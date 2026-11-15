@@ -2,31 +2,71 @@ import { useRef } from 'react'
 import { FieldTypeSwitcher } from './components/FieldTypeSwitcher'
 import { FileBar } from './components/FileBar'
 import { ItemSidebar } from './components/ItemSidebar'
+import { LibraryView } from './components/LibraryView'
 import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
 import { Timeline } from './components/Timeline'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { usePlaybackStore } from './store/playbackStore'
+import { useViewStore, type View } from './store/viewStore'
+
+const VIEWS: { view: View; label: string }[] = [
+  { view: 'editor', label: 'Editor' },
+  { view: 'library', label: 'Bibliothek' },
+]
 
 export default function App() {
   const dropTargetRef = useRef<DropTarget | null>(null)
-  useKeyboardShortcuts()
+  const view = useViewStore((s) => s.view)
+  const setView = useViewStore((s) => s.setView)
+  useKeyboardShortcuts(view === 'editor')
 
   return (
     <div className="flex h-full flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 bg-slate-900 px-4 py-2">
-        <FileBar />
-        <FieldTypeSwitcher />
+      <header className="flex flex-wrap items-center gap-2 border-b border-slate-700 bg-slate-900 px-4 py-2">
+        <nav aria-label="Bereich" className="flex gap-1 rounded-lg bg-slate-800 p-1">
+          {VIEWS.map((v) => (
+            <button
+              key={v.view}
+              type="button"
+              aria-current={v.view === view ? 'page' : undefined}
+              onClick={() => {
+                usePlaybackStore.getState().stop()
+                setView(v.view)
+              }}
+              className={`min-h-10 rounded-md px-3 text-sm font-semibold ${
+                v.view === view ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
+        </nav>
+        {view === 'editor' && (
+          <>
+            <FileBar />
+            <div className="ml-auto">
+              <FieldTypeSwitcher />
+            </div>
+          </>
+        )}
       </header>
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <ItemSidebar dropTargetRef={dropTargetRef} />
-        <main className="flex min-h-0 flex-1 flex-col">
-          <LineToolbar />
-          <div className="min-h-0 flex-1">
-            <PitchStage dropTargetRef={dropTargetRef} />
-          </div>
-          <Timeline />
+      {view === 'editor' ? (
+        <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+          <ItemSidebar dropTargetRef={dropTargetRef} />
+          <main className="flex min-h-0 flex-1 flex-col">
+            <LineToolbar />
+            <div className="min-h-0 flex-1">
+              <PitchStage dropTargetRef={dropTargetRef} />
+            </div>
+            <Timeline />
+          </main>
+        </div>
+      ) : (
+        <main className="min-h-0 flex-1">
+          <LibraryView />
         </main>
-      </div>
+      )}
     </div>
   )
 }

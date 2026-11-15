@@ -19,6 +19,7 @@ export function startAutosave(): () => void {
     if (
       s.title === prev.title &&
       s.description === prev.description &&
+      s.category === prev.category &&
       s.fieldType === prev.fieldType &&
       s.scenes === prev.scenes
     ) {

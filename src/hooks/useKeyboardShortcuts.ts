@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { saveToLibraryWithFeedback } from '../library/libraryActions'
 import type { Item, Line } from '../model/types'
 import { currentScene, findElement, useDrillStore } from '../store/drillStore'
 import { togglePlayback } from '../store/playbackActions'
@@ -14,12 +15,23 @@ function isTyping(target: EventTarget | null): boolean {
   )
 }
 
-/** Undo/redo, copy/paste/duplicate, delete, Escape and Space (play/pause). */
-export function useKeyboardShortcuts() {
+/**
+ * Editor shortcuts: save (Ctrl+S), undo/redo, copy/paste/duplicate, delete,
+ * Escape and Space (play/pause). Inactive while `enabled` is false or a dialog is open.
+ */
+export function useKeyboardShortcuts(enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return
     let clipboard: Item | Line | null = null
 
     function onKeyDown(e: KeyboardEvent) {
+      if (document.querySelector('[aria-modal="true"]')) return
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        // Works while typing in the title too; replaces the browser's "save page".
+        e.preventDefault()
+        void saveToLibraryWithFeedback()
+        return
+      }
       if (isTyping(e.target)) return
       const store = useDrillStore.getState()
       const selected = findElement(currentScene(store), store.selectedId)
@@ -59,5 +71,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+  }, [enabled])
 }

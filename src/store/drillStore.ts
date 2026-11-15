@@ -3,7 +3,7 @@ import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
 import type { NewItem } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
-import type { Drill, Item, Line, LineType, Point, Scene } from '../model/types'
+import type { Category, Drill, Item, Line, LineType, Point, Scene } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -21,11 +21,15 @@ export const MAX_SCENE_DURATION_MS = 60_000
 export interface DrillState extends DrillContent {
   title: string
   description: string
+  category: Category | null
   selectedId: string | null
   past: DrillContent[]
   future: DrillContent[]
 
+  // Title, description and category are not part of undo (every keystroke would be a step).
   setTitle: (title: string) => void
+  setDescription: (description: string) => void
+  setCategory: (category: Category | null) => void
   setFieldType: (fieldType: FieldType) => void
   select: (id: string | null) => void
 
@@ -102,11 +106,12 @@ export function findElement(
 
 /** Builds the drill (as saved to a file) from the current state. */
 export function currentDrill(
-  state: Pick<DrillState, 'title' | 'description' | 'fieldType' | 'scenes'>,
+  state: Pick<DrillState, 'title' | 'description' | 'category' | 'fieldType' | 'scenes'>,
 ): Drill {
   return {
     title: state.title,
     description: state.description,
+    category: state.category,
     fieldType: state.fieldType,
     scenes: state.scenes,
   }
@@ -156,6 +161,7 @@ function stateFromDrill(drill: Drill) {
   return {
     title: drill.title,
     description: drill.description,
+    category: drill.category,
     fieldType: drill.fieldType,
     scenes: drill.scenes.length > 0 ? drill.scenes : emptyDrill().scenes,
     sceneIndex: 0,
@@ -169,6 +175,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   ...stateFromDrill(emptyDrill()),
 
   setTitle: (title) => set({ title }),
+  setDescription: (description) => set({ description }),
+  setCategory: (category) => set({ category }),
   setFieldType: (fieldType) =>
     set((s) => (s.fieldType === fieldType ? {} : { ...recorded(s), fieldType })),
   select: (selectedId) => set({ selectedId }),

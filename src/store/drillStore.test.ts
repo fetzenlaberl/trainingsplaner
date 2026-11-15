@@ -228,6 +228,7 @@ describe('load / new', () => {
   const drill: Drill = {
     title: 'Rondo 4 gegen 2',
     description: 'Aufwärmen',
+    category: 'warmup',
     fieldType: 'penalty',
     scenes: [
       {
@@ -250,6 +251,17 @@ describe('load / new', () => {
     store().loadDrill(drill)
     store().newDrill()
     expect(currentDrill(store())).toEqual(emptyDrill())
+  })
+})
+
+describe('title, description and category', () => {
+  it('are saved with the drill but not recorded in the history', () => {
+    store().setTitle('Rondo')
+    store().setDescription('Zwei Kontakte')
+    store().setCategory('passing')
+    expect(store().past).toEqual([])
+    const drill = currentDrill(store())
+    expect([drill.title, drill.description, drill.category]).toEqual(['Rondo', 'Zwei Kontakte', 'passing'])
   })
 })
 

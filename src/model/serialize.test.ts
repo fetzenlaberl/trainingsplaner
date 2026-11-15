@@ -13,6 +13,7 @@ import type { Drill } from './types'
 const drill: Drill = {
   title: 'Torabschluss',
   description: 'Flanke und Abschluss',
+  category: 'shooting',
   fieldType: 'half',
   scenes: [
     {
@@ -74,6 +75,13 @@ describe('serializeDrill / parseDrill', () => {
     expect(data.version).toBe(FILE_VERSION)
   })
 
+  it('reads older files without a category', () => {
+    const text = tamper((d) => {
+      delete d.category
+    })
+    expect(parseDrill(text).category).toBeNull()
+  })
+
   it('drops unknown extra fields', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].extra = 'x'
@@ -108,6 +116,7 @@ describe('parseDrill rejects invalid files', () => {
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],
     ['broken control point', (d) => (d.scenes[0].lines[0].control = { x: 1 })],
     ['duplicate ids', (d) => (d.scenes[0].items[1].id = 'p1')],
+    ['unknown category', (d) => (d.category = 'fitness')],
   ])('rejects %s', (_name, change) => {
     expectError(tamper(change), /beschädigt oder unvollständig/)
   })

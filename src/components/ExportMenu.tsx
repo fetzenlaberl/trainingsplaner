@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { totalDuration } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
 import type { VideoFormat, VideoProgress } from '../video/exportVideo'
+import { Dropdown } from './Dropdown'
 import { buttonClass } from './ui'
 
 type ExportKind = 'png' | 'pdf' | VideoFormat
@@ -20,24 +21,11 @@ function isAbort(err: unknown): boolean {
 /** Export menu (image, PDF, video) with a progress dialog for videos. */
 export function ExportMenu() {
   const canAnimate = useDrillStore((s) => totalDuration(s.scenes) > 0)
-  const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [videoProgress, setVideoProgress] = useState<VideoProgress | null>(null)
   const abortRef = useRef<AbortController | null>(null)
-  const menuRef = useRef<HTMLDivElement>(null)
-
-  // Close the menu when clicking or tapping elsewhere.
-  useEffect(() => {
-    if (!open) return
-    const onPointerDown = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setOpen(false)
-    }
-    window.addEventListener('pointerdown', onPointerDown)
-    return () => window.removeEventListener('pointerdown', onPointerDown)
-  }, [open])
 
   async function runExport(kind: ExportKind) {
-    setOpen(false)
     setBusy(true)
     try {
       if (kind === 'png' || kind === 'pdf') {
@@ -68,46 +56,24 @@ export function ExportMenu() {
   }
 
   return (
-    <div ref={menuRef} className="relative">
-      <button
-        type="button"
-        className={buttonClass}
-        aria-haspopup="menu"
-        aria-expanded={open}
+    <>
+      <Dropdown
+        label="Exportieren"
         disabled={busy}
-        onClick={() => setOpen((o) => !o)}
-      >
-        Exportieren ▾
-      </button>
-      {open && (
-        <div
-          role="menu"
-          className="absolute left-0 z-40 mt-1 flex w-56 flex-col rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-xl"
-        >
-          {MENU_ITEMS.map((item) => {
-            const disabled = item.video && !canAnimate
-            return (
-              <button
-                key={item.kind}
-                type="button"
-                role="menuitem"
-                disabled={disabled}
-                onClick={() => runExport(item.kind)}
-                className="flex min-h-10 flex-col items-start justify-center rounded-md px-3 py-1 text-left text-sm text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-              >
-                {item.label}
-                {disabled && (
-                  <span className="text-xs text-slate-400">Braucht mindestens zwei Szenen</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
+        items={MENU_ITEMS.map((item) => {
+          const disabled = item.video && !canAnimate
+          return {
+            label: item.label,
+            disabled,
+            hint: disabled ? 'Braucht mindestens zwei Szenen' : undefined,
+            onSelect: () => runExport(item.kind),
+          }
+        })}
+      />
       {videoProgress && (
         <VideoProgressDialog progress={videoProgress} onCancel={() => abortRef.current?.abort()} />
       )}
-    </div>
+    </>
   )
 }
 

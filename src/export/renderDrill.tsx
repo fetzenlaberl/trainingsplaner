@@ -2,18 +2,26 @@ import type Konva from 'konva'
 import { createRoot } from 'react-dom/client'
 import { Layer, Stage } from 'react-konva'
 import { FieldView } from '../components/FieldView'
-import { getViewport } from '../field/dimensions'
+import { getViewport, type FieldType } from '../field/dimensions'
+import type { Scene } from '../model/types'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { EXPORT_SCALE, exportSize } from './layout'
 
+/** Renders the scene shown in the editor (see renderSceneToCanvas). */
+export function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanvasElement> {
+  const state = useDrillStore.getState()
+  return renderSceneToCanvas(state.fieldType, currentScene(state), pxPerMeter)
+}
+
 /**
- * Renders the current drill into a canvas at a fixed resolution, independent of the
+ * Renders a scene into a canvas at a fixed resolution, independent of the
  * window size and without selection marks or handles.
  */
-export async function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanvasElement> {
-  const state = useDrillStore.getState()
-  const { fieldType } = state
-  const { items, lines } = currentScene(state)
+export async function renderSceneToCanvas(
+  fieldType: FieldType,
+  { items, lines }: Scene,
+  pxPerMeter = EXPORT_SCALE,
+): Promise<HTMLCanvasElement> {
   const viewport = getViewport(fieldType)
   const { width, height } = exportSize(viewport, pxPerMeter)
 

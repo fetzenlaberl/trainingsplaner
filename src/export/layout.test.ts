@@ -16,6 +16,25 @@ describe('exportSize', () => {
   })
 })
 
+describe('pdfLayout with description', () => {
+  it('reserves a box below the image that stays on the page', () => {
+    const { width, height } = exportSize(getViewport('full'))
+    const layout = pdfLayout(width, height, true)
+    const box = layout.description!
+    expect(box.y).toBeGreaterThan(layout.image.y + layout.image.height)
+    expect(box.y + box.maxHeight).toBeLessThanOrEqual(layout.pageHeight)
+  })
+
+  it('makes the image smaller when a description is shown', () => {
+    const { width, height } = exportSize(getViewport('full'))
+    expect(pdfLayout(width, height, true).image.width).toBeLessThan(pdfLayout(width, height).image.width)
+  })
+
+  it('has no description box without a description', () => {
+    expect(pdfLayout(1000, 500).description).toBeNull()
+  })
+})
+
 describe('pdfLayout', () => {
   it('uses landscape for a wide image (full field)', () => {
     const { width, height } = exportSize(getViewport('full'))

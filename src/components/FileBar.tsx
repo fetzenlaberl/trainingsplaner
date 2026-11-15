@@ -1,11 +1,19 @@
-import { useRef, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
+import { isEditorDirty, saveToLibraryWithFeedback, unlinkEditor } from '../library/libraryActions'
+import { useLibraryLink } from '../library/libraryStore'
 import { DrillFileError, fileNameFromTitle, parseDrill, serializeDrill } from '../model/serialize'
 import { currentDrill, useDrillStore } from '../store/drillStore'
+import { usePlaybackStore } from '../store/playbackStore'
+import { DetailsDialog } from './DetailsDialog'
+import { Dropdown } from './Dropdown'
 import { ExportMenu } from './ExportMenu'
 import { buttonClass, inputClass } from './ui'
 
-/** Title, new/open/save, export and undo/redo. */
+const DISCARD_QUESTION =
+  'Die Übung im Editor hat Änderungen, die nicht in der Bibliothek gespeichert sind. Trotzdem fortfahren?'
+
+/** Title, details, file menu, library save, export and undo/redo. */
 export function FileBar() {
   const title = useDrillStore((s) => s.title)
   const setTitle = useDrillStore((s) => s.setTitle)
@@ -13,30 +21,47 @@ export function FileBar() {
   const canRedo = useDrillStore((s) => s.future.length > 0)
   const undo = useDrillStore((s) => s.undo)
   const redo = useDrillStore((s) => s.redo)
+  const drillJson = useDrillStore((s) => serializeDrill(currentDrill(s)))
+  const savedJson = useLibraryLink((s) => s.savedJson)
+  const inLibrary = useLibraryLink((s) => s.libraryId !== null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const dirty = drillJson !== savedJson
 
   function handleNew() {
-    if (window.confirm('Neue Übung beginnen? Die aktuelle Übung wird verworfen, wenn du sie nicht gespeichert hast.')) {
-      useDrillStore.getState().newDrill()
-    }
+    if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
+    usePlaybackStore.getState().stop()
+    useDrillStore.getState().newDrill()
+    unlinkEditor(serializeDrill(currentDrill(useDrillStore.getState())))
   }
 
-  function handleSave() {
+  function handleSaveFile() {
     const state = useDrillStore.getState()
     const blob = new Blob([serializeDrill(currentDrill(state))], { type: 'application/json' })
     downloadBlob(blob, `${fileNameFromTitle(state.title)}.json`)
   }
 
-  async function handleOpen(e: ChangeEvent<HTMLInputElement>) {
+  async function handleOpenFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // allow opening the same file again
     if (!file) return
     try {
-      useDrillStore.getState().loadDrill(parseDrill(await file.text()))
+      const drill = parseDrill(await file.text())
+      if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
+      usePlaybackStore.getState().stop()
+      useDrillStore.getState().loadDrill(drill)
+      unlinkEditor(null) // a drill from a file is not in the library yet
     } catch (err) {
       const message = err instanceof DrillFileError ? err.message : 'Die Datei konnte nicht gelesen werden.'
       window.alert(`Öffnen fehlgeschlagen: ${message}`)
     }
+  }
+
+  async function handleSaveToLibrary() {
+    setSaving(true)
+    await saveToLibraryWithFeedback()
+    setSaving(false)
   }
 
   return (
@@ -48,22 +73,36 @@ export function FileBar() {
         placeholder="Titel der Übung"
         onChange={(e) => setTitle(e.target.value)}
       />
-      <button type="button" className={buttonClass} onClick={handleNew}>
-        Neu
+      <button type="button" className={buttonClass} onClick={() => setDetailsOpen(true)}>
+        Details
       </button>
-      <button type="button" className={buttonClass} onClick={() => fileInputRef.current?.click()}>
-        Öffnen
-      </button>
+      <Dropdown
+        label="Datei"
+        items={[
+          { label: 'Neue Übung', onSelect: handleNew },
+          { label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
+          { label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
+        ]}
+      />
       <input
         ref={fileInputRef}
         type="file"
         accept=".json,application/json"
         className="hidden"
-        onChange={handleOpen}
+        onChange={handleOpenFile}
       />
-      <button type="button" className={buttonClass} onClick={handleSave}>
-        Speichern
+      <button
+        type="button"
+        className={`${buttonClass} ${dirty ? 'bg-emerald-700 text-white hover:bg-emerald-600' : ''}`}
+        title="In der Übungsbibliothek speichern (Strg+S)"
+        disabled={saving}
+        onClick={handleSaveToLibrary}
+      >
+        {saving ? 'Speichert …' : 'In Bibliothek speichern'}
       </button>
+      <span className="text-xs text-slate-400" aria-live="polite">
+        {dirty ? '● Ungespeichert' : inLibrary ? '✓ Gespeichert' : ''}
+      </span>
       <ExportMenu />
       <span className="mx-1 h-6 w-px bg-slate-700" aria-hidden />
       <button
@@ -84,6 +123,7 @@ export function FileBar() {
       >
         ↷ Wiederholen
       </button>
+      {detailsOpen && <DetailsDialog onClose={() => setDetailsOpen(false)} />}
     </div>
   )
 }

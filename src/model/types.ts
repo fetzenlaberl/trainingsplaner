@@ -37,9 +37,19 @@ export interface Scene {
   lines: Line[]
 }
 
+export type Category =
+  | 'warmup'
+  | 'technique'
+  | 'passing'
+  | 'shooting'
+  | 'tactics'
+  | 'game'
+  | 'cooldown'
+
 export interface Drill {
   title: string
   description: string
+  category: Category | null
   fieldType: FieldType
   scenes: Scene[]
 }
