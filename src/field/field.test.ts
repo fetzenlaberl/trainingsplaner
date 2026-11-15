@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FIELD_TYPES, getViewport, PITCH, RUNOFF } from './dimensions'
-import { fitViewport, metersToPixels } from './layout'
+import { clampToRect, fitViewport, isInsideRect, metersToPixels, pixelsToMeters } from './layout'
 import { arcPoints, getGoals, getPitchMarkings } from './markings'
 
 describe('getViewport', () => {
@@ -70,6 +70,32 @@ describe('metersToPixels', () => {
     const layout = fitViewport(viewport, 1000, 1000)
     expect(metersToPixels(layout, viewport, -5, -5)).toEqual({ x: 0, y: 250 })
     expect(metersToPixels(layout, viewport, 95, 45)).toEqual({ x: 1000, y: 750 })
+  })
+})
+
+describe('pixelsToMeters', () => {
+  it('is the inverse of metersToPixels', () => {
+    const viewport = getViewport('penalty')
+    const layout = fitViewport(viewport, 800, 600, 12)
+    const px = metersToPixels(layout, viewport, 11, 34)
+    const m = pixelsToMeters(layout, viewport, px.x, px.y)
+    expect(m.x).toBeCloseTo(11)
+    expect(m.y).toBeCloseTo(34)
+  })
+})
+
+describe('isInsideRect / clampToRect', () => {
+  const rect = { x: 0, y: 0, width: 10, height: 5 }
+
+  it('detects points inside and outside', () => {
+    expect(isInsideRect(rect, 5, 2)).toBe(true)
+    expect(isInsideRect(rect, 11, 2)).toBe(false)
+    expect(isInsideRect(rect, 5, -1)).toBe(false)
+  })
+
+  it('clamps points onto the rectangle', () => {
+    expect(clampToRect(rect, -3, 8)).toEqual({ x: 0, y: 5 })
+    expect(clampToRect(rect, 4, 2)).toEqual({ x: 4, y: 2 })
   })
 })
 

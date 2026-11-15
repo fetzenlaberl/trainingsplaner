@@ -1,16 +1,23 @@
+import { useRef } from 'react'
 import { FieldTypeSwitcher } from './components/FieldTypeSwitcher'
-import { PitchStage } from './components/PitchStage'
+import { ItemSidebar } from './components/ItemSidebar'
+import { PitchStage, type DropTarget } from './components/PitchStage'
 
 export default function App() {
+  const dropTargetRef = useRef<DropTarget | null>(null)
+
   return (
     <div className="flex h-full flex-col">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 bg-slate-900 px-4 py-2">
         <h1 className="text-lg font-semibold text-white">Trainingsplaner</h1>
         <FieldTypeSwitcher />
       </header>
-      <main className="min-h-0 flex-1">
-        <PitchStage />
-      </main>
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <ItemSidebar dropTargetRef={dropTargetRef} />
+        <main className="min-h-0 flex-1">
+          <PitchStage dropTargetRef={dropTargetRef} />
+        </main>
+      </div>
     </div>
   )
 }

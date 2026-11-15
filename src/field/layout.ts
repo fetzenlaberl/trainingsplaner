@@ -40,3 +40,28 @@ export function metersToPixels(
     y: layout.offsetY + (y - viewport.y) * layout.scale,
   }
 }
+
+/** Converts a point in pixels to meters. */
+export function pixelsToMeters(
+  layout: Layout,
+  viewport: Rect,
+  px: number,
+  py: number,
+): { x: number; y: number } {
+  return {
+    x: viewport.x + (px - layout.offsetX) / layout.scale,
+    y: viewport.y + (py - layout.offsetY) / layout.scale,
+  }
+}
+
+export function isInsideRect(rect: Rect, x: number, y: number): boolean {
+  return x >= rect.x && x <= rect.x + rect.width && y >= rect.y && y <= rect.y + rect.height
+}
+
+/** Clamps a point so it stays inside the rectangle. */
+export function clampToRect(rect: Rect, x: number, y: number): { x: number; y: number } {
+  return {
+    x: Math.min(Math.max(x, rect.x), rect.x + rect.width),
+    y: Math.min(Math.max(y, rect.y), rect.y + rect.height),
+  }
+}

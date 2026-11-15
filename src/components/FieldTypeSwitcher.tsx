@@ -1,9 +1,9 @@
 import { FIELD_TYPE_LABELS, FIELD_TYPES } from '../field/dimensions'
-import { useFieldStore } from '../store/fieldStore'
+import { useDrillStore } from '../store/drillStore'
 
 export function FieldTypeSwitcher() {
-  const fieldType = useFieldStore((s) => s.fieldType)
-  const setFieldType = useFieldStore((s) => s.setFieldType)
+  const fieldType = useDrillStore((s) => s.fieldType)
+  const setFieldType = useDrillStore((s) => s.setFieldType)
 
   return (
     <div role="group" aria-label="Feldtyp" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
