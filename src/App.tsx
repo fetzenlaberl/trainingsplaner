@@ -5,6 +5,7 @@ import { ItemSidebar } from './components/ItemSidebar'
 import { LibraryView } from './components/LibraryView'
 import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
+import { SessionsView } from './components/SessionsView'
 import { Timeline } from './components/Timeline'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { usePlaybackStore } from './store/playbackStore'
@@ -13,6 +14,7 @@ import { useViewStore, type View } from './store/viewStore'
 const VIEWS: { view: View; label: string }[] = [
   { view: 'editor', label: 'Editor' },
   { view: 'library', label: 'Bibliothek' },
+  { view: 'sessions', label: 'Einheiten' },
 ]
 
 export default function App() {
@@ -63,9 +65,7 @@ export default function App() {
           </main>
         </div>
       ) : (
-        <main className="min-h-0 flex-1">
-          <LibraryView />
-        </main>
+        <main className="min-h-0 flex-1">{view === 'library' ? <LibraryView /> : <SessionsView />}</main>
       )}
     </div>
   )

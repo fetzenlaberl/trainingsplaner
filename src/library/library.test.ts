@@ -7,13 +7,14 @@ import {
   createEntry,
   duplicateEntry,
   filterEntries,
-  parseLibrary,
+  parseBackup,
   planImport,
-  serializeLibrary,
+  serializeBackup,
   sortEntries,
   updateEntry,
   type LibraryEntry,
 } from './library'
+import { createSession, freeBlock } from '../sessions/session'
 
 function drill(title: string, category: Category | null = null, description = ''): Drill {
   return { ...emptyDrill(), title, category, description }
@@ -86,32 +87,50 @@ describe('backup', () => {
   ]
 
   it('round-trips the library', () => {
-    expect(parseLibrary(serializeLibrary(entries))).toEqual(entries)
+    expect(parseBackup(serializeBackup({ entries, sessions: [] }))).toEqual({ entries, sessions: [] })
+  })
+
+  it('round-trips training sessions', () => {
+    const session = { ...createSession(7, '2026-11-20'), blocks: [freeBlock('Trinkpause', 5)] }
+    expect(parseBackup(serializeBackup({ entries, sessions: [session] })).sessions).toEqual([session])
+  })
+
+  it('reads older backups without sessions', () => {
+    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    delete data.sessions
+    expect(parseBackup(JSON.stringify(data)).sessions).toEqual([])
+  })
+
+  it('rejects broken sessions', () => {
+    const session = createSession(7)
+    const data = JSON.parse(serializeBackup({ entries, sessions: [session] }))
+    data.sessions[0].blocks = [{ id: 'x', title: 'ohne Dauer' }]
+    expect(() => parseBackup(JSON.stringify(data))).toThrow(/beschädigt/)
   })
 
   it('writes format and version', () => {
-    const data = JSON.parse(serializeLibrary(entries))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
     expect([data.format, data.version]).toEqual([BACKUP_FORMAT, BACKUP_VERSION])
   })
 
   it('rejects other files', () => {
-    expect(() => parseLibrary('kein json')).toThrow(DrillFileError)
-    expect(() => parseLibrary('{"format":"trainingsplaner-drill"}')).toThrow(/keine Sicherung/)
+    expect(() => parseBackup('kein json')).toThrow(DrillFileError)
+    expect(() => parseBackup('{"format":"trainingsplaner-drill"}')).toThrow(/keine Sicherung/)
   })
 
   it('rejects broken entries and broken drills inside', () => {
-    const data = JSON.parse(serializeLibrary(entries))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
     data.entries[0].drill.fieldType = 'beach'
-    expect(() => parseLibrary(JSON.stringify(data))).toThrow(/beschädigt/)
-    const data2 = JSON.parse(serializeLibrary(entries))
+    expect(() => parseBackup(JSON.stringify(data))).toThrow(/beschädigt/)
+    const data2 = JSON.parse(serializeBackup({ entries, sessions: [] }))
     data2.entries[1].thumbnail = 'javascript:alert(1)'
-    expect(() => parseLibrary(JSON.stringify(data2))).toThrow(/beschädigt/)
+    expect(() => parseBackup(JSON.stringify(data2))).toThrow(/beschädigt/)
   })
 
   it('rejects backups from newer versions', () => {
-    const data = JSON.parse(serializeLibrary(entries))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
     data.version = BACKUP_VERSION + 1
-    expect(() => parseLibrary(JSON.stringify(data))).toThrow(/neueren Version/)
+    expect(() => parseBackup(JSON.stringify(data))).toThrow(/neueren Version/)
   })
 })
 

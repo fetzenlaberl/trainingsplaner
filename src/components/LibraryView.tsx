@@ -5,15 +5,16 @@ import {
   CATEGORY_LABELS,
   duplicateEntry,
   filterEntries,
-  parseLibrary,
+  parseBackup,
   planImport,
-  serializeLibrary,
+  serializeBackup,
   type LibraryEntry,
 } from '../library/library'
 import { isEditorDirty, openEntryInEditor, unlinkEditor } from '../library/libraryActions'
 import { deleteEntry, listEntries, putEntries, putEntry } from '../library/libraryDb'
 import { useLibraryLink } from '../library/libraryStore'
 import { CATEGORIES, DrillFileError } from '../model/serialize'
+import { listSessions, putSessions } from '../sessions/sessionDb'
 import type { Category } from '../model/types'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -100,10 +101,16 @@ export function LibraryView() {
     })
   }
 
-  function handleExportBackup() {
-    if (!entries) return
-    const blob = new Blob([serializeLibrary(entries)], { type: 'application/json' })
-    downloadBlob(blob, `trainingsplaner-bibliothek-${todayStamp()}.json`)
+  /** Backup of all drills and training sessions. */
+  async function handleExportBackup() {
+    try {
+      const backup = { entries: await listEntries(), sessions: await listSessions() }
+      const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
+      downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
+    } catch (err) {
+      console.error(err)
+      window.alert('Die Sicherung konnte nicht erstellt werden.')
+    }
   }
 
   async function handleImportBackup(e: ChangeEvent<HTMLInputElement>) {
@@ -111,12 +118,15 @@ export function LibraryView() {
     e.target.value = ''
     if (!file) return
     try {
-      const imported = parseLibrary(await file.text())
-      const { toStore, skipped } = planImport(await listEntries(), imported)
-      await putEntries(toStore)
+      const backup = parseBackup(await file.text())
+      const drills = planImport(await listEntries(), backup.entries)
+      const sessions = planImport(await listSessions(), backup.sessions)
+      await putEntries(drills.toStore)
+      await putSessions(sessions.toStore)
+      const skipped = drills.skipped + sessions.skipped
       window.alert(
-        `${toStore.length} Übung(en) importiert.` +
-          (skipped > 0 ? ` ${skipped} übersprungen, weil die Bibliothek schon eine neuere Fassung hat.` : ''),
+        `${drills.toStore.length} Übung(en) und ${sessions.toStore.length} Einheit(en) importiert.` +
+          (skipped > 0 ? ` ${skipped} übersprungen, weil schon eine neuere Fassung vorhanden ist.` : ''),
       )
     } catch (err) {
       console.error(err)
@@ -156,7 +166,7 @@ export function LibraryView() {
           ))}
         </div>
         <div className="ml-auto flex gap-1.5">
-          <button type="button" className={buttonClass} disabled={!entries?.length} onClick={handleExportBackup}>
+          <button type="button" className={buttonClass} onClick={() => void handleExportBackup()}>
             Sicherung exportieren
           </button>
           <button type="button" className={buttonClass} onClick={() => importInputRef.current?.click()}>

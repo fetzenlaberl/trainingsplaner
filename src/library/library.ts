@@ -1,5 +1,6 @@
 import { DrillFileError, drillFromData } from '../model/serialize'
 import type { Category, Drill } from '../model/types'
+import { sessionFromData, type TrainingSession } from '../sessions/session'
 
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 export const BACKUP_VERSION = 1
@@ -73,16 +74,22 @@ export function filterEntries(
   })
 }
 
-export function serializeLibrary(entries: LibraryEntry[]): string {
-  return JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, entries }, null, 2)
+export interface Backup {
+  entries: LibraryEntry[]
+  sessions: TrainingSession[]
+}
+
+/** Backup of drills and training sessions as one file. */
+export function serializeBackup({ entries, sessions }: Backup): string {
+  return JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, entries, sessions }, null, 2)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-/** Parses a library backup. Throws DrillFileError with a German message. */
-export function parseLibrary(text: string): LibraryEntry[] {
+/** Parses a backup. Throws DrillFileError with a German message. */
+export function parseBackup(text: string): Backup {
   let data: unknown
   try {
     data = JSON.parse(text)
@@ -95,10 +102,16 @@ export function parseLibrary(text: string): LibraryEntry[] {
   if (typeof data.version !== 'number' || data.version > BACKUP_VERSION) {
     throw new DrillFileError('Die Sicherung stammt aus einer neueren Version des Trainingsplaners.')
   }
-  if (!Array.isArray(data.entries)) {
+  // Sessions were added later; older backups only contain drills.
+  if (!Array.isArray(data.entries) || !(data.sessions === undefined || Array.isArray(data.sessions))) {
     throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
   }
-  return data.entries.map((value): LibraryEntry => {
+  const sessions = ((data.sessions as unknown[] | undefined) ?? []).map((value) => {
+    const session = sessionFromData(value)
+    if (!session) throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
+    return session
+  })
+  const entries = data.entries.map((value): LibraryEntry => {
     if (
       !isRecord(value) ||
       typeof value.id !== 'string' ||
@@ -116,16 +129,17 @@ export function parseLibrary(text: string): LibraryEntry[] {
       updatedAt: value.updatedAt,
     }
   })
+  return { entries, sessions }
 }
 
 /**
- * Decides which imported entries to write: new ones, and existing ones only if the
- * imported version is newer. Returns the entries to store and how many were skipped.
+ * Decides which imported records to write: new ones, and existing ones only if the
+ * imported version is newer. Returns the records to store and how many were skipped.
  */
-export function planImport(
-  existing: LibraryEntry[],
-  imported: LibraryEntry[],
-): { toStore: LibraryEntry[]; skipped: number } {
+export function planImport<T extends { id: string; updatedAt: number }>(
+  existing: T[],
+  imported: T[],
+): { toStore: T[]; skipped: number } {
   const byId = new Map(existing.map((e) => [e.id, e]))
   const toStore = imported.filter((entry) => {
     const current = byId.get(entry.id)
