@@ -13,15 +13,17 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Zustand: Zustand (Store), Undo/Redo über Verlaufsstapel
 - Styling: Tailwind CSS
 - Tests: Vitest für die Logik (Interpolation, Speichern/Laden)
-- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage)
+- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek und Einheiten)
 
 ## Datenmodell (Kern)
-- `Drill`: Titel, Beschreibung, Feldtyp, Liste von `Scene`
+- `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Liste von `Scene`
 - `Scene`: Dauer in ms, Liste von `Item`-Zuständen, Liste von `Line`
 - `Item`: id, Typ (player | ball | cone | goal | pole | text), x, y, Drehung, Farbe, Beschriftung
 - `Line`: Typ (pass | run | dribble | shot), Punkte (gerade oder Bézier-Kurve), Farbe
 - Koordinaten immer in Metern relativ zum Feld, nie in Pixeln. Umrechnung nur beim Zeichnen.
 - Ein Item behält seine id über alle Szenen; die Animation interpoliert Position und Drehung zwischen aufeinanderfolgenden Szenen.
+- `TrainingSession` (Einheit): Titel, Datum, Beginn, Mannschaft, Ziel, Notizen, Liste von Blöcken
+- Block: verweist per id auf eine Übung der Bibliothek (keine Kopie) oder ist ein freier Block (z. B. Trinkpause); Dauer in Minuten, Notiz
 
 ## Funktionsumfang nach Phasen
 1. Spielfeld (Ganzfeld, Halbfeld, Strafraum, leere Fläche), responsiv
@@ -31,7 +33,10 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 5. Export: PNG und PDF
 6. Animation: Zeitleiste mit Szenen, Play/Pause, Tempo, Ball folgt Passlinien
 7. Videoexport: WebM (canvas.captureStream + MediaRecorder), danach MP4 (ffmpeg.wasm)
-8. Später: Übungsbibliothek, Einheitenplaner, Cloud-Speicher mit Login
+8. Erweiterungen, in Teilschritten:
+   - 8a Übungsbibliothek (IndexedDB, Suche, Kategorien, Sicherung als Datei) – erledigt
+   - 8b Einheitenplaner (Blöcke aus der Bibliothek, Zeiten, PDF der Einheit) – erledigt
+   - 8c Cloud-Speicher mit Login – zurückgestellt. Braucht einen externen Anbieter (z. B. Supabase mit EU-Servern), ein vom Nutzer angelegtes Projekt und Klärung von Datenschutz (DSGVO) und Kosten. Beginnt Version 2 (mit Backend); vorher eigenen Plan vorlegen.
 
 ## Arbeitsregeln
 - Immer nur die aktuell beauftragte Phase umsetzen, nichts vorwegnehmen.
