@@ -1,3 +1,5 @@
+import type { FieldType } from '../field/dimensions'
+
 export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text'
 
 export interface Item {
@@ -27,4 +29,17 @@ export interface Line {
   /** Control point of a quadratic Bézier curve; null for a straight line */
   control: Point | null
   color: string
+}
+
+export interface Scene {
+  durationMs: number
+  items: Item[]
+  lines: Line[]
+}
+
+export interface Drill {
+  title: string
+  description: string
+  fieldType: FieldType
+  scenes: Scene[]
 }

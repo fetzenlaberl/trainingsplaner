@@ -7,7 +7,7 @@ import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
 import { useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
-import { CurveHandles, FieldLines } from './FieldLines'
+import { FieldLines, LineHandles } from './FieldLines'
 import { FieldItems } from './FieldItems'
 import { LineShape } from './LineShape'
 import { Pitch } from './Pitch'
@@ -32,6 +32,7 @@ interface PitchStageProps {
 export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
   const addLine = useDrillStore((s) => s.addLine)
+  const select = useDrillStore((s) => s.select)
   const tool = useToolStore((s) => s.tool)
   const lineColor = useToolStore((s) => s.lineColor)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -73,8 +74,12 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     }
   })
 
-  function startLine(e: KonvaEventObject<PointerEvent>) {
-    if (tool === 'select' || e.target.name() === 'curve-handle') return
+  function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
+    if (tool === 'select') {
+      // Tap on empty space clears the selection
+      if (e.target === e.target.getStage()) select(null)
+      return
+    }
     if (e.evt.pointerType === 'mouse' && e.evt.button !== 0) return
     const start = clientToMeters(e.evt.clientX, e.evt.clientY)
     if (!start || !isInsideRect(viewport, start.x, start.y)) return
@@ -113,7 +118,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       style={{ cursor: drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
-        <Stage width={size.width} height={size.height} onPointerDown={startLine}>
+        <Stage width={size.width} height={size.height} onPointerDown={handlePointerDown}>
           <Layer>
             <Group
               x={layout.offsetX - viewport.x * layout.scale}
@@ -126,7 +131,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
               clipHeight={viewport.height}
             >
               <Pitch fieldType={fieldType} viewport={viewport} scale={layout.scale} />
-              <FieldLines scale={layout.scale} />
+              <FieldLines scale={layout.scale} interactive={!drawing} />
               <FieldItems viewport={viewport} scale={layout.scale} interactive={!drawing} />
               {draft && tool !== 'select' && (
                 <LineShape
@@ -138,7 +143,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                   opacity={0.7}
                 />
               )}
-              {drawing && !draft && <CurveHandles scale={layout.scale} />}
+              {!drawing && <LineHandles scale={layout.scale} />}
             </Group>
           </Layer>
         </Stage>

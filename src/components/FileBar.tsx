@@ -1,0 +1,91 @@
+import { useRef, type ChangeEvent } from 'react'
+import { DrillFileError, fileNameFromTitle, parseDrill, serializeDrill } from '../model/serialize'
+import { currentDrill, useDrillStore } from '../store/drillStore'
+import { buttonClass, inputClass } from './ui'
+
+/** Title, new/open/save and undo/redo. */
+export function FileBar() {
+  const title = useDrillStore((s) => s.title)
+  const setTitle = useDrillStore((s) => s.setTitle)
+  const canUndo = useDrillStore((s) => s.past.length > 0)
+  const canRedo = useDrillStore((s) => s.future.length > 0)
+  const undo = useDrillStore((s) => s.undo)
+  const redo = useDrillStore((s) => s.redo)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  function handleNew() {
+    if (window.confirm('Neue Übung beginnen? Die aktuelle Übung wird verworfen, wenn du sie nicht gespeichert hast.')) {
+      useDrillStore.getState().newDrill()
+    }
+  }
+
+  function handleSave() {
+    const state = useDrillStore.getState()
+    const blob = new Blob([serializeDrill(currentDrill(state))], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${fileNameFromTitle(state.title)}.json`
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  async function handleOpen(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // allow opening the same file again
+    if (!file) return
+    try {
+      useDrillStore.getState().loadDrill(parseDrill(await file.text()))
+    } catch (err) {
+      const message = err instanceof DrillFileError ? err.message : 'Die Datei konnte nicht gelesen werden.'
+      window.alert(`Öffnen fehlgeschlagen: ${message}`)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <input
+        className={`${inputClass} w-48`}
+        value={title}
+        aria-label="Titel der Übung"
+        placeholder="Titel der Übung"
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <button type="button" className={buttonClass} onClick={handleNew}>
+        Neu
+      </button>
+      <button type="button" className={buttonClass} onClick={() => fileInputRef.current?.click()}>
+        Öffnen
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={handleOpen}
+      />
+      <button type="button" className={buttonClass} onClick={handleSave}>
+        Speichern
+      </button>
+      <span className="mx-1 h-6 w-px bg-slate-700" aria-hidden />
+      <button
+        type="button"
+        className={buttonClass}
+        title="Rückgängig (Strg+Z)"
+        disabled={!canUndo}
+        onClick={undo}
+      >
+        ↶ Rückgängig
+      </button>
+      <button
+        type="button"
+        className={buttonClass}
+        title="Wiederholen (Strg+Y)"
+        disabled={!canRedo}
+        onClick={redo}
+      >
+        ↷ Wiederholen
+      </button>
+    </div>
+  )
+}

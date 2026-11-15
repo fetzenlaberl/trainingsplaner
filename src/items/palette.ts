@@ -35,3 +35,6 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   goal: 5.4,
   text: 6,
 }
+
+/** Item types where rotation is visible. */
+export const ROTATABLE_TYPES: ItemType[] = ['player', 'goal', 'text']

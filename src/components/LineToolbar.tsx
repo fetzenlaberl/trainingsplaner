@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
+import { useDrillStore } from '../store/drillStore'
 import { useToolStore, type Tool } from '../store/toolStore'
+import { SelectionBar } from './SelectionBar'
 
 const LINE_COLORS: { value: string; name: string }[] = [
   { value: '#ffffff', name: 'Weiß' },
@@ -78,6 +80,7 @@ export function LineToolbar() {
   const setTool = useToolStore((s) => s.setTool)
   const lineColor = useToolStore((s) => s.lineColor)
   const setLineColor = useToolStore((s) => s.setLineColor)
+  const select = useDrillStore((s) => s.select)
 
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-slate-900 px-3 py-2">
@@ -89,7 +92,10 @@ export function LineToolbar() {
               key={t.tool}
               type="button"
               aria-pressed={active}
-              onClick={() => setTool(t.tool)}
+              onClick={() => {
+                setTool(t.tool)
+                if (t.tool !== 'select') select(null)
+              }}
               className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors ${
                 active ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
               }`}
@@ -121,6 +127,12 @@ export function LineToolbar() {
           )
         })}
       </div>
+
+      {tool === 'select' && (
+        <div className="ml-auto">
+          <SelectionBar />
+        </div>
+      )}
     </div>
   )
 }
