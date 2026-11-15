@@ -63,3 +63,34 @@ describe('nextPlayerNumber', () => {
     expect(nextPlayerNumber(items, 'green')).toBe(1)
   })
 })
+
+describe('drillStore lines', () => {
+  beforeEach(() => useDrillStore.setState({ lines: [] }))
+
+  it('adds a straight line', () => {
+    const id = useDrillStore
+      .getState()
+      .addLine('pass', { x: 1, y: 2 }, { x: 5, y: 6 }, '#ffffff')
+    expect(useDrillStore.getState().lines).toEqual([
+      {
+        id,
+        type: 'pass',
+        points: [
+          { x: 1, y: 2 },
+          { x: 5, y: 6 },
+        ],
+        control: null,
+        color: '#ffffff',
+      },
+    ])
+  })
+
+  it('bends and straightens a line', () => {
+    const { addLine, setLineControl } = useDrillStore.getState()
+    const id = addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#ffffff')
+    setLineControl(id, { x: 5, y: 4 })
+    expect(useDrillStore.getState().lines[0].control).toEqual({ x: 5, y: 4 })
+    setLineControl(id, null)
+    expect(useDrillStore.getState().lines[0].control).toBeNull()
+  })
+})

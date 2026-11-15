@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { FieldTypeSwitcher } from './components/FieldTypeSwitcher'
 import { ItemSidebar } from './components/ItemSidebar'
+import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
 
 export default function App() {
@@ -14,8 +15,11 @@ export default function App() {
       </header>
       <div className="flex min-h-0 flex-1 flex-col md:flex-row">
         <ItemSidebar dropTargetRef={dropTargetRef} />
-        <main className="min-h-0 flex-1">
-          <PitchStage dropTargetRef={dropTargetRef} />
+        <main className="flex min-h-0 flex-1 flex-col">
+          <LineToolbar />
+          <div className="min-h-0 flex-1">
+            <PitchStage dropTargetRef={dropTargetRef} />
+          </div>
         </main>
       </div>
     </div>

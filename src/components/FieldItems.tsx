@@ -13,6 +13,8 @@ interface FieldItemsProps {
   viewport: ViewRect
   /** Pixels per meter */
   scale: number
+  /** When false (e.g. while a line tool is active), items cannot be dragged. */
+  interactive: boolean
 }
 
 function setCursor(e: KonvaEventObject<MouseEvent>, cursor: string) {
@@ -21,18 +23,18 @@ function setCursor(e: KonvaEventObject<MouseEvent>, cursor: string) {
 }
 
 /** All placed items; each can be dragged to a new position. */
-export function FieldItems({ viewport, scale }: FieldItemsProps) {
+export function FieldItems({ viewport, scale, interactive }: FieldItemsProps) {
   const items = useDrillStore((s) => s.items)
   const moveItem = useDrillStore((s) => s.moveItem)
 
   return (
-    <Group>
+    <Group listening={interactive}>
       {items.map((item) => (
         <Group
           key={item.id}
           x={item.x}
           y={item.y}
-          draggable
+          draggable={interactive}
           onMouseEnter={(e) => setCursor(e, 'grab')}
           onMouseLeave={(e) => setCursor(e, '')}
           onDragEnd={(e) => {
