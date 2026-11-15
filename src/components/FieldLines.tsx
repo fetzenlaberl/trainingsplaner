@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { Circle, Group, Line as KonvaLine, Rect } from 'react-konva'
 import { controlFromMidpoint, curveMidpoint, distance, flatten, samplePath } from '../lines/geometry'
 import type { Line, Point } from '../model/types'
-import { useDrillStore, type DrillContent } from '../store/drillStore'
+import { selectLines, useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
 import { LineShape } from './LineShape'
@@ -12,6 +12,7 @@ import { LineShape } from './LineShape'
 const STRAIGHT_SNAP = 0.3
 
 interface FieldLinesProps {
+  lines: Line[]
   /** Pixels per meter */
   scale: number
   /** When false (e.g. while a line tool is active), lines cannot be selected or dragged. */
@@ -19,8 +20,7 @@ interface FieldLinesProps {
 }
 
 /** All drawn lines; in select mode they can be selected and dragged as a whole. */
-export function FieldLines({ scale, interactive }: FieldLinesProps) {
-  const lines = useDrillStore((s) => s.lines)
+export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
   const selectedId = useDrillStore((s) => s.selectedId)
   const select = useDrillStore((s) => s.select)
   const moveLine = useDrillStore((s) => s.moveLine)
@@ -72,7 +72,7 @@ export function FieldLines({ scale, interactive }: FieldLinesProps) {
 
 /** Handles of the selected line: start, end (squares) and bend handle (circle). */
 export function LineHandles({ scale }: { scale: number }) {
-  const line = useDrillStore((s) => s.lines.find((l) => l.id === s.selectedId))
+  const line = useDrillStore((s) => selectLines(s).find((l) => l.id === s.selectedId))
   const draggingId = useToolStore((s) => s.draggingId)
   if (!line || draggingId === line.id) return null
   return <SelectedLineHandles line={line} scale={scale} />

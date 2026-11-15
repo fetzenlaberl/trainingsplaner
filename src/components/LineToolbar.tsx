@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useDrillStore } from '../store/drillStore'
+import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore, type Tool } from '../store/toolStore'
 import { SelectionBar } from './SelectionBar'
 
@@ -94,6 +95,7 @@ export function LineToolbar() {
               aria-pressed={active}
               onClick={() => {
                 setTool(t.tool)
+                usePlaybackStore.getState().stop()
                 if (t.tool !== 'select') select(null)
               }}
               className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors ${

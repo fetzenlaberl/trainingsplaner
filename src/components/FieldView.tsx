@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
 import { Group } from 'react-konva'
 import type { FieldType, Rect as ViewRect } from '../field/dimensions'
+import type { Item, Line } from '../model/types'
 import { FieldItems } from './FieldItems'
 import { FieldLines } from './FieldLines'
 import { Pitch } from './Pitch'
 
 interface FieldViewProps {
   fieldType: FieldType
+  items: (Item & { opacity?: number })[]
+  lines: Line[]
   viewport: ViewRect
   /** Pixels per meter */
   scale: number
@@ -22,6 +25,8 @@ interface FieldViewProps {
 /** Pitch, lines and items, converted from meters to pixels. Used on screen and for export. */
 export function FieldView({
   fieldType,
+  items,
+  lines,
   viewport,
   scale,
   offsetX,
@@ -41,8 +46,8 @@ export function FieldView({
       clipHeight={viewport.height}
     >
       <Pitch fieldType={fieldType} viewport={viewport} scale={scale} />
-      <FieldLines scale={scale} interactive={interactive} />
-      <FieldItems viewport={viewport} scale={scale} interactive={interactive} />
+      <FieldLines lines={lines} scale={scale} interactive={interactive} />
+      <FieldItems items={items} viewport={viewport} scale={scale} interactive={interactive} />
       {children}
     </Group>
   )

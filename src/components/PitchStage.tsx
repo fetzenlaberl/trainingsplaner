@@ -5,7 +5,9 @@ import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
 import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
+import { frameAt } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
+import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
 import { FieldView } from './FieldView'
@@ -32,6 +34,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
   const addLine = useDrillStore((s) => s.addLine)
   const select = useDrillStore((s) => s.select)
+  const scenes = useDrillStore((s) => s.scenes)
+  const sceneIndex = useDrillStore((s) => s.sceneIndex)
+  const time = usePlaybackStore((s) => s.time)
   const tool = useToolStore((s) => s.tool)
   const lineColor = useToolStore((s) => s.lineColor)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -54,7 +59,11 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
 
   const viewport = getViewport(fieldType)
   const layout = fitViewport(viewport, size.width, size.height, PADDING)
-  const drawing = tool !== 'select'
+  const animating = time !== null
+  const drawing = tool !== 'select' && !animating
+  const frame = animating ? frameAt(scenes, time) : null
+  const items = frame ? frame.items : scenes[sceneIndex].items
+  const lines = frame ? frame.lines : scenes[sceneIndex].lines
 
   function clientToMeters(clientX: number, clientY: number): Point | null {
     const el = containerRef.current
@@ -74,6 +83,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   })
 
   function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
+    if (animating) return
     if (tool === 'select') {
       // Tap on empty space clears the selection
       if (e.target === e.target.getStage()) select(null)
@@ -121,11 +131,13 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           <Layer>
             <FieldView
               fieldType={fieldType}
+              items={items}
+              lines={lines}
               viewport={viewport}
               scale={layout.scale}
               offsetX={layout.offsetX}
               offsetY={layout.offsetY}
-              interactive={!drawing}
+              interactive={tool === 'select' && !animating}
             >
               {draft && tool !== 'select' && (
                 <LineShape
@@ -137,7 +149,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                   opacity={0.7}
                 />
               )}
-              {!drawing && <LineHandles scale={layout.scale} />}
+              {tool === 'select' && !animating && <LineHandles scale={layout.scale} />}
             </FieldView>
           </Layer>
         </Stage>

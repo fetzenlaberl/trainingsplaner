@@ -1,13 +1,13 @@
 import { useRef } from 'react'
 import { ROTATABLE_TYPES } from '../items/palette'
-import { findElement, isLine, useDrillStore, type DrillContent } from '../store/drillStore'
+import { currentScene, findElement, isLine, useDrillStore, type DrillContent } from '../store/drillStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
 
 /** Actions for the selected item or line: rotate, label, straighten, duplicate, delete. */
 export function SelectionBar() {
-  const selected = useDrillStore((s) => findElement(s, s.selectedId))
+  const selected = useDrillStore((s) => findElement(currentScene(s), s.selectedId))
   const rotateItem = useDrillStore((s) => s.rotateItem)
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
   const setLineControl = useDrillStore((s) => s.setLineControl)

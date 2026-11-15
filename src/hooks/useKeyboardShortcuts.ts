@@ -1,13 +1,20 @@
 import { useEffect } from 'react'
 import type { Item, Line } from '../model/types'
-import { findElement, useDrillStore } from '../store/drillStore'
+import { currentScene, findElement, useDrillStore } from '../store/drillStore'
+import { togglePlayback } from '../store/playbackActions'
+import { usePlaybackStore } from '../store/playbackStore'
 
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
-  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+  return (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT' ||
+    target.isContentEditable
+  )
 }
 
-/** Undo/redo, copy/paste/duplicate, delete and Escape. */
+/** Undo/redo, copy/paste/duplicate, delete, Escape and Space (play/pause). */
 export function useKeyboardShortcuts() {
   useEffect(() => {
     let clipboard: Item | Line | null = null
@@ -15,7 +22,7 @@ export function useKeyboardShortcuts() {
     function onKeyDown(e: KeyboardEvent) {
       if (isTyping(e.target)) return
       const store = useDrillStore.getState()
-      const selected = findElement(store, store.selectedId)
+      const selected = findElement(currentScene(store), store.selectedId)
       const mod = e.ctrlKey || e.metaKey
       const key = e.key.toLowerCase()
 
@@ -36,13 +43,17 @@ export function useKeyboardShortcuts() {
         e.preventDefault()
         const id = store.insertCopy(clipboard)
         // Repeated pastes cascade instead of stacking on the same spot.
-        clipboard = findElement(useDrillStore.getState(), id) ?? clipboard
+        clipboard = findElement(currentScene(useDrillStore.getState()), id) ?? clipboard
       } else if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
         if (!selected) return
         e.preventDefault()
         store.deleteElement(selected.id)
       } else if (e.key === 'Escape') {
         store.select(null)
+        usePlaybackStore.getState().stop()
+      } else if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
+        e.preventDefault()
+        togglePlayback()
       }
     }
 

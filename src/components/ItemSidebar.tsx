@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { ITEM_EXTENT, ITEM_TEMPLATES, type ItemTemplate } from '../items/palette'
 import { useDrillStore } from '../store/drillStore'
+import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { ItemPreview } from './ItemPreview'
 import type { DropTarget } from './PitchStage'
@@ -50,6 +51,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       cleanup()
       const pos = dropTargetRef.current?.toMeters(ev.clientX, ev.clientY)
       if (!pos) return
+      usePlaybackStore.getState().stop()
       // Switch to the select tool so the new item can be adjusted right away.
       setTool('select')
       select(addItem(template.item, pos.x, pos.y))

@@ -4,6 +4,7 @@ import { FileBar } from './components/FileBar'
 import { ItemSidebar } from './components/ItemSidebar'
 import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
+import { Timeline } from './components/Timeline'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
           <div className="min-h-0 flex-1">
             <PitchStage dropTargetRef={dropTargetRef} />
           </div>
+          <Timeline />
         </main>
       </div>
     </div>

@@ -16,6 +16,8 @@ const ROTATION_SNAP = 15
 const ROTATION_SNAP_TOLERANCE = 4
 
 interface FieldItemsProps {
+  /** Items to draw; opacity is used while fading in or out during the animation */
+  items: (Item & { opacity?: number })[]
   viewport: ViewRect
   /** Pixels per meter */
   scale: number
@@ -29,8 +31,7 @@ function snapAngle(degrees: number): number {
 }
 
 /** All placed items; they can be selected, dragged and rotated. */
-export function FieldItems({ viewport, scale, interactive }: FieldItemsProps) {
-  const items = useDrillStore((s) => s.items)
+export function FieldItems({ items, viewport, scale, interactive }: FieldItemsProps) {
   const selectedId = useDrillStore((s) => s.selectedId)
   const select = useDrillStore((s) => s.select)
   const moveItem = useDrillStore((s) => s.moveItem)
@@ -48,6 +49,7 @@ export function FieldItems({ viewport, scale, interactive }: FieldItemsProps) {
             key={item.id}
             x={item.x}
             y={item.y}
+            opacity={item.opacity ?? 1}
             draggable={interactive}
             onPointerDown={() => select(item.id)}
             onMouseEnter={(e) => setCursor(e, 'grab')}

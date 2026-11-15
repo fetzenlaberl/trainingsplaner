@@ -20,8 +20,7 @@ export function startAutosave(): () => void {
       s.title === prev.title &&
       s.description === prev.description &&
       s.fieldType === prev.fieldType &&
-      s.items === prev.items &&
-      s.lines === prev.lines
+      s.scenes === prev.scenes
     ) {
       return
     }

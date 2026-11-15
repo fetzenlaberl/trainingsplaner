@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Layer, Stage } from 'react-konva'
 import { FieldView } from '../components/FieldView'
 import { getViewport } from '../field/dimensions'
-import { useDrillStore } from '../store/drillStore'
+import { currentScene, useDrillStore } from '../store/drillStore'
 import { EXPORT_SCALE, exportSize } from './layout'
 
 /**
@@ -11,7 +11,9 @@ import { EXPORT_SCALE, exportSize } from './layout'
  * window size and without selection marks or handles.
  */
 export async function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanvasElement> {
-  const { fieldType } = useDrillStore.getState()
+  const state = useDrillStore.getState()
+  const { fieldType } = state
+  const { items, lines } = currentScene(state)
   const viewport = getViewport(fieldType)
   const { width, height } = exportSize(viewport, pxPerMeter)
 
@@ -36,6 +38,8 @@ export async function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HT
           <Layer>
             <FieldView
               fieldType={fieldType}
+              items={items}
+              lines={lines}
               viewport={viewport}
               scale={pxPerMeter}
               offsetX={0}
