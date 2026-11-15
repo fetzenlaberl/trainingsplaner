@@ -1,16 +1,15 @@
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { Group, Layer, Stage } from 'react-konva'
+import { Layer, Stage } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
 import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
 import { useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
-import { FieldLines, LineHandles } from './FieldLines'
-import { FieldItems } from './FieldItems'
+import { LineHandles } from './FieldLines'
+import { FieldView } from './FieldView'
 import { LineShape } from './LineShape'
-import { Pitch } from './Pitch'
 
 const PADDING = 12
 /** Shorter strokes (meters) are treated as accidental taps. */
@@ -120,19 +119,14 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
         <Stage width={size.width} height={size.height} onPointerDown={handlePointerDown}>
           <Layer>
-            <Group
-              x={layout.offsetX - viewport.x * layout.scale}
-              y={layout.offsetY - viewport.y * layout.scale}
-              scaleX={layout.scale}
-              scaleY={layout.scale}
-              clipX={viewport.x}
-              clipY={viewport.y}
-              clipWidth={viewport.width}
-              clipHeight={viewport.height}
+            <FieldView
+              fieldType={fieldType}
+              viewport={viewport}
+              scale={layout.scale}
+              offsetX={layout.offsetX}
+              offsetY={layout.offsetY}
+              interactive={!drawing}
             >
-              <Pitch fieldType={fieldType} viewport={viewport} scale={layout.scale} />
-              <FieldLines scale={layout.scale} interactive={!drawing} />
-              <FieldItems viewport={viewport} scale={layout.scale} interactive={!drawing} />
               {draft && tool !== 'select' && (
                 <LineShape
                   type={tool}
@@ -144,7 +138,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 />
               )}
               {!drawing && <LineHandles scale={layout.scale} />}
-            </Group>
+            </FieldView>
           </Layer>
         </Stage>
       )}
