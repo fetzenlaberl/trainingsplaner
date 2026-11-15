@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@ffmpeg/core": "^0.12.10",
+    "@ffmpeg/ffmpeg": "^0.12.15",
     "jspdf": "^4.2.1",
     "konva": "^10.9.1",
     "react": "^19.3.1",
