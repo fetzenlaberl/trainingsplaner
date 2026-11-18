@@ -8,10 +8,10 @@ import {
   clampZoneSize,
   DEFAULT_ZONE_COLOR,
   DEFAULT_ZONE_FILL_OPACITY,
-  DEFAULT_ZONE_SIZE,
+  type ZoneTemplate,
 } from '../items/zones'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene, Zone, ZoneShape } from '../model/types'
+import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -69,8 +69,8 @@ export interface DrillState extends DrillContent {
   /** Removes all bends: only start and end remain. */
   clearLineBends: (id: string) => void
   setLineSmooth: (id: string, smooth: boolean) => void
-  /** Adds a zone centered at the given position (meters) and returns its id. */
-  addZone: (shape: ZoneShape, x: number, y: number) => string
+  /** Adds a zone from a template, centered at the given position (meters), and returns its id. */
+  addZone: (template: Pick<ZoneTemplate, 'shape' | 'goals' | 'width' | 'height'>, x: number, y: number) => string
   /** Changes a zone (position, size, rotation, color, outline) as one undo step. */
   updateZone: (id: string, change: Partial<Omit<Zone, 'id'>>) => void
   /** Inserts an offset copy of an item, line or zone, selects it and returns its id. */
@@ -370,13 +370,15 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       })),
     })),
 
-  addZone: (shape, x, y) => {
+  addZone: ({ shape, goals, width, height }, x, y) => {
     const zone: Zone = {
       id: createId('zone'),
       shape,
       x,
       y,
-      ...DEFAULT_ZONE_SIZE[shape],
+      width: clampZoneSize(width),
+      height: clampZoneSize(height),
+      goals,
       rotation: 0,
       color: DEFAULT_ZONE_COLOR,
       fillColor: DEFAULT_ZONE_COLOR,

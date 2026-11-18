@@ -60,6 +60,7 @@ const drill: Drill = {
           fillOpacity: 0.4,
           dashed: true,
           label: 'Zone A',
+          goals: 4,
         },
       ],
     },
@@ -155,6 +156,20 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(serializeDrill(withBox)).scenes[0].items[2]).toEqual(textbox)
   })
 
+  it('reads version 4 zones without goals', () => {
+    const text = tamper((d) => {
+      d.version = 4
+      delete d.scenes[0].zones[0].goals
+    })
+    expect(parseDrill(text).scenes[0].zones[0].goals).toBe(0)
+  })
+
+  it.each(['minigoal', 'slalom', 'dummy', 'wall', 'ladder'] as const)('round-trips the %s item', (type) => {
+    const equipment = { ...drill.scenes[0].items[1], id: 'eq', type, rotation: 45 }
+    const withItem = { ...drill, scenes: [{ ...drill.scenes[0], items: [equipment] }] }
+    expect(parseDrill(serializeDrill(withItem)).scenes[0].items[0]).toEqual(equipment)
+  })
+
   it('reads older files without zones', () => {
     const text = tamper((d) => {
       d.version = 2
@@ -238,6 +253,7 @@ describe('parseDrill rejects invalid files', () => {
     ['name not text', (d) => (d.scenes[0].items[0].name = 7)],
     ['highlight not yes/no', (d) => (d.scenes[0].items[0].highlight = 'ja')],
     ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
+    ['unsupported number of goals', (d) => (d.scenes[0].zones[0].goals = 5)],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],
     ['unknown grid', (d) => (d.pitch.grid = 'hexagons')],

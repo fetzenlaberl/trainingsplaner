@@ -47,6 +47,11 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'cone', name: 'Hütchen', item: { type: 'cone', color: '#f97316' } },
   { key: 'pole', name: 'Stange', item: { type: 'pole', color: '#facc15' } },
   { key: 'goal', name: 'Tor', item: { type: 'goal', color: '#ffffff' } },
+  { key: 'minigoal', name: 'Minitor', item: { type: 'minigoal', color: '#ffffff' } },
+  { key: 'slalom', name: 'Stangenreihe', item: { type: 'slalom', color: '#facc15' } },
+  { key: 'dummy', name: 'Dummy', item: { type: 'dummy', color: '#2563eb' } },
+  { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
+  { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
   { key: 'text', name: 'Text', item: { type: 'text', color: '#ffffff', label: 'Text' } },
   { key: 'textbox', name: 'Textfeld', item: { type: 'textbox', color: '#fde047', label: 'Anweisung' } },
 ]
@@ -58,12 +63,27 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   cone: 1.1,
   pole: 0.7,
   goal: 5.4,
+  minigoal: 1.6,
+  slalom: 6.6,
+  dummy: 1,
+  wall: 2.6,
+  ladder: 4.2,
   text: 6,
   textbox: 12,
 }
 
 /** Item types where rotation is visible. */
-export const ROTATABLE_TYPES: ItemType[] = ['player', 'goal', 'text', 'textbox']
+export const ROTATABLE_TYPES: ItemType[] = [
+  'player',
+  'goal',
+  'minigoal',
+  'slalom',
+  'dummy',
+  'wall',
+  'ladder',
+  'text',
+  'textbox',
+]
 
 /** Background colors for text boxes. */
 export const TEXTBOX_COLORS: { value: string; name: string }[] = [

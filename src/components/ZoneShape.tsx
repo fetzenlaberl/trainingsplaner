@@ -1,12 +1,15 @@
 import { useContext } from 'react'
-import { Ellipse, Line, Rect, Text } from 'react-konva'
+import { Ellipse, Group, Line, Rect, Text } from 'react-konva'
 import { displayColor } from '../field/pitchStyle'
+import { MINIGOAL } from '../items/equipment'
+import { zoneGoalPositions } from '../items/zones'
 import type { Zone } from '../model/types'
+import { GoalShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
 
 type ZoneShapeProps = Pick<
   Zone,
-  'shape' | 'width' | 'height' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label'
+  'shape' | 'width' | 'height' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label' | 'goals'
 > & {
   /** Pixels per meter, keeps the outline visible at small sizes */
   scale: number
@@ -22,6 +25,7 @@ export function ZoneShape({
   fillOpacity,
   dashed,
   label,
+  goals,
   scale,
 }: ZoneShapeProps) {
   const pitchColor = useContext(PitchColorContext)
@@ -58,6 +62,18 @@ export function ZoneShape({
           <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed {...outline} lineJoin="round" />
         </>
       )}
+      {shape === 'rect' &&
+        zoneGoalPositions(width, height, goals).map((goal, i) => (
+          <Group key={i} x={goal.x} y={goal.y}>
+            <GoalShape
+              width={MINIGOAL.width}
+              depth={MINIGOAL.depth}
+              color="#ffffff"
+              rotation={goal.rotation}
+              anchor="posts"
+            />
+          </Group>
+        ))}
       {label && (
         <Text
           text={label}

@@ -8,7 +8,13 @@ import {
   type PitchStyle,
 } from '../field/pitchStyle'
 import { clampItemSize, PLAYER_SHAPES } from '../items/palette'
-import { clampFillOpacity, clampZoneSize, DEFAULT_ZONE_FILL_OPACITY, ZONE_SHAPES } from '../items/zones'
+import {
+  clampFillOpacity,
+  clampZoneSize,
+  DEFAULT_ZONE_FILL_OPACITY,
+  ZONE_GOAL_OPTIONS,
+  ZONE_SHAPES,
+} from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
 import type {
   Category,
@@ -21,6 +27,7 @@ import type {
   Point,
   Scene,
   Zone,
+  ZoneGoals,
   ZoneShape,
 } from './types'
 
@@ -28,11 +35,25 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 2: lines with any number of waypoints (version 1 had start, end and one control point).
 // Version 3: zones in scenes.
 // Version 4: text boxes, player name tags and highlight, zone fill color and opacity.
-export const FILE_VERSION = 4
+// Version 5: equipment items (mini goal, slalom, dummy, wall, ladder) and zones with goals.
+export const FILE_VERSION = 5
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
-const ITEM_TYPES: ItemType[] = ['player', 'ball', 'cone', 'goal', 'pole', 'text', 'textbox']
+const ITEM_TYPES: ItemType[] = [
+  'player',
+  'ball',
+  'cone',
+  'goal',
+  'minigoal',
+  'pole',
+  'slalom',
+  'dummy',
+  'wall',
+  'ladder',
+  'text',
+  'textbox',
+]
 const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot']
 export const CATEGORIES: Category[] = [
   'warmup',
@@ -225,6 +246,8 @@ function parseZone(value: unknown): Zone {
     !(value.fillColor === undefined || typeof value.fillColor === 'string') ||
     !(value.fillOpacity === undefined || isNumber(value.fillOpacity)) ||
     typeof value.dashed !== 'boolean' ||
+    // Built-in goals were added in version 5.
+    !(value.goals === undefined || ZONE_GOAL_OPTIONS.includes(value.goals as ZoneGoals)) ||
     typeof value.label !== 'string'
   ) {
     throw corrupt()
@@ -243,6 +266,7 @@ function parseZone(value: unknown): Zone {
       value.fillOpacity === undefined ? DEFAULT_ZONE_FILL_OPACITY : clampFillOpacity(value.fillOpacity as number),
     dashed: value.dashed,
     label: value.label,
+    goals: (value.goals as ZoneGoals | undefined) ?? 0,
   }
 }
 

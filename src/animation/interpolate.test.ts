@@ -170,6 +170,7 @@ describe('interpolateZones', () => {
     fillOpacity: 0.2,
     dashed: false,
     label: '',
+    goals: 0,
   })
 
   it('moves, resizes and rotates zones evenly', () => {

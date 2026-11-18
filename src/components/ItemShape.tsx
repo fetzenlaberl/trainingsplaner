@@ -3,6 +3,8 @@ import { useContext, useMemo } from 'react'
 import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
+import { MINIGOAL } from '../items/equipment'
+import { DummyShape, GoalShape, LadderShape, PoleShape, SlalomShape, WallShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
 import type { Item } from '../model/types'
 
@@ -11,7 +13,6 @@ const TRIANGLE_RADIUS = 1.3
 const CROSS_HALF = 0.85
 const BALL_RADIUS = 0.55
 const CONE_RADIUS = 0.5
-const POLE_RADIUS = 0.25
 const GOAL_WIDTH = 5
 const GOAL_DEPTH = 2
 const TEXT_SIZE = 2
@@ -71,41 +72,23 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
         </Group>
       )
     case 'pole':
+      return <PoleShape color={color} />
+    case 'goal':
+      return <GoalShape width={GOAL_WIDTH} depth={GOAL_DEPTH} color={color} rotation={rotation} />
+    case 'minigoal':
+      return <GoalShape width={MINIGOAL.width} depth={MINIGOAL.depth} color={color} rotation={rotation} />
+    case 'slalom':
+      return <SlalomShape color={color} rotation={rotation} />
+    case 'dummy':
       return (
-        <Group>
-          <Circle radius={POLE_RADIUS + 0.1} fill="rgba(0,0,0,0.25)" />
-          <Circle radius={POLE_RADIUS} fill={color} stroke="#111827" strokeWidth={0.06} />
+        <Group rotation={rotation}>
+          <DummyShape color={color} />
         </Group>
       )
-    case 'goal': {
-      // Opening faces +x (rotation 0); net extends behind it.
-      const halfW = GOAL_WIDTH / 2
-      const netLines: number[][] = []
-      for (let y = -halfW + 0.5; y < halfW; y += 0.5) netLines.push([-GOAL_DEPTH, y, 0, y])
-      for (let x = -GOAL_DEPTH + 0.5; x < 0; x += 0.5) netLines.push([x, -halfW, x, halfW])
-      return (
-        <Group rotation={rotation} offsetX={-GOAL_DEPTH / 2}>
-          <Rect
-            x={-GOAL_DEPTH}
-            y={-halfW}
-            width={GOAL_DEPTH}
-            height={GOAL_WIDTH}
-            fill={onWhite ? 'rgba(31,41,55,0.06)' : 'rgba(255,255,255,0.15)'}
-          />
-          {netLines.map((points, i) => (
-            <Line key={i} points={points} stroke={onWhite ? 'rgba(31,41,55,0.45)' : 'rgba(255,255,255,0.6)'} strokeWidth={0.04} />
-          ))}
-          <Line
-            points={[0, -halfW, -GOAL_DEPTH, -halfW, -GOAL_DEPTH, halfW, 0, halfW]}
-            stroke={displayColor(color, pitchColor)}
-            strokeWidth={0.1}
-            lineJoin="round"
-          />
-          {/* Posts and crossbar */}
-          <Line points={[0, -halfW, 0, halfW]} stroke={displayColor(color, pitchColor)} strokeWidth={0.25} lineCap="round" />
-        </Group>
-      )
-    }
+    case 'wall':
+      return <WallShape color={color} rotation={rotation} />
+    case 'ladder':
+      return <LadderShape color={color} rotation={rotation} />
     case 'text':
       return (
         <Text

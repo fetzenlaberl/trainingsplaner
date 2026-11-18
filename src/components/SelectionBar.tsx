@@ -7,7 +7,7 @@ import {
   ROTATABLE_TYPES,
   TEXTBOX_COLORS,
 } from '../items/palette'
-import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS } from '../items/zones'
+import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS, ZONE_GOAL_OPTIONS } from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
   currentScene,
@@ -366,6 +366,24 @@ function ZoneControls({ zone }: { zone: Zone }) {
       >
         {zone.dashed ? 'Rand durchgezogen' : 'Rand gestrichelt'}
       </button>
+      {zone.shape === 'rect' && (
+        <div role="group" aria-label="Minitore" className="flex items-center gap-1">
+          <span className="text-sm text-slate-400">Tore</span>
+          {ZONE_GOAL_OPTIONS.map((goals) => (
+            <button
+              key={goals}
+              type="button"
+              aria-pressed={zone.goals === goals}
+              onClick={() => updateZone(zone.id, { goals })}
+              className={`min-h-8 min-w-8 rounded-md px-2 text-sm ${
+                zone.goals === goals ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {goals}
+            </button>
+          ))}
+        </div>
+      )}
       <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLive(zone.id, { label })} />
     </>
   )

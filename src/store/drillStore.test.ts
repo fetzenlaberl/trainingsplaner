@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_PLAYER_SIZE, MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
-import { MAX_ZONE_SIZE, MIN_ZONE_SIZE } from '../items/zones'
+import { MAX_ZONE_SIZE, MIN_ZONE_SIZE, ZONE_TEMPLATES } from '../items/zones'
 import { emptyDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
 import {
@@ -18,6 +18,10 @@ const store = () => useDrillStore.getState()
 const items = () => currentScene(store()).items
 const lines = () => currentScene(store()).lines
 const ORANGE = '#f97316'
+const zoneTemplate = (key: string) => ZONE_TEMPLATES.find((t) => t.key === key)!
+const RECT = zoneTemplate('zone-rect')
+const ELLIPSE = zoneTemplate('zone-ellipse')
+const TRIANGLE = zoneTemplate('zone-triangle')
 
 beforeEach(() => store().newDrill())
 
@@ -333,7 +337,7 @@ describe('zones', () => {
   const zones = () => currentScene(store()).zones
 
   it('adds a zone with default size, centered at the drop position', () => {
-    const id = store().addZone('rect', 30, 20)
+    const id = store().addZone(RECT, 30, 20)
     expect(zones()).toEqual([
       {
         id,
@@ -348,12 +352,13 @@ describe('zones', () => {
         fillOpacity: 0.22,
         dashed: false,
         label: '',
+        goals: 0,
       },
     ])
   })
 
   it('changes position, size, rotation and style as single undo steps', () => {
-    const id = store().addZone('ellipse', 30, 20)
+    const id = store().addZone(ELLIPSE, 30, 20)
     store().updateZone(id, { x: 40, width: 30, height: 12, rotation: -90 })
     store().updateZone(id, { color: '#2563eb', dashed: true })
     expect(zones()[0]).toMatchObject({ x: 40, width: 30, height: 12, rotation: 270, color: '#2563eb', dashed: true })
@@ -364,7 +369,7 @@ describe('zones', () => {
   })
 
   it('sets fill and outline separately and keeps the opacity in range', () => {
-    const id = store().addZone('rect', 30, 20)
+    const id = store().addZone(RECT, 30, 20)
     store().updateZone(id, { fillColor: '#2563eb', color: '#dc2626', fillOpacity: 0.5 })
     expect(zones()[0]).toMatchObject({ fillColor: '#2563eb', color: '#dc2626', fillOpacity: 0.5 })
     store().updateZone(id, { fillOpacity: 3 })
@@ -373,14 +378,21 @@ describe('zones', () => {
     expect(zones()[0].fillOpacity).toBe(0)
   })
 
+  it('creates small-sided fields with built-in goals that can be changed', () => {
+    const id = store().addZone(zoneTemplate('field-6'), 50, 34)
+    expect(zones()[0]).toMatchObject({ shape: 'rect', goals: 6, width: 40, height: 25 })
+    store().updateZone(id, { goals: 4 })
+    expect(zones()[0].goals).toBe(4)
+  })
+
   it('keeps zones within the allowed size', () => {
-    const id = store().addZone('rect', 30, 20)
+    const id = store().addZone(RECT, 30, 20)
     store().updateZone(id, { width: 0.1, height: 999 })
     expect([zones()[0].width, zones()[0].height]).toEqual([MIN_ZONE_SIZE, MAX_ZONE_SIZE])
   })
 
   it('copies, finds and deletes zones like other elements', () => {
-    const id = store().addZone('triangle', 30, 20)
+    const id = store().addZone(TRIANGLE, 30, 20)
     const copyId = store().insertCopy(zones()[0])
     expect(zones()[1]).toMatchObject({ x: 30 + COPY_OFFSET, y: 20 + COPY_OFFSET, shape: 'triangle' })
     expect(store().selectedId).toBe(copyId)
@@ -389,13 +401,13 @@ describe('zones', () => {
   })
 
   it('carries zones into a new scene', () => {
-    store().addZone('rect', 30, 20)
+    store().addZone(RECT, 30, 20)
     store().addScene()
     expect(zones()).toHaveLength(1)
   })
 
   it('edits the label live, recorded as one step via pushHistory', () => {
-    const id = store().addZone('rect', 30, 20)
+    const id = store().addZone(RECT, 30, 20)
     const before = store().snapshot()
     store().setZoneLive(id, { label: 'Z' })
     store().setZoneLive(id, { label: 'Zone A' })

@@ -1,7 +1,19 @@
 import type { FieldType } from '../field/dimensions'
 import type { PitchStyle } from '../field/pitchStyle'
 
-export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text' | 'textbox'
+export type ItemType =
+  | 'player'
+  | 'ball'
+  | 'cone'
+  | 'goal'
+  | 'minigoal'
+  | 'pole'
+  | 'slalom'
+  | 'dummy'
+  | 'wall'
+  | 'ladder'
+  | 'text'
+  | 'textbox'
 
 /** How a player is drawn; other item types ignore it. */
 export type PlayerShape = 'circle' | 'triangle' | 'cross'
@@ -46,6 +58,9 @@ export interface Line {
 
 export type ZoneShape = 'rect' | 'triangle' | 'ellipse'
 
+/** Mini goals built into a rectangular zone (small-sided field): none, 2 or 3 per short side. */
+export type ZoneGoals = 0 | 4 | 6
+
 /** Marked area on the pitch (e.g. playing field, zone, area around a position). */
 export interface Zone {
   id: string
@@ -65,6 +80,7 @@ export interface Zone {
   /** Dashed instead of solid outline */
   dashed: boolean
   label: string
+  goals: ZoneGoals
 }
 
 export interface Scene {
