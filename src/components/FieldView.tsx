@@ -12,7 +12,7 @@ import { PitchColorContext } from './pitchColorContext'
 interface FieldViewProps {
   fieldType: FieldType
   pitch: PitchStyle
-  items: (Item & { opacity?: number })[]
+  items: (Item & { opacity?: number; glow?: number })[]
   lines: Line[]
   zones: (Zone & { opacity?: number })[]
   viewport: ViewRect

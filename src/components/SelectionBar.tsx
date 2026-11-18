@@ -1,6 +1,13 @@
-import { useRef } from 'react'
-import { ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_SHAPES, ROTATABLE_TYPES } from '../items/palette'
-import { ZONE_COLORS } from '../items/zones'
+import { useRef, useState } from 'react'
+import {
+  ITEM_SIZE_STEP,
+  MAX_ITEM_SIZE,
+  MIN_ITEM_SIZE,
+  PLAYER_SHAPES,
+  ROTATABLE_TYPES,
+  TEXTBOX_COLORS,
+} from '../items/palette'
+import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS } from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
   currentScene,
@@ -10,6 +17,7 @@ import {
   useDrillStore,
   type DrillContent,
 } from '../store/drillStore'
+import { TextBoxDialog } from './TextBoxDialog'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
@@ -66,10 +74,12 @@ function LabelInput({
   value,
   onChange,
   placeholder,
+  caption = 'Beschriftung',
 }: {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  caption?: string
 }) {
   const snapshot = useDrillStore((s) => s.snapshot)
   const pushHistory = useDrillStore((s) => s.pushHistory)
@@ -77,7 +87,7 @@ function LabelInput({
 
   return (
     <label className="flex items-center gap-1.5 text-sm text-slate-400">
-      Beschriftung
+      {caption}
       <input
         className={`${inputClass} w-28`}
         value={value}
@@ -105,6 +115,10 @@ function ItemControls({ item }: { item: Item }) {
   const setAllItemSizes = useDrillStore((s) => s.setAllItemSizes)
   const setItemShape = useDrillStore((s) => s.setItemShape)
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
+  const setItemName = useDrillStore((s) => s.setItemName)
+  const setItemHighlight = useDrillStore((s) => s.setItemHighlight)
+  const setItemColor = useDrillStore((s) => s.setItemColor)
+  const [editingText, setEditingText] = useState(false)
 
   return (
     <>
@@ -184,7 +198,46 @@ function ItemControls({ item }: { item: Item }) {
       )}
 
       {(item.type === 'player' || item.type === 'text') && (
-        <LabelInput value={item.label} onChange={(label) => setItemLabel(item.id, label)} />
+        <LabelInput
+          caption={item.type === 'player' ? 'Nummer' : 'Beschriftung'}
+          value={item.label}
+          onChange={(label) => setItemLabel(item.id, label)}
+        />
+      )}
+
+      {item.type === 'player' && (
+        <>
+          <LabelInput
+            caption="Name"
+            placeholder="für Aufstellung"
+            value={item.name}
+            onChange={(name) => setItemName(item.id, name)}
+          />
+          <button
+            type="button"
+            aria-pressed={item.highlight}
+            title="Leuchtenden Rahmen um den Spieler anzeigen"
+            onClick={() => setItemHighlight(item.id, !item.highlight)}
+            className={`${buttonClass} ${item.highlight ? 'bg-yellow-500 text-slate-900 hover:bg-yellow-400' : ''}`}
+          >
+            ✦ Hervorheben
+          </button>
+        </>
+      )}
+
+      {item.type === 'textbox' && (
+        <>
+          <ColorSwatches
+            label="Hintergrund"
+            colors={TEXTBOX_COLORS}
+            value={item.color}
+            onSelect={(color) => setItemColor(item.id, color)}
+          />
+          <button type="button" className={buttonClass} onClick={() => setEditingText(true)}>
+            Text bearbeiten
+          </button>
+          {editingText && <TextBoxDialog itemId={item.id} onClose={() => setEditingText(false)} />}
+        </>
       )}
     </>
   )
@@ -212,31 +265,99 @@ function LineControls({ line }: { line: Line }) {
   )
 }
 
+function ColorSwatches({
+  label,
+  colors,
+  value,
+  onSelect,
+}: {
+  label: string
+  colors: { value: string; name: string }[]
+  value: string
+  onSelect: (color: string) => void
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex items-center gap-1">
+      <span className="text-sm text-slate-400">{label}</span>
+      {colors.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          title={c.name}
+          aria-label={`${label}: ${c.name}`}
+          aria-pressed={value === c.value}
+          onClick={() => onSelect(c.value)}
+          className={`h-7 w-7 rounded-full border-2 ${
+            value === c.value ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'
+          }`}
+          style={{ backgroundColor: c.value }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** Opacity slider: moves live, one undo step per drag. */
+function OpacitySlider({ zone }: { zone: Zone }) {
+  const setZoneLive = useDrillStore((s) => s.setZoneLive)
+  const snapshot = useDrillStore((s) => s.snapshot)
+  const pushHistory = useDrillStore((s) => s.pushHistory)
+  const beforeRef = useRef<DrillContent | null>(null)
+  const begin = () => {
+    beforeRef.current ??= snapshot()
+  }
+  const finish = () => {
+    if (beforeRef.current) pushHistory(beforeRef.current)
+    beforeRef.current = null
+  }
+
+  return (
+    <label className="flex items-center gap-1.5 text-sm text-slate-400">
+      Deckkraft
+      <input
+        type="range"
+        className="w-24 accent-emerald-500"
+        min={0}
+        max={MAX_ZONE_FILL_OPACITY}
+        step={0.05}
+        value={zone.fillOpacity}
+        onPointerDown={begin}
+        onKeyDown={begin}
+        onChange={(e) => {
+          begin()
+          setZoneLive(zone.id, { fillOpacity: Number(e.target.value) })
+        }}
+        onPointerUp={finish}
+        onKeyUp={finish}
+        onBlur={finish}
+      />
+      <span className="w-9 text-right tabular-nums">{Math.round(zone.fillOpacity * 100)} %</span>
+    </label>
+  )
+}
+
 function ZoneControls({ zone }: { zone: Zone }) {
   const updateZone = useDrillStore((s) => s.updateZone)
-  const setZoneLabel = useDrillStore((s) => s.setZoneLabel)
+  const setZoneLive = useDrillStore((s) => s.setZoneLive)
 
   return (
     <>
       <span className="text-sm text-slate-300 tabular-nums" title="Größe der Zone">
         {formatMeters(zone.width)} × {formatMeters(zone.height)} m
       </span>
-      <div role="group" aria-label="Farbe der Zone" className="flex items-center gap-1">
-        {ZONE_COLORS.map((c) => (
-          <button
-            key={c.value}
-            type="button"
-            title={c.name}
-            aria-label={c.name}
-            aria-pressed={zone.color === c.value}
-            onClick={() => updateZone(zone.id, { color: c.value })}
-            className={`h-7 w-7 rounded-full border-2 ${
-              zone.color === c.value ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'
-            }`}
-            style={{ backgroundColor: c.value }}
-          />
-        ))}
-      </div>
+      <ColorSwatches
+        label="Füllung"
+        colors={ZONE_COLORS}
+        value={zone.fillColor}
+        onSelect={(fillColor) => updateZone(zone.id, { fillColor })}
+      />
+      <OpacitySlider zone={zone} />
+      <ColorSwatches
+        label="Rand"
+        colors={ZONE_COLORS}
+        value={zone.color}
+        onSelect={(color) => updateZone(zone.id, { color })}
+      />
       <button
         type="button"
         className={buttonClass}
@@ -245,7 +366,7 @@ function ZoneControls({ zone }: { zone: Zone }) {
       >
         {zone.dashed ? 'Rand durchgezogen' : 'Rand gestrichelt'}
       </button>
-      <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLabel(zone.id, label)} />
+      <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLive(zone.id, { label })} />
     </>
   )
 }

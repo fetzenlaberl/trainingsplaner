@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross']
 
@@ -48,6 +48,7 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'pole', name: 'Stange', item: { type: 'pole', color: '#facc15' } },
   { key: 'goal', name: 'Tor', item: { type: 'goal', color: '#ffffff' } },
   { key: 'text', name: 'Text', item: { type: 'text', color: '#ffffff', label: 'Text' } },
+  { key: 'textbox', name: 'Textfeld', item: { type: 'textbox', color: '#fde047', label: 'Anweisung' } },
 ]
 
 /** Approximate size of each item type in meters (used for previews and hit areas). */
@@ -58,7 +59,18 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   pole: 0.7,
   goal: 5.4,
   text: 6,
+  textbox: 12,
 }
 
 /** Item types where rotation is visible. */
-export const ROTATABLE_TYPES: ItemType[] = ['player', 'goal', 'text']
+export const ROTATABLE_TYPES: ItemType[] = ['player', 'goal', 'text', 'textbox']
+
+/** Background colors for text boxes. */
+export const TEXTBOX_COLORS: { value: string; name: string }[] = [
+  { value: '#fde047', name: 'Gelb' },
+  { value: '#ffffff', name: 'Weiß' },
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#16a34a', name: 'Grün' },
+  { value: '#f97316', name: 'Orange' },
+]

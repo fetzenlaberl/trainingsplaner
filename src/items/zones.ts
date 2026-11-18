@@ -34,6 +34,13 @@ export const ZONE_COLORS: { value: string; name: string }[] = [
 ]
 
 export const DEFAULT_ZONE_COLOR = ZONE_COLORS[0].value
+export const DEFAULT_ZONE_FILL_OPACITY = 0.22
+export const MAX_ZONE_FILL_OPACITY = 0.8
+
+export function clampFillOpacity(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_ZONE_FILL_OPACITY
+  return Math.round(Math.min(Math.max(value, 0), MAX_ZONE_FILL_OPACITY) * 100) / 100
+}
 
 export function clampZoneSize(value: number): number {
   if (!Number.isFinite(value)) return MIN_ZONE_SIZE

@@ -1,5 +1,6 @@
+import Konva from 'konva'
+import { useContext, useMemo } from 'react'
 import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
-import { useContext } from 'react'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
 import { PitchColorContext } from './pitchColorContext'
@@ -15,16 +16,34 @@ const GOAL_WIDTH = 5
 const GOAL_DEPTH = 2
 const TEXT_SIZE = 2
 const TEXT_BOX_WIDTH = 16
+const TEXTBOX_WIDTH = 12
+const TEXTBOX_PADDING = 0.6
+const TEXTBOX_FONT_SIZE = 1.1
+const NAME_FONT_SIZE = 0.8
+const GLOW_COLOR = '#fde047'
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'>
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'> & {
+  /** Player name tag (empty = none) */
+  name?: string
+  /** Highlight ring strength 0..1 */
+  glow?: number
+}
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation, shape }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape, name = '', glow = 0 }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
   const onWhite = pitchColor === 'white'
   switch (type) {
     case 'player':
-      return <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} />
+      return (
+        <Group>
+          {glow > 0 && <HighlightRing strength={glow} />}
+          <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} />
+          {name && <NameTag name={name} />}
+        </Group>
+      )
+    case 'textbox':
+      return <TextBox text={label} background={color} rotation={rotation} />
     case 'ball':
       return (
         <Group>
@@ -193,5 +212,98 @@ function PlayerLabel({ label, color, box }: { label: string; color: string; box:
       fontStyle="bold"
       fill={color}
     />
+  )
+}
+
+/** Soft glowing ring behind a player. */
+function HighlightRing({ strength }: { strength: number }) {
+  return (
+    <Group listening={false}>
+      <Circle radius={2.3} fill={GLOW_COLOR} opacity={0.12 * strength} />
+      <Circle radius={1.95} fill={GLOW_COLOR} opacity={0.22 * strength} />
+      <Circle radius={1.6} fill={GLOW_COLOR} opacity={0.35 * strength} />
+      <Circle radius={1.45} stroke={GLOW_COLOR} strokeWidth={0.2} opacity={strength} />
+    </Group>
+  )
+}
+
+/** Name tag below a player, for line-ups. Not rotated, so it always reads straight. */
+function NameTag({ name }: { name: string }) {
+  // Rough text width: average character is about half the font size wide.
+  const width = Math.max(2, name.length * NAME_FONT_SIZE * 0.55 + 0.8)
+  const height = NAME_FONT_SIZE + 0.4
+  const top = 1.55
+  return (
+    <Group listening={false}>
+      <Rect
+        x={-width / 2}
+        y={top}
+        width={width}
+        height={height}
+        cornerRadius={0.25}
+        fill="#ffffff"
+        opacity={0.92}
+        stroke="rgba(15,23,42,0.35)"
+        strokeWidth={0.05}
+      />
+      <Text
+        text={name}
+        x={-width / 2}
+        y={top}
+        width={width}
+        height={height}
+        align="center"
+        verticalAlign="middle"
+        fontSize={NAME_FONT_SIZE}
+        fontStyle="bold"
+        fill="#111827"
+        wrap="none"
+        ellipsis
+      />
+    </Group>
+  )
+}
+
+/** Colored box with wrapped text for instructions, centered at (0, 0). */
+function TextBox({ text, background, rotation }: { text: string; background: string; rotation: number }) {
+  // Measure the wrapped text once per change so the box fits around it.
+  const height = useMemo(() => {
+    const measure = new Konva.Text({
+      text: text || ' ',
+      width: TEXTBOX_WIDTH,
+      padding: TEXTBOX_PADDING,
+      fontSize: TEXTBOX_FONT_SIZE,
+      lineHeight: 1.25,
+      wrap: 'word',
+    })
+    const h = measure.height()
+    measure.destroy()
+    return h
+  }, [text])
+
+  return (
+    <Group rotation={rotation}>
+      <Rect
+        x={-TEXTBOX_WIDTH / 2}
+        y={-height / 2}
+        width={TEXTBOX_WIDTH}
+        height={height}
+        cornerRadius={0.4}
+        fill={background}
+        stroke="rgba(15,23,42,0.3)"
+        strokeWidth={0.08}
+      />
+      <Text
+        text={text}
+        x={-TEXTBOX_WIDTH / 2}
+        y={-height / 2}
+        width={TEXTBOX_WIDTH}
+        padding={TEXTBOX_PADDING}
+        fontSize={TEXTBOX_FONT_SIZE}
+        lineHeight={1.25}
+        wrap="word"
+        fill={contrastTextColor(background)}
+      />
+    </Group>
   )
 }

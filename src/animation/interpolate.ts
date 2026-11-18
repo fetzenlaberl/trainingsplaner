@@ -5,7 +5,11 @@ import { ATTACH_DISTANCE } from './scenes'
 /** An item as shown in an animation frame; opacity < 1 while fading in or out. */
 export interface FrameItem extends Item {
   opacity: number
+  /** Strength of the highlight ring, 0..1 (fades between scenes) */
+  glow: number
 }
+
+const glowOf = (item: Item) => (item.highlight ? 1 : 0)
 
 /** A zone as shown in an animation frame; opacity < 1 while fading in or out. */
 export interface FrameZone extends Zone {
@@ -87,19 +91,20 @@ export function interpolateScenes(from: Scene, to: Scene, t: number): FrameItem[
   const targets = new Map(to.items.map((item) => [item.id, item]))
   const result: FrameItem[] = from.items.map((item) => {
     const target = targets.get(item.id)
-    if (!target) return { ...item, opacity: 1 - t }
+    if (!target) return { ...item, opacity: 1 - t, glow: glowOf(item) }
     const path = findPathLine(from.lines, item, target)
     return {
       ...item,
       ...positionAt(item, target, path, t),
       rotation: lerpAngle(item.rotation, target.rotation, t),
       size: item.size + (target.size - item.size) * t,
+      glow: glowOf(item) + (glowOf(target) - glowOf(item)) * t,
       opacity: 1,
     }
   })
   const existing = new Set(from.items.map((item) => item.id))
   for (const item of to.items) {
-    if (!existing.has(item.id)) result.push({ ...item, opacity: t })
+    if (!existing.has(item.id)) result.push({ ...item, opacity: t, glow: glowOf(item) })
   }
   return result
 }
@@ -134,7 +139,9 @@ export function frameAt(scenes: Scene[], time: number): Frame {
   const from = scenes[index]
   const to = scenes[index + 1]
   return {
-    items: to ? interpolateScenes(from, to, progress) : from.items.map((i) => ({ ...i, opacity: 1 })),
+    items: to
+      ? interpolateScenes(from, to, progress)
+      : from.items.map((i) => ({ ...i, opacity: 1, glow: glowOf(i) })),
     lines: from.lines,
     zones: to ? interpolateZones(from.zones, to.zones, progress) : from.zones.map((z) => ({ ...z, opacity: 1 })),
     sceneIndex: index,

@@ -4,16 +4,29 @@ import { displayColor } from '../field/pitchStyle'
 import type { Zone } from '../model/types'
 import { PitchColorContext } from './pitchColorContext'
 
-const FILL_OPACITY = 0.22
-
-type ZoneShapeProps = Pick<Zone, 'shape' | 'width' | 'height' | 'color' | 'dashed' | 'label'> & {
+type ZoneShapeProps = Pick<
+  Zone,
+  'shape' | 'width' | 'height' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label'
+> & {
   /** Pixels per meter, keeps the outline visible at small sizes */
   scale: number
 }
 
 /** Draws a zone centered at (0, 0) in meter units (rotation is applied by the parent). */
-export function ZoneShape({ shape, width, height, color: chosenColor, dashed, label, scale }: ZoneShapeProps) {
-  const color = displayColor(chosenColor, useContext(PitchColorContext))
+export function ZoneShape({
+  shape,
+  width,
+  height,
+  color: chosenColor,
+  fillColor: chosenFill,
+  fillOpacity,
+  dashed,
+  label,
+  scale,
+}: ZoneShapeProps) {
+  const pitchColor = useContext(PitchColorContext)
+  const color = displayColor(chosenColor, pitchColor)
+  const fill = displayColor(chosenFill, pitchColor)
   const strokeWidth = Math.max(0.15, 1.5 / scale)
   // Fill and outline are separate shapes: only the fill is see-through.
   const outline = {
@@ -29,19 +42,19 @@ export function ZoneShape({ shape, width, height, color: chosenColor, dashed, la
     <>
       {shape === 'rect' && (
         <>
-          <Rect x={-halfW} y={-halfH} width={width} height={height} fill={color} opacity={FILL_OPACITY} />
+          <Rect x={-halfW} y={-halfH} width={width} height={height} fill={fill} opacity={fillOpacity} />
           <Rect x={-halfW} y={-halfH} width={width} height={height} {...outline} />
         </>
       )}
       {shape === 'ellipse' && (
         <>
-          <Ellipse radiusX={halfW} radiusY={halfH} fill={color} opacity={FILL_OPACITY} />
+          <Ellipse radiusX={halfW} radiusY={halfH} fill={fill} opacity={fillOpacity} />
           <Ellipse radiusX={halfW} radiusY={halfH} {...outline} />
         </>
       )}
       {shape === 'triangle' && (
         <>
-          <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed fill={color} opacity={FILL_OPACITY} />
+          <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed fill={fill} opacity={fillOpacity} />
           <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed {...outline} lineJoin="round" />
         </>
       )}

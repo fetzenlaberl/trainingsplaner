@@ -1,7 +1,7 @@
 import type { FieldType } from '../field/dimensions'
 import type { PitchStyle } from '../field/pitchStyle'
 
-export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text'
+export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text' | 'textbox'
 
 /** How a player is drawn; other item types ignore it. */
 export type PlayerShape = 'circle' | 'triangle' | 'cross'
@@ -17,8 +17,14 @@ export interface Item {
   /** Display size factor, 1 = default size */
   size: number
   shape: PlayerShape
+  /** Main color; background color for text boxes */
   color: string
+  /** Shirt number, or the text of text and text box items */
   label: string
+  /** Name tag below a player (line-ups); empty = no tag */
+  name: string
+  /** Glowing ring to highlight a player */
+  highlight: boolean
 }
 
 export interface Point {
@@ -51,7 +57,11 @@ export interface Zone {
   width: number
   height: number
   rotation: number
+  /** Outline color */
   color: string
+  fillColor: string
+  /** 0 = no fill, 1 = solid */
+  fillOpacity: number
   /** Dashed instead of solid outline */
   dashed: boolean
   label: string

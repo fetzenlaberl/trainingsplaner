@@ -3,7 +3,13 @@ import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
-import { clampZoneSize, DEFAULT_ZONE_COLOR, DEFAULT_ZONE_SIZE } from '../items/zones'
+import {
+  clampFillOpacity,
+  clampZoneSize,
+  DEFAULT_ZONE_COLOR,
+  DEFAULT_ZONE_FILL_OPACITY,
+  DEFAULT_ZONE_SIZE,
+} from '../items/zones'
 import { emptyDrill } from '../model/serialize'
 import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene, Zone, ZoneShape } from '../model/types'
 
@@ -51,6 +57,8 @@ export interface DrillState extends DrillContent {
   rotateItem: (id: string, rotation: number) => void
   setItemSize: (id: string, size: number) => void
   setItemShape: (id: string, shape: PlayerShape) => void
+  setItemColor: (id: string, color: string) => void
+  setItemHighlight: (id: string, highlight: boolean) => void
   /** Gives every item of the current scene the same size. */
   setAllItemSizes: (size: number) => void
   /** Adds a straight line (meters) and returns its id. */
@@ -73,7 +81,9 @@ export interface DrillState extends DrillContent {
   // Take a snapshot() before and call pushHistory(snapshot) when the edit is finished.
   setItemRotation: (id: string, rotation: number) => void
   setItemLabel: (id: string, label: string) => void
-  setZoneLabel: (id: string, label: string) => void
+  setItemName: (id: string, name: string) => void
+  /** Live change of a zone (label typing, opacity slider). */
+  setZoneLive: (id: string, change: Partial<Omit<Zone, 'id'>>) => void
   setLinePoint: (id: string, index: number, point: Point) => void
   /** Inserts a bend before waypoint `index` (live edit). */
   insertLinePoint: (id: string, index: number, point: Point) => void
@@ -260,6 +270,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       rotation: item.rotation ?? 0,
       size: clampItemSize(item.size ?? (item.type === 'player' ? DEFAULT_PLAYER_SIZE : 1)),
       shape: item.shape ?? 'circle',
+      name: item.name ?? '',
+      highlight: item.highlight ?? false,
       color: item.color,
       label,
     }
@@ -290,6 +302,16 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { shape }) })),
+    })),
+  setItemColor: (id, color) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
+    })),
+  setItemHighlight: (id, highlight) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { highlight }) })),
     })),
   setAllItemSizes: (size) =>
     set((s) => ({
@@ -357,6 +379,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       ...DEFAULT_ZONE_SIZE[shape],
       rotation: 0,
       color: DEFAULT_ZONE_COLOR,
+      fillColor: DEFAULT_ZONE_COLOR,
+      fillOpacity: DEFAULT_ZONE_FILL_OPACITY,
       dashed: false,
       label: '',
     }
@@ -369,6 +393,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (clamped.width !== undefined) clamped.width = clampZoneSize(clamped.width)
       if (clamped.height !== undefined) clamped.height = clampZoneSize(clamped.height)
       if (clamped.rotation !== undefined) clamped.rotation = normalizeAngle(clamped.rotation)
+      if (clamped.fillOpacity !== undefined) clamped.fillOpacity = clampFillOpacity(clamped.fillOpacity)
       return {
         ...recorded(s),
         scenes: editScene(s, (scene) => ({
@@ -442,12 +467,18 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { label }) })),
     })),
-  setZoneLabel: (id, label) =>
-    set((s) => ({
-      scenes: editScene(s, (scene) => ({
-        zones: scene.zones.map((z) => (z.id === id ? { ...z, label } : z)),
-      })),
-    })),
+  setItemName: (id, name) =>
+    set((s) => ({ scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { name }) })) })),
+  setZoneLive: (id, change) =>
+    set((s) => {
+      const clamped = { ...change }
+      if (clamped.fillOpacity !== undefined) clamped.fillOpacity = clampFillOpacity(clamped.fillOpacity)
+      return {
+        scenes: editScene(s, (scene) => ({
+          zones: scene.zones.map((z) => (z.id === id ? { ...z, ...clamped } : z)),
+        })),
+      }
+    }),
   setLinePoint: (id, index, point) =>
     set((s) => ({
       scenes: editScene(s, (scene) => ({

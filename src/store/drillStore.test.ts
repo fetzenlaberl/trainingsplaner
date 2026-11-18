@@ -25,7 +25,7 @@ describe('items', () => {
   it('adds an item at the given position in meters', () => {
     const id = store().addItem({ type: 'cone', color: ORANGE }, 20.5, 30)
     expect(items()).toEqual([
-      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, size: 1, shape: 'circle', color: ORANGE, label: '' },
+      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, size: 1, shape: 'circle', color: ORANGE, label: '', name: '', highlight: false },
     ])
   })
 
@@ -266,7 +266,7 @@ describe('load / new', () => {
     scenes: [
       {
         durationMs: 2000,
-        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, shape: 'circle', color: '#dc2626', label: '1' }],
+        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, shape: 'circle', color: '#dc2626', label: '1', name: '', highlight: false }],
         lines: [],
         zones: [],
       },
@@ -344,6 +344,8 @@ describe('zones', () => {
         height: 15,
         rotation: 0,
         color: '#facc15',
+        fillColor: '#facc15',
+        fillOpacity: 0.22,
         dashed: false,
         label: '',
       },
@@ -359,6 +361,16 @@ describe('zones', () => {
     expect(zones()[0].dashed).toBe(false)
     store().undo()
     expect(zones()[0].width).toBe(18)
+  })
+
+  it('sets fill and outline separately and keeps the opacity in range', () => {
+    const id = store().addZone('rect', 30, 20)
+    store().updateZone(id, { fillColor: '#2563eb', color: '#dc2626', fillOpacity: 0.5 })
+    expect(zones()[0]).toMatchObject({ fillColor: '#2563eb', color: '#dc2626', fillOpacity: 0.5 })
+    store().updateZone(id, { fillOpacity: 3 })
+    expect(zones()[0].fillOpacity).toBe(0.8)
+    store().setZoneLive(id, { fillOpacity: -1 })
+    expect(zones()[0].fillOpacity).toBe(0)
   })
 
   it('keeps zones within the allowed size', () => {
@@ -385,12 +397,39 @@ describe('zones', () => {
   it('edits the label live, recorded as one step via pushHistory', () => {
     const id = store().addZone('rect', 30, 20)
     const before = store().snapshot()
-    store().setZoneLabel(id, 'Z')
-    store().setZoneLabel(id, 'Zone A')
+    store().setZoneLive(id, { label: 'Z' })
+    store().setZoneLive(id, { label: 'Zone A' })
     store().pushHistory(before)
     expect(zones()[0].label).toBe('Zone A')
     store().undo()
     expect(zones()[0].label).toBe('')
+  })
+})
+
+describe('name tags, highlight and text boxes', () => {
+  it('starts players without name and highlight', () => {
+    store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    expect([items()[0].name, items()[0].highlight]).toEqual(['', false])
+  })
+
+  it('sets the name live (one undo step via pushHistory) and toggles the highlight with undo', () => {
+    const id = store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    const before = store().snapshot()
+    store().setItemName(id, 'M')
+    store().setItemName(id, 'Müller')
+    store().pushHistory(before)
+    store().setItemHighlight(id, true)
+    expect([items()[0].name, items()[0].highlight]).toEqual(['Müller', true])
+    store().undo()
+    expect(items()[0].highlight).toBe(false)
+    store().undo()
+    expect(items()[0].name).toBe('')
+  })
+
+  it('creates text boxes with background color that can be changed', () => {
+    const id = store().addItem({ type: 'textbox', color: '#fde047', label: 'Anweisung' }, 10, 10)
+    store().setItemColor(id, '#2563eb')
+    expect(items()[0]).toMatchObject({ type: 'textbox', color: '#2563eb', label: 'Anweisung', size: 1 })
   })
 })
 
@@ -439,7 +478,16 @@ describe('player shapes', () => {
 
 describe('helpers', () => {
   it('nextPlayerNumber continues after the highest number of that color', () => {
-    const base = { type: 'player' as const, x: 0, y: 0, rotation: 0, size: 1, shape: 'circle' as const }
+    const base = {
+      type: 'player' as const,
+      x: 0,
+      y: 0,
+      rotation: 0,
+      size: 1,
+      shape: 'circle' as const,
+      name: '',
+      highlight: false,
+    }
     const items = [
       { ...base, id: 'a', color: 'red', label: '7' },
       { ...base, id: 'b', color: 'red', label: 'TW' },

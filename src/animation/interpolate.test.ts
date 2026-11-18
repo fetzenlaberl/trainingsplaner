@@ -13,7 +13,7 @@ import {
 } from './interpolate'
 
 function item(id: string, x: number, y: number, rotation = 0, type: Item['type'] = 'player'): Item {
-  return { id, type, x, y, rotation, size: 1, shape: 'circle', color: '#fff', label: '' }
+  return { id, type, x, y, rotation, size: 1, shape: 'circle', color: '#fff', label: '', name: '', highlight: false }
 }
 
 function scene(items: Item[], lines: Line[] = [], durationMs = 1000): Scene {
@@ -94,6 +94,14 @@ describe('interpolateScenes', () => {
     expect(p.size).toBeCloseTo(1.25)
   })
 
+  it('fades the highlight ring in between scenes', () => {
+    const plain = item('a', 0, 0)
+    const highlighted = { ...item('a', 0, 0), highlight: true }
+    expect(interpolateScenes(scene([plain]), scene([highlighted]), 0.25)[0].glow).toBeCloseTo(0.25)
+    expect(interpolateScenes(scene([highlighted]), scene([highlighted]), 0.5)[0].glow).toBe(1)
+    expect(frameAt([scene([highlighted])], 0).items[0].glow).toBe(1)
+  })
+
   it('is exact at the start of a transition', () => {
     const [p] = interpolateScenes(scene([item('a', 3, 4)]), scene([item('a', 10, 20)]), 0)
     expect([p.x, p.y]).toEqual([3, 4])
@@ -158,6 +166,8 @@ describe('interpolateZones', () => {
     height: 10,
     rotation,
     color: '#fff',
+    fillColor: '#fff',
+    fillOpacity: 0.2,
     dashed: false,
     label: '',
   })

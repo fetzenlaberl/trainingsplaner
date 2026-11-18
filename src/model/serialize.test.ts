@@ -20,8 +20,8 @@ const drill: Drill = {
     {
       durationMs: 2000,
       items: [
-        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, size: 1.5, shape: 'triangle', color: '#dc2626', label: '9' },
-        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, size: 1, shape: 'circle', color: '#ffffff', label: '' },
+        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, size: 1.5, shape: 'triangle', color: '#dc2626', label: '9', name: 'Müller', highlight: true },
+        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, size: 1, shape: 'circle', color: '#ffffff', label: '', name: '', highlight: false },
       ],
       lines: [
         {
@@ -56,6 +56,8 @@ const drill: Drill = {
           height: 18,
           rotation: 15,
           color: '#facc15',
+          fillColor: '#2563eb',
+          fillOpacity: 0.4,
           dashed: true,
           label: 'Zone A',
         },
@@ -119,6 +121,38 @@ describe('serializeDrill / parseDrill', () => {
     expect(curved.smooth).toBe(true)
     expect(curved).not.toHaveProperty('control')
     expect(straight.points).toHaveLength(2)
+  })
+
+  it('reads version 3 files without name tag, highlight and zone fill', () => {
+    const text = tamper((d) => {
+      d.version = 3
+      delete d.scenes[0].items[0].name
+      delete d.scenes[0].items[0].highlight
+      delete d.scenes[0].zones[0].fillColor
+      delete d.scenes[0].zones[0].fillOpacity
+    })
+    const scene = parseDrill(text).scenes[0]
+    expect([scene.items[0].name, scene.items[0].highlight]).toEqual(['', false])
+    expect(scene.zones[0].fillColor).toBe(scene.zones[0].color)
+    expect(scene.zones[0].fillOpacity).toBe(0.22)
+  })
+
+  it('round-trips text boxes with multi-line text', () => {
+    const textbox = {
+      id: 't1',
+      type: 'textbox' as const,
+      x: 50,
+      y: 10,
+      rotation: 0,
+      size: 1,
+      shape: 'circle' as const,
+      color: '#fde047',
+      label: 'Erst passen,\ndann laufen!',
+      name: '',
+      highlight: false,
+    }
+    const withBox = { ...drill, scenes: [{ ...drill.scenes[0], items: [...drill.scenes[0].items, textbox] }] }
+    expect(parseDrill(serializeDrill(withBox)).scenes[0].items[2]).toEqual(textbox)
   })
 
   it('reads older files without zones', () => {
@@ -201,6 +235,9 @@ describe('parseDrill rejects invalid files', () => {
     ['unknown player shape', (d) => (d.scenes[0].items[0].shape = 'star')],
     ['unknown pitch color', (d) => (d.pitch.color = 'pink')],
     ['unknown zone shape', (d) => (d.scenes[0].zones[0].shape = 'hexagon')],
+    ['name not text', (d) => (d.scenes[0].items[0].name = 7)],
+    ['highlight not yes/no', (d) => (d.scenes[0].items[0].highlight = 'ja')],
+    ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],
     ['unknown grid', (d) => (d.pitch.grid = 'hexagons')],

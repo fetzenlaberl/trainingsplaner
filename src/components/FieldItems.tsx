@@ -17,7 +17,7 @@ const ROTATION_SNAP_TOLERANCE = 4
 
 interface FieldItemsProps {
   /** Items to draw; opacity is used while fading in or out during the animation */
-  items: (Item & { opacity?: number })[]
+  items: (Item & { opacity?: number; glow?: number })[]
   viewport: ViewRect
   /** Pixels per meter */
   scale: number
@@ -86,6 +86,8 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
                 label={item.label}
                 rotation={item.rotation}
                 shape={item.shape}
+                name={item.name}
+                glow={item.glow ?? (item.highlight ? 1 : 0)}
               />
             </Group>
           </Group>

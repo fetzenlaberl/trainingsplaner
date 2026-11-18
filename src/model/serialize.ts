@@ -8,7 +8,7 @@ import {
   type PitchStyle,
 } from '../field/pitchStyle'
 import { clampItemSize, PLAYER_SHAPES } from '../items/palette'
-import { clampZoneSize, ZONE_SHAPES } from '../items/zones'
+import { clampFillOpacity, clampZoneSize, DEFAULT_ZONE_FILL_OPACITY, ZONE_SHAPES } from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
 import type {
   Category,
@@ -27,11 +27,12 @@ import type {
 export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 2: lines with any number of waypoints (version 1 had start, end and one control point).
 // Version 3: zones in scenes.
-export const FILE_VERSION = 3
+// Version 4: text boxes, player name tags and highlight, zone fill color and opacity.
+export const FILE_VERSION = 4
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
-const ITEM_TYPES: ItemType[] = ['player', 'ball', 'cone', 'goal', 'pole', 'text']
+const ITEM_TYPES: ItemType[] = ['player', 'ball', 'cone', 'goal', 'pole', 'text', 'textbox']
 const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot']
 export const CATEGORIES: Category[] = [
   'warmup',
@@ -156,7 +157,10 @@ function parseItem(value: unknown): Item {
     // Shape was added later; older files only have circles.
     !(value.shape === undefined || PLAYER_SHAPES.includes(value.shape as PlayerShape)) ||
     typeof value.color !== 'string' ||
-    typeof value.label !== 'string'
+    typeof value.label !== 'string' ||
+    // Name tag and highlight were added in version 4.
+    !(value.name === undefined || typeof value.name === 'string') ||
+    !(value.highlight === undefined || typeof value.highlight === 'boolean')
   ) {
     throw corrupt()
   }
@@ -170,6 +174,8 @@ function parseItem(value: unknown): Item {
     shape: (value.shape as PlayerShape | undefined) ?? 'circle',
     color: value.color,
     label: value.label,
+    name: (value.name as string | undefined) ?? '',
+    highlight: (value.highlight as boolean | undefined) ?? false,
   }
 }
 
@@ -215,6 +221,9 @@ function parseZone(value: unknown): Zone {
     !isNumber(value.height) ||
     !isNumber(value.rotation) ||
     typeof value.color !== 'string' ||
+    // Separate fill color and opacity were added in version 4.
+    !(value.fillColor === undefined || typeof value.fillColor === 'string') ||
+    !(value.fillOpacity === undefined || isNumber(value.fillOpacity)) ||
     typeof value.dashed !== 'boolean' ||
     typeof value.label !== 'string'
   ) {
@@ -229,6 +238,9 @@ function parseZone(value: unknown): Zone {
     height: clampZoneSize(value.height),
     rotation: value.rotation,
     color: value.color,
+    fillColor: (value.fillColor as string | undefined) ?? value.color,
+    fillOpacity:
+      value.fillOpacity === undefined ? DEFAULT_ZONE_FILL_OPACITY : clampFillOpacity(value.fillOpacity as number),
     dashed: value.dashed,
     label: value.label,
   }

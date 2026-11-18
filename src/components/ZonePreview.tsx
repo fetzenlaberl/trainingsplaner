@@ -1,5 +1,5 @@
 import { Group, Layer, Stage } from 'react-konva'
-import { DEFAULT_ZONE_COLOR, DEFAULT_ZONE_SIZE } from '../items/zones'
+import { DEFAULT_ZONE_COLOR, DEFAULT_ZONE_FILL_OPACITY, DEFAULT_ZONE_SIZE } from '../items/zones'
 import type { ZoneShape as ZoneShapeType } from '../model/types'
 import { ZoneShape } from './ZoneShape'
 
@@ -23,6 +23,8 @@ export function ZonePreview({ shape, scale }: ZonePreviewProps) {
             width={width}
             height={height}
             color={DEFAULT_ZONE_COLOR}
+            fillColor={DEFAULT_ZONE_COLOR}
+            fillOpacity={DEFAULT_ZONE_FILL_OPACITY}
             dashed={false}
             label=""
             scale={scale}

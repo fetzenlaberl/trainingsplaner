@@ -3,7 +3,7 @@ import type { Item, Line, Scene } from '../model/types'
 import { ATTACH_DISTANCE, nextSceneFrom } from './scenes'
 
 function item(id: string, type: Item['type'], x: number, y: number): Item {
-  return { id, type, x, y, rotation: 0, size: 1, shape: 'circle', color: '#fff', label: '' }
+  return { id, type, x, y, rotation: 0, size: 1, shape: 'circle', color: '#fff', label: '', name: '', highlight: false }
 }
 
 function line(id: string, type: Line['type'], x1: number, y1: number, x2: number, y2: number): Line {
@@ -35,6 +35,8 @@ describe('nextSceneFrom', () => {
       height: 15,
       rotation: 0,
       color: '#facc15',
+      fillColor: '#facc15',
+      fillOpacity: 0.22,
       dashed: false,
       label: '',
     }
