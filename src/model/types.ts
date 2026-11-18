@@ -26,10 +26,10 @@ export type LineType = 'pass' | 'run' | 'dribble' | 'shot'
 export interface Line {
   id: string
   type: LineType
-  /** Start and end point in meters */
-  points: [Point, Point]
-  /** Control point of a quadratic Bézier curve; null for a straight line */
-  control: Point | null
+  /** Waypoints in meters: start, any number of bends, end (at least 2) */
+  points: Point[]
+  /** true: smooth curve through the waypoints; false: straight segments with corners */
+  smooth: boolean
   color: string
 }
 

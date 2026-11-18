@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   arrowHead,
-  controlFromMidpoint,
-  curveMidpoint,
   distance,
   endDirection,
+  legacyBendToPoints,
   offsetPolyline,
-  pointAt,
+  pointAtDistance,
+  pointOnSegment,
   polylineLength,
   samplePath,
   trimEnd,
@@ -15,34 +15,83 @@ import {
 
 const start = { x: 0, y: 0 }
 const end = { x: 10, y: 0 }
+const sCurve = [
+  { x: 0, y: 0 },
+  { x: 10, y: 5 },
+  { x: 20, y: -5 },
+  { x: 30, y: 0 },
+]
 
-describe('pointAt / samplePath', () => {
-  it('interpolates a straight line linearly', () => {
-    expect(pointAt(start, end, null, 0.25)).toEqual({ x: 2.5, y: 0 })
-  })
+/** Smallest distance from a point to any sample of the path. */
+function distanceToPath(path: { x: number; y: number }[], p: { x: number; y: number }) {
+  return Math.min(...path.map((q) => distance(p, q)))
+}
 
-  it('starts and ends a curve at its end points', () => {
-    const control = { x: 5, y: 8 }
-    expect(pointAt(start, end, control, 0)).toEqual(start)
-    expect(pointAt(start, end, control, 1)).toEqual(end)
-  })
-
-  it('samples densely and keeps the end points', () => {
-    const pts = samplePath(start, end, null)
+describe('samplePath', () => {
+  it('samples a straight line densely and keeps the end points', () => {
+    const pts = samplePath([start, end], true)
     expect(pts.length).toBeGreaterThan(50)
     expect(pts[0]).toEqual(start)
     expect(pts.at(-1)).toEqual(end)
     expect(polylineLength(pts)).toBeCloseTo(10)
   })
 
-  it('makes a curve longer than the straight line', () => {
-    expect(polylineLength(samplePath(start, end, { x: 5, y: 8 }))).toBeGreaterThan(10)
+  it('treats a smooth line with two points as straight', () => {
+    const pts = samplePath([start, end], true)
+    expect(Math.max(...pts.map((p) => Math.abs(p.y)))).toBeCloseTo(0)
+  })
+
+  it('passes through every waypoint of a smooth curve', () => {
+    const path = samplePath(sCurve, true)
+    for (const waypoint of sCurve) expect(distanceToPath(path, waypoint)).toBeLessThan(1e-9)
+  })
+
+  it('is longer than the corner version, because it bulges around the points', () => {
+    const smooth = polylineLength(samplePath(sCurve, true))
+    const corners = polylineLength(samplePath(sCurve, false))
+    expect(corners).toBeCloseTo(
+      distance(sCurve[0], sCurve[1]) + distance(sCurve[1], sCurve[2]) + distance(sCurve[2], sCurve[3]),
+    )
+    expect(smooth).toBeGreaterThan(corners * 0.99)
+  })
+
+  it('goes straight between waypoints with corners', () => {
+    const path = samplePath(sCurve, false)
+    const halfway = pointOnSegment(sCurve, false, 0, 0.5)
+    expect(halfway).toEqual({ x: 5, y: 2.5 })
+    expect(distanceToPath(path, halfway)).toBeLessThan(1e-9)
+  })
+
+  it('bends away from the straight line on a smooth curve', () => {
+    // Middle of the first segment lies above the straight connection.
+    const mid = pointOnSegment(sCurve, true, 1, 0.5)
+    expect(mid.x).toBeCloseTo(15, 0)
+    expect(Math.abs(mid.y)).toBeLessThan(5)
+  })
+
+  it('copes with two waypoints on top of each other', () => {
+    const pts = samplePath([start, start, end], true)
+    expect(pts.every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(true)
+    expect(pts.at(-1)).toEqual(end)
+  })
+})
+
+describe('pointAtDistance', () => {
+  const path = samplePath([start, end], false)
+
+  it('finds points by distance along the path', () => {
+    expect(pointAtDistance(path, 2.5).x).toBeCloseTo(2.5)
+  })
+
+  it('clamps to the ends', () => {
+    expect(pointAtDistance(path, -1)).toEqual(start)
+    expect(pointAtDistance(path, 99)).toEqual(end)
   })
 })
 
 describe('trimEnd', () => {
   it('shortens the polyline by the given amount', () => {
-    const trimmed = trimEnd(samplePath(start, end, null), 1.5)
+    const trimmed = trimEnd(samplePath([start, end], false), 1.5)
     expect(trimmed.at(-1)!.x).toBeCloseTo(8.5)
     expect(polylineLength(trimmed)).toBeCloseTo(8.5)
   })
@@ -62,8 +111,7 @@ describe('offsetPolyline', () => {
 })
 
 describe('wavePolyline', () => {
-  const path = samplePath(start, end, null)
-  const wave = wavePolyline(path, 0.4, 2)
+  const wave = wavePolyline(samplePath([start, end], false), 0.4, 2)
 
   it('starts and ends on the path', () => {
     expect(wave[0].y).toBeCloseTo(0)
@@ -80,11 +128,13 @@ describe('wavePolyline', () => {
 
 describe('endDirection / arrowHead', () => {
   it('points along a straight line', () => {
-    expect(endDirection(start, end, null)).toEqual({ x: 1, y: 0 })
+    const dir = endDirection(samplePath([start, end], false))
+    expect(dir.x).toBeCloseTo(1)
+    expect(dir.y).toBeCloseTo(0)
   })
 
-  it('follows the curve tangent at the end', () => {
-    const dir = endDirection(start, end, { x: 10, y: -10 })
+  it('follows the last segment of a line with corners', () => {
+    const dir = endDirection(samplePath([start, { x: 10, y: 0 }, { x: 10, y: 10 }], false))
     expect(dir.x).toBeCloseTo(0)
     expect(dir.y).toBeCloseTo(1)
   })
@@ -98,14 +148,13 @@ describe('endDirection / arrowHead', () => {
   })
 })
 
-describe('curve handle', () => {
-  it('sits in the middle of a straight line', () => {
-    expect(curveMidpoint(start, end, null)).toEqual({ x: 5, y: 0 })
+describe('legacyBendToPoints', () => {
+  it('keeps straight lines with two points', () => {
+    expect(legacyBendToPoints(start, end, null)).toEqual([start, end])
   })
 
-  it('round-trips: the curve passes through the dragged handle position', () => {
-    const handle = { x: 4, y: 3 }
-    const control = controlFromMidpoint(start, end, handle)
-    expect(distance(curveMidpoint(start, end, control), handle)).toBeCloseTo(0)
+  it('turns the old control point into a waypoint in the middle of the old curve', () => {
+    const points = legacyBendToPoints(start, end, { x: 5, y: 8 })
+    expect(points).toEqual([start, { x: 5, y: 4 }, end])
   })
 })

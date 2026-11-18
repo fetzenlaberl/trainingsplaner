@@ -75,30 +75,61 @@ describe('lines', () => {
           { x: 1, y: 2 },
           { x: 5, y: 6 },
         ],
-        control: null,
+        smooth: true,
         color: '#ffffff',
       },
     ])
   })
 
-  it('bends and straightens a line', () => {
+  it('inserts bends between the waypoints, never before the start or after the end', () => {
     const id = store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#ffffff')
-    store().setLineControl(id, { x: 5, y: 4 })
-    expect(lines()[0].control).toEqual({ x: 5, y: 4 })
-    store().setLineControl(id, null)
-    expect(lines()[0].control).toBeNull()
+    store().insertLinePoint(id, 1, { x: 5, y: 4 })
+    store().insertLinePoint(id, 2, { x: 8, y: -2 })
+    expect(lines()[0].points).toEqual([
+      { x: 0, y: 0 },
+      { x: 5, y: 4 },
+      { x: 8, y: -2 },
+      { x: 10, y: 0 },
+    ])
+    store().insertLinePoint(id, 0, { x: 99, y: 99 })
+    store().insertLinePoint(id, 4, { x: 99, y: 99 })
+    expect(lines()[0].points).toHaveLength(4)
   })
 
-  it('moves a line including its control point', () => {
+  it('removes single bends but keeps start and end, with undo', () => {
+    const id = store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#ffffff')
+    store().insertLinePoint(id, 1, { x: 5, y: 4 })
+    store().removeLinePoint(id, 0)
+    store().removeLinePoint(id, 2)
+    expect(lines()[0].points).toHaveLength(3)
+    store().removeLinePoint(id, 1)
+    expect(lines()[0].points).toHaveLength(2)
+    store().undo()
+    expect(lines()[0].points).toHaveLength(3)
+  })
+
+  it('clears all bends and switches between smooth and corners', () => {
+    const id = store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#ffffff')
+    store().insertLinePoint(id, 1, { x: 3, y: 4 })
+    store().insertLinePoint(id, 2, { x: 6, y: -4 })
+    store().setLineSmooth(id, false)
+    expect(lines()[0].smooth).toBe(false)
+    store().clearLineBends(id)
+    expect(lines()[0].points).toEqual([
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+    ])
+  })
+
+  it('moves a line including all bends', () => {
     const id = store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#ffffff')
-    store().setLineControl(id, { x: 5, y: 4 })
+    store().insertLinePoint(id, 1, { x: 5, y: 4 })
     store().moveLine(id, 2, 3)
-    const line = lines()[0]
-    expect(line.points).toEqual([
+    expect(lines()[0].points).toEqual([
       { x: 2, y: 3 },
+      { x: 7, y: 7 },
       { x: 12, y: 3 },
     ])
-    expect(line.control).toEqual({ x: 7, y: 7 })
   })
 
   it('moves a single end point', () => {
@@ -185,13 +216,13 @@ describe('undo / redo', () => {
     const id = store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
     const pastBefore = store().past.length
     const before = store().snapshot()
-    store().setLineControl(id, { x: 5, y: 1 })
-    store().setLineControl(id, { x: 5, y: 2 })
-    store().setLineControl(id, { x: 5, y: 3 })
+    store().insertLinePoint(id, 1, { x: 5, y: 1 })
+    store().setLinePoint(id, 1, { x: 5, y: 2 })
+    store().setLinePoint(id, 1, { x: 5, y: 3 })
     store().pushHistory(before)
     expect(store().past.length).toBe(pastBefore + 1)
     store().undo()
-    expect(lines()[0].control).toBeNull()
+    expect(lines()[0].points).toHaveLength(2)
   })
 
   it('does not record a live edit that changed nothing', () => {

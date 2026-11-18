@@ -14,7 +14,7 @@ function line(id: string, type: Line['type'], x1: number, y1: number, x2: number
       { x: x1, y: y1 },
       { x: x2, y: y2 },
     ],
-    control: null,
+    smooth: true,
     color: '#fff',
   }
 }

@@ -11,16 +11,16 @@ import {
 } from '../lines/geometry'
 import type { Line } from '../model/types'
 
-type LineShapeProps = Pick<Line, 'type' | 'points' | 'control' | 'color'> & {
+type LineShapeProps = Pick<Line, 'type' | 'points' | 'smooth' | 'color'> & {
   /** Pixels per meter, used to keep lines readable at small sizes */
   scale: number
   opacity?: number
 }
 
 /** Draws a pass, run, dribble or shot line in meter units, with an arrowhead at the end. */
-export function LineShape({ type, points, control, color, scale, opacity = 1 }: LineShapeProps) {
-  const [start, end] = points
-  const path = samplePath(start, end, control)
+export function LineShape({ type, points, smooth, color, scale, opacity = 1 }: LineShapeProps) {
+  const path = samplePath(points, smooth)
+  const end = path[path.length - 1]
   const total = polylineLength(path)
   if (total === 0) return null
 
@@ -29,7 +29,7 @@ export function LineShape({ type, points, control, color, scale, opacity = 1 }: 
   const arrowLength = Math.min(Math.max(1.2, 10 / scale) * (type === 'shot' ? 1.3 : 1), total * 0.5)
   const arrowWidth = type === 'shot' ? 2 * shotGap + arrowLength * 0.8 : arrowLength * 0.8
   const body = trimEnd(path, arrowLength * 0.8)
-  const arrow = arrowHead(end, endDirection(start, end, control), arrowLength, arrowWidth)
+  const arrow = arrowHead(end, endDirection(path), arrowLength, arrowWidth)
 
   const stroke = {
     stroke: color,

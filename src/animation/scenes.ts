@@ -35,7 +35,7 @@ export function nextSceneFrom(scene: Scene): Scene {
   for (const line of scene.lines) {
     for (const type of MOVERS[line.type]) {
       const item = nearestItem(scene.items, type, line.points[0], new Set(targets.keys()))
-      if (item) targets.set(item.id, line.points[1])
+      if (item) targets.set(item.id, line.points[line.points.length - 1])
     }
   }
   return {

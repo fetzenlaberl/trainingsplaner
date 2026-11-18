@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pointAt } from '../lines/geometry'
+import { pointAtDistance, polylineLength, samplePath } from '../lines/geometry'
 import type { Item, Line, Scene } from '../model/types'
 import {
   findPathLine,
@@ -24,9 +24,23 @@ const curvedPass: Line = {
   type: 'pass',
   points: [
     { x: 0, y: 0 },
+    { x: 10, y: 5 },
     { x: 20, y: 0 },
   ],
-  control: { x: 10, y: 10 },
+  smooth: true,
+  color: '#fff',
+}
+
+const zigzagRun: Line = {
+  id: 'z',
+  type: 'run',
+  points: [
+    { x: 0, y: 0 },
+    { x: 10, y: 10 },
+    { x: 20, y: 0 },
+    { x: 30, y: 10 },
+  ],
+  smooth: false,
   color: '#fff',
 }
 
@@ -96,10 +110,23 @@ describe('interpolateScenes', () => {
     const from = scene([item('b', 0, 0, 0, 'ball')], [curvedPass])
     const to = scene([item('b', 20, 0, 0, 'ball')])
     const [b] = interpolateScenes(from, to, 0.5)
-    const expected = pointAt(curvedPass.points[0], curvedPass.points[1], curvedPass.control, 0.5)
+    const path = samplePath(curvedPass.points, curvedPass.smooth)
+    const expected = pointAtDistance(path, polylineLength(path) / 2)
     expect(b.x).toBeCloseTo(expected.x)
     expect(b.y).toBeCloseTo(expected.y)
     expect(b.y).toBeGreaterThan(4) // clearly off the straight line
+  })
+
+  it('follows a line with several corners at constant speed', () => {
+    const from = scene([item('p', 0, 0)], [zigzagRun])
+    const to = scene([item('p', 30, 10)])
+    // All three segments are equally long, so 1/3 of the time reaches the first corner.
+    const [atCorner] = interpolateScenes(from, to, 1 / 3)
+    expect(atCorner.x).toBeCloseTo(10)
+    expect(atCorner.y).toBeCloseTo(10)
+    const [halfway] = interpolateScenes(from, to, 0.5)
+    expect(halfway.x).toBeCloseTo(15)
+    expect(halfway.y).toBeCloseTo(5)
   })
 
   it('blends small offsets between item and line ends', () => {

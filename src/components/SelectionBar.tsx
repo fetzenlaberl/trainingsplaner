@@ -5,14 +5,15 @@ import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
 
-/** Actions for the selected item or line: size, rotate, label, straighten, duplicate, delete. */
+/** Actions for the selected item or line: size, rotate, label, bends, duplicate, delete. */
 export function SelectionBar() {
   const selected = useDrillStore((s) => findElement(currentScene(s), s.selectedId))
   const rotateItem = useDrillStore((s) => s.rotateItem)
   const setItemSize = useDrillStore((s) => s.setItemSize)
   const setAllItemSizes = useDrillStore((s) => s.setAllItemSizes)
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
-  const setLineControl = useDrillStore((s) => s.setLineControl)
+  const setLineSmooth = useDrillStore((s) => s.setLineSmooth)
+  const clearLineBends = useDrillStore((s) => s.clearLineBends)
   const insertCopy = useDrillStore((s) => s.insertCopy)
   const deleteElement = useDrillStore((s) => s.deleteElement)
   const snapshot = useDrillStore((s) => s.snapshot)
@@ -20,12 +21,6 @@ export function SelectionBar() {
   const labelBeforeRef = useRef<DrillContent | null>(null)
 
   if (!selected) return null
-
-  const straighten = (id: string) => {
-    const before = snapshot()
-    setLineControl(id, null)
-    pushHistory(before)
-  }
 
   return (
     <div role="group" aria-label="Auswahl bearbeiten" className="flex flex-wrap items-center gap-1.5">
@@ -108,10 +103,20 @@ export function SelectionBar() {
         </label>
       )}
 
-      {isLine(selected) && selected.control && (
-        <button type="button" className={buttonClass} onClick={() => straighten(selected.id)}>
-          Gerade machen
-        </button>
+      {isLine(selected) && selected.points.length > 2 && (
+        <>
+          <button
+            type="button"
+            className={buttonClass}
+            title={selected.smooth ? 'Biegungen als Ecken zeigen' : 'Biegungen als weiche Kurve zeigen'}
+            onClick={() => setLineSmooth(selected.id, !selected.smooth)}
+          >
+            {selected.smooth ? 'Eckig' : 'Rund'}
+          </button>
+          <button type="button" className={buttonClass} onClick={() => clearLineBends(selected.id)}>
+            Alle Biegungen entfernen
+          </button>
+        </>
       )}
 
       <button

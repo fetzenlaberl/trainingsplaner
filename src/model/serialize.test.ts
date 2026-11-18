@@ -28,9 +28,10 @@ const drill: Drill = {
           type: 'pass',
           points: [
             { x: 30, y: 20 },
+            { x: 18, y: 22 },
             { x: 10, y: 34 },
           ],
-          control: { x: 15, y: 20 },
+          smooth: true,
           color: '#ffffff',
         },
         {
@@ -40,7 +41,7 @@ const drill: Drill = {
             { x: 1, y: 1 },
             { x: 2, y: 2 },
           ],
-          control: null,
+          smooth: false,
           color: '#facc15',
         },
       ],
@@ -80,6 +81,29 @@ describe('serializeDrill / parseDrill', () => {
       delete d.category
     })
     expect(parseDrill(text).category).toBeNull()
+  })
+
+  it('converts lines from version 1 files (start, end, control point)', () => {
+    const text = tamper((d) => {
+      d.version = 1
+      d.scenes[0].lines[0].points = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ]
+      d.scenes[0].lines[0].control = { x: 5, y: 8 }
+      delete d.scenes[0].lines[0].smooth
+      d.scenes[0].lines[1].control = null
+      delete d.scenes[0].lines[1].smooth
+    })
+    const [curved, straight] = parseDrill(text).scenes[0].lines
+    expect(curved.points).toEqual([
+      { x: 0, y: 0 },
+      { x: 5, y: 4 },
+      { x: 10, y: 0 },
+    ])
+    expect(curved.smooth).toBe(true)
+    expect(curved).not.toHaveProperty('control')
+    expect(straight.points).toHaveLength(2)
   })
 
   it('reads older files without item size', () => {
@@ -129,7 +153,22 @@ describe('parseDrill rejects invalid files', () => {
     ['size not a number', (d) => (d.scenes[0].items[0].size = 'groß')],
     ['unknown line type', (d) => (d.scenes[0].lines[0].type = 'header')],
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],
-    ['broken control point', (d) => (d.scenes[0].lines[0].control = { x: 1 })],
+    ['broken waypoint', (d) => (d.scenes[0].lines[0].points[1] = { x: 1 })],
+    ['missing smooth flag', (d) => delete d.scenes[0].lines[0].smooth],
+    [
+      'old format with three points',
+      (d) => {
+        d.scenes[0].lines[0].control = null
+        delete d.scenes[0].lines[0].smooth
+      },
+    ],
+    [
+      'old format with broken control point',
+      (d) => {
+        d.scenes[0].lines[1].control = { x: 1 }
+        delete d.scenes[0].lines[1].smooth
+      },
+    ],
     ['duplicate ids', (d) => (d.scenes[0].items[1].id = 'p1')],
     ['unknown category', (d) => (d.category = 'fitness')],
   ])('rejects %s', (_name, change) => {

@@ -198,7 +198,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 <LineShape
                   type={tool}
                   points={[draft.start, draft.end]}
-                  control={null}
+                  smooth
                   color={lineColor}
                   scale={layout.scale}
                   opacity={0.7}

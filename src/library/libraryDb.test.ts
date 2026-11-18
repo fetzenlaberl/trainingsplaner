@@ -42,6 +42,32 @@ describe('libraryDb', () => {
     expect(all[0].drill.title).toBe('Neu')
   })
 
+  it('converts old entries with single-bend lines when reading', async () => {
+    const oldLine = {
+      id: 'l1',
+      type: 'pass',
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ],
+      control: { x: 5, y: 8 },
+      color: '#ffffff',
+    }
+    const old = entry('old', 1)
+    old.drill.scenes[0] = { ...old.drill.scenes[0], lines: [oldLine as never] }
+    await putEntry(old)
+    const [loaded] = await listEntries()
+    expect(loaded.drill.scenes[0].lines[0].points).toHaveLength(3)
+    expect(loaded.drill.scenes[0].lines[0].smooth).toBe(true)
+    expect((await getEntry('old'))?.drill.scenes[0].lines[0].points).toHaveLength(3)
+  })
+
+  it('skips broken entries instead of failing the whole library', async () => {
+    const broken = { ...entry('broken', 2), drill: { title: 'kaputt' } as never }
+    await putEntries([entry('ok', 1), broken])
+    expect((await listEntries()).map((e) => e.id)).toEqual(['ok'])
+  })
+
   it('deletes entries', async () => {
     await putEntries([entry('a', 1), entry('b', 2)])
     await deleteEntry('a')

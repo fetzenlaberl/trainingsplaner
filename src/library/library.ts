@@ -3,7 +3,8 @@ import type { Category, Drill } from '../model/types'
 import { sessionFromData, type TrainingSession } from '../sessions/session'
 
 export const BACKUP_FORMAT = 'trainingsplaner-library'
-export const BACKUP_VERSION = 1
+// Version 2: drills use the line format of file version 2.
+export const BACKUP_VERSION = 2
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',

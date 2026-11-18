@@ -19,7 +19,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Liste von `Scene`
 - `Scene`: Dauer in ms, Liste von `Item`-Zuständen, Liste von `Line`
 - `Item`: id, Typ (player | ball | cone | goal | pole | text), x, y, Drehung, Größe (Faktor, 1 = Standard), Farbe, Beschriftung
-- `Line`: Typ (pass | run | dribble | shot), Punkte (gerade oder Bézier-Kurve), Farbe
+- `Line`: Typ (pass | run | dribble | shot), Wegpunkte (Start, beliebig viele Biegungen, Ende), rund oder eckig, Farbe. Dateiformat Version 2; Version-1-Linien (Start, Ende, ein Kontrollpunkt) werden beim Laden umgewandelt.
 - Koordinaten immer in Metern relativ zum Feld, nie in Pixeln. Umrechnung nur beim Zeichnen.
 - Ein Item behält seine id über alle Szenen; die Animation interpoliert Position und Drehung zwischen aufeinanderfolgenden Szenen.
 - `TrainingSession` (Einheit): Titel, Datum, Beginn, Mannschaft, Ziel, Notizen, Liste von Blöcken

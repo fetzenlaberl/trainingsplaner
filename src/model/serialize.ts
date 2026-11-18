@@ -1,9 +1,11 @@
 import { FIELD_TYPES, type FieldType } from '../field/dimensions'
 import { clampItemSize } from '../items/palette'
+import { legacyBendToPoints } from '../lines/geometry'
 import type { Category, Drill, Item, ItemType, Line, LineType, Point, Scene } from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
-export const FILE_VERSION = 1
+// Version 2: lines with any number of waypoints (version 1 had start, end and one control point).
+export const FILE_VERSION = 2
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -131,13 +133,25 @@ function parseItem(value: unknown): Item {
   }
 }
 
+/** Reads the waypoints; converts the old format (start, end, control point) on the fly. */
+function parseLinePath(value: Record<string, unknown>): Pick<Line, 'points' | 'smooth'> {
+  const points = (value.points as unknown[]).map(parsePoint)
+  if ('control' in value) {
+    if (points.length !== 2) throw corrupt()
+    const control = value.control === null ? null : parsePoint(value.control)
+    return { points: legacyBendToPoints(points[0], points[1], control), smooth: true }
+  }
+  if (typeof value.smooth !== 'boolean') throw corrupt()
+  return { points, smooth: value.smooth }
+}
+
 function parseLine(value: unknown): Line {
   if (
     !isRecord(value) ||
     typeof value.id !== 'string' ||
     !LINE_TYPES.includes(value.type as LineType) ||
     !Array.isArray(value.points) ||
-    value.points.length !== 2 ||
+    value.points.length < 2 ||
     typeof value.color !== 'string'
   ) {
     throw corrupt()
@@ -145,8 +159,7 @@ function parseLine(value: unknown): Line {
   return {
     id: value.id,
     type: value.type as LineType,
-    points: [parsePoint(value.points[0]), parsePoint(value.points[1])],
-    control: value.control === null ? null : parsePoint(value.control),
+    ...parseLinePath(value),
     color: value.color,
   }
 }

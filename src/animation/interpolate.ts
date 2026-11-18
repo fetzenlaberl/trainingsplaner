@@ -1,4 +1,4 @@
-import { distance, pointAt } from '../lines/geometry'
+import { distance, pointAtDistance, polylineLength, samplePath } from '../lines/geometry'
 import type { Item, Line, Scene } from '../model/types'
 import { ATTACH_DISTANCE } from './scenes'
 
@@ -53,7 +53,7 @@ export function findPathLine(lines: Line[], from: Item, to: Item): Line | undefi
   let bestScore = Infinity
   for (const line of lines) {
     const dStart = distance(from, line.points[0])
-    const dEnd = distance(to, line.points[1])
+    const dEnd = distance(to, line.points[line.points.length - 1])
     if (dStart <= ATTACH_DISTANCE && dEnd <= ATTACH_DISTANCE && dStart + dEnd < bestScore) {
       best = line
       bestScore = dStart + dEnd
@@ -64,8 +64,11 @@ export function findPathLine(lines: Line[], from: Item, to: Item): Line | undefi
 
 function positionAt(from: Item, to: Item, path: Line | undefined, t: number) {
   if (!path) return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }
-  const [start, end] = path.points
-  const onPath = pointAt(start, end, path.control, t)
+  const start = path.points[0]
+  const end = path.points[path.points.length - 1]
+  // Follow the line at constant speed (by distance), also through tight bends.
+  const sampled = samplePath(path.points, path.smooth)
+  const onPath = pointAtDistance(sampled, t * polylineLength(sampled))
   // Blend out the small offsets between item and line ends so start and end positions are exact.
   return {
     x: onPath.x + (from.x - start.x) * (1 - t) + (to.x - end.x) * t,

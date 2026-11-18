@@ -2,38 +2,84 @@ import type { Point } from '../model/types'
 
 /** Distance between two sample points along the path, in meters. */
 const SAMPLE_STEP = 0.1
+/** Avoids division by zero for waypoints on top of each other. */
+const EPSILON = 1e-6
 
 export function distance(a: Point, b: Point): number {
   return Math.hypot(b.x - a.x, b.y - a.y)
 }
 
-/** Point on a quadratic Bézier curve (or straight line if control is null) at t in [0, 1]. */
-export function pointAt(start: Point, end: Point, control: Point | null, t: number): Point {
-  if (!control) {
-    return { x: start.x + (end.x - start.x) * t, y: start.y + (end.y - start.y) * t }
-  }
-  const u = 1 - t
-  return {
-    x: u * u * start.x + 2 * u * t * control.x + t * t * end.x,
-    y: u * u * start.y + 2 * u * t * control.y + t * t * end.y,
-  }
+function lerp(a: Point, b: Point, t: number): Point {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
 }
 
-/** Samples the path densely so it can be turned into waves or parallel lines. */
-export function samplePath(start: Point, end: Point, control: Point | null): Point[] {
-  const roughLength = control
-    ? distance(start, control) + distance(control, end)
-    : distance(start, end)
-  const segments = Math.max(1, Math.ceil(roughLength / SAMPLE_STEP))
-  const points: Point[] = []
-  for (let i = 0; i <= segments; i++) points.push(pointAt(start, end, control, i / segments))
-  return points
+/**
+ * Point on the centripetal Catmull-Rom segment from p1 to p2 (t in [0, 1]).
+ * Centripetal parametrisation avoids loops and overshoots with unevenly spaced points.
+ */
+function catmullRom(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+  const t0 = 0
+  const t1 = t0 + Math.max(Math.sqrt(distance(p0, p1)), EPSILON)
+  const t2 = t1 + Math.max(Math.sqrt(distance(p1, p2)), EPSILON)
+  const t3 = t2 + Math.max(Math.sqrt(distance(p2, p3)), EPSILON)
+  const tt = t1 + (t2 - t1) * t
+  const a1 = lerp(p0, p1, (tt - t0) / (t1 - t0))
+  const a2 = lerp(p1, p2, (tt - t1) / (t2 - t1))
+  const a3 = lerp(p2, p3, (tt - t2) / (t3 - t2))
+  const b1 = lerp(a1, a2, (tt - t0) / (t2 - t0))
+  const b2 = lerp(a2, a3, (tt - t1) / (t3 - t1))
+  return lerp(b1, b2, (tt - t1) / (t2 - t1))
+}
+
+/** Neighbouring points of segment i; the ends are mirrored so the curve starts straight. */
+function segmentNeighbours(points: Point[], i: number): [Point, Point, Point, Point] {
+  const p1 = points[i]
+  const p2 = points[i + 1]
+  const p0 = i > 0 ? points[i - 1] : { x: 2 * p1.x - p2.x, y: 2 * p1.y - p2.y }
+  const p3 = i + 2 < points.length ? points[i + 2] : { x: 2 * p2.x - p1.x, y: 2 * p2.y - p1.y }
+  return [p0, p1, p2, p3]
+}
+
+/** Point on segment i (between waypoint i and i + 1) at t in [0, 1]. */
+export function pointOnSegment(points: Point[], smooth: boolean, i: number, t: number): Point {
+  if (!smooth || points.length === 2) return lerp(points[i], points[i + 1], t)
+  const [p0, p1, p2, p3] = segmentNeighbours(points, i)
+  return catmullRom(p0, p1, p2, p3, t)
+}
+
+/**
+ * Samples the path through all waypoints densely, so it can be drawn, turned into waves
+ * or parallel lines, and followed in the animation. `smooth` curves through the points,
+ * otherwise straight segments with corners.
+ */
+export function samplePath(points: Point[], smooth: boolean): Point[] {
+  const result: Point[] = [points[0]]
+  for (let i = 0; i < points.length - 1; i++) {
+    const rough = distance(points[i], points[i + 1]) * (smooth ? 1.3 : 1)
+    const steps = Math.max(1, Math.ceil(rough / SAMPLE_STEP))
+    for (let s = 1; s <= steps; s++) result.push(pointOnSegment(points, smooth, i, s / steps))
+  }
+  return result
 }
 
 export function polylineLength(points: Point[]): number {
   let length = 0
   for (let i = 1; i < points.length; i++) length += distance(points[i - 1], points[i])
   return length
+}
+
+/** Point at the given distance (meters) along the polyline, clamped to its ends. */
+export function pointAtDistance(points: Point[], target: number): Point {
+  if (target <= 0) return points[0]
+  let travelled = 0
+  for (let i = 1; i < points.length; i++) {
+    const segment = distance(points[i - 1], points[i])
+    if (travelled + segment >= target) {
+      return lerp(points[i - 1], points[i], segment === 0 ? 0 : (target - travelled) / segment)
+    }
+    travelled += segment
+  }
+  return points[points.length - 1]
 }
 
 /** Cuts the polyline so it ends `amount` meters before its last point. */
@@ -43,11 +89,7 @@ export function trimEnd(points: Point[], amount: number): Point[] {
     const segment = distance(points[i - 1], points[i])
     if (segment >= remaining) {
       const t = segment === 0 ? 0 : (segment - remaining) / segment
-      const cut = {
-        x: points[i - 1].x + (points[i].x - points[i - 1].x) * t,
-        y: points[i - 1].y + (points[i].y - points[i - 1].y) * t,
-      }
-      return [...points.slice(0, i), cut]
+      return [...points.slice(0, i), lerp(points[i - 1], points[i], t)]
     }
     remaining -= segment
   }
@@ -87,10 +129,14 @@ export function wavePolyline(points: Point[], amplitude: number, wavelength: num
   })
 }
 
-/** Unit direction of travel at the end of the path. */
-export function endDirection(start: Point, end: Point, control: Point | null): Point {
-  const from = control && distance(control, end) > 1e-9 ? control : start
-  const len = distance(from, end) || 1
+/** Unit direction of travel at the end of a sampled path. */
+export function endDirection(path: Point[]): Point {
+  const end = path[path.length - 1]
+  const total = polylineLength(path)
+  // Look a short distance back, so tiny last sample steps do not distort the direction.
+  const from = pointAtDistance(path, Math.max(0, total - Math.min(0.5, total / 4)))
+  const len = distance(from, end)
+  if (len < EPSILON) return { x: 1, y: 0 }
   return { x: (end.x - from.x) / len, y: (end.y - from.y) / len }
 }
 
@@ -105,17 +151,14 @@ export function arrowHead(tip: Point, dir: Point, length: number, width: number)
   ]
 }
 
-/** Point on the curve at t = 0.5, where the bend handle sits. */
-export function curveMidpoint(start: Point, end: Point, control: Point | null): Point {
-  return pointAt(start, end, control, 0.5)
-}
-
-/** Control point that makes the curve pass through `mid` at t = 0.5. */
-export function controlFromMidpoint(start: Point, end: Point, mid: Point): Point {
-  return {
-    x: 2 * mid.x - (start.x + end.x) / 2,
-    y: 2 * mid.y - (start.y + end.y) / 2,
+/** Converts the old single-bend line (quadratic Bézier) into waypoints: start, curve middle, end. */
+export function legacyBendToPoints(start: Point, end: Point, control: Point | null): Point[] {
+  if (!control) return [start, end]
+  const mid = {
+    x: 0.25 * start.x + 0.5 * control.x + 0.25 * end.x,
+    y: 0.25 * start.y + 0.5 * control.y + 0.25 * end.y,
   }
+  return [start, mid, end]
 }
 
 export function flatten(points: Point[]): number[] {

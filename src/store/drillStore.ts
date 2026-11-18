@@ -50,6 +50,11 @@ export interface DrillState extends DrillContent {
   /** Adds a straight line (meters) and returns its id. */
   addLine: (type: LineType, start: Point, end: Point, color: string) => string
   moveLine: (id: string, dx: number, dy: number) => void
+  /** Removes a bend (not the start or end point). */
+  removeLinePoint: (id: string, index: number) => void
+  /** Removes all bends: only start and end remain. */
+  clearLineBends: (id: string) => void
+  setLineSmooth: (id: string, smooth: boolean) => void
   /** Inserts an offset copy of an item or line, selects it and returns its id. */
   insertCopy: (element: Item | Line) => string
   deleteElement: (id: string) => void
@@ -58,9 +63,9 @@ export interface DrillState extends DrillContent {
   // Take a snapshot() before and call pushHistory(snapshot) when the edit is finished.
   setItemRotation: (id: string, rotation: number) => void
   setItemLabel: (id: string, label: string) => void
-  setLinePoint: (id: string, index: 0 | 1, point: Point) => void
-  /** Bends a line (control point) or straightens it again (null). */
-  setLineControl: (id: string, control: Point | null) => void
+  setLinePoint: (id: string, index: number, point: Point) => void
+  /** Inserts a bend before waypoint `index` (live edit). */
+  insertLinePoint: (id: string, index: number, point: Point) => void
   snapshot: () => DrillContent
   pushHistory: (before: DrillContent) => void
 
@@ -259,7 +264,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     })),
 
   addLine: (type, start, end, color) => {
-    const line: Line = { id: createId('line'), type, points: [start, end], control: null, color }
+    const line: Line = { id: createId('line'), type, points: [start, end], smooth: true, color }
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ lines: [...scene.lines, line] })),
@@ -272,9 +277,38 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       scenes: editScene(s, (scene) => ({
         lines: updateLine(scene.lines, id, (line) => ({
           ...line,
-          points: [shift(line.points[0], dx, dy), shift(line.points[1], dx, dy)],
-          control: line.control && shift(line.control, dx, dy),
+          points: line.points.map((p) => shift(p, dx, dy)),
         })),
+      })),
+    })),
+
+  removeLinePoint: (id, index) =>
+    set((s) => {
+      const line = currentScene(s).lines.find((l) => l.id === id)
+      if (!line || index <= 0 || index >= line.points.length - 1) return {}
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          lines: updateLine(scene.lines, id, (l) => ({ ...l, points: l.points.filter((_, i) => i !== index) })),
+        })),
+      }
+    }),
+  clearLineBends: (id) =>
+    set((s) => {
+      const line = currentScene(s).lines.find((l) => l.id === id)
+      if (!line || line.points.length <= 2) return {}
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          lines: updateLine(scene.lines, id, (l) => ({ ...l, points: [l.points[0], l.points[l.points.length - 1]] })),
+        })),
+      }
+    }),
+  setLineSmooth: (id, smooth) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        lines: updateLine(scene.lines, id, (l) => ({ ...l, smooth })),
       })),
     })),
 
@@ -284,11 +318,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       const copy: Line = {
         ...element,
         id: createId('line'),
-        points: [
-          shift(element.points[0], COPY_OFFSET, COPY_OFFSET),
-          shift(element.points[1], COPY_OFFSET, COPY_OFFSET),
-        ],
-        control: element.control && shift(element.control, COPY_OFFSET, COPY_OFFSET),
+        points: element.points.map((p) => shift(p, COPY_OFFSET, COPY_OFFSET)),
       }
       set({
         ...recorded(s),
@@ -341,16 +371,21 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       scenes: editScene(s, (scene) => ({
         lines: updateLine(scene.lines, id, (line) => {
-          const points: [Point, Point] = [...line.points]
+          const points = [...line.points]
           points[index] = point
           return { ...line, points }
         }),
       })),
     })),
-  setLineControl: (id, control) =>
+  insertLinePoint: (id, index, point) =>
     set((s) => ({
       scenes: editScene(s, (scene) => ({
-        lines: updateLine(scene.lines, id, (line) => ({ ...line, control })),
+        lines: updateLine(scene.lines, id, (line) => {
+          if (index <= 0 || index >= line.points.length) return line
+          const points = [...line.points]
+          points.splice(index, 0, point)
+          return { ...line, points }
+        }),
       })),
     })),
   snapshot: () => contentOf(get()),
