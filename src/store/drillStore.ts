@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
-import { clampItemSize, type NewItem } from '../items/palette'
+import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, Item, Line, LineType, Point, Scene } from '../model/types'
+import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -45,6 +45,7 @@ export interface DrillState extends DrillContent {
   moveItem: (id: string, x: number, y: number) => void
   rotateItem: (id: string, rotation: number) => void
   setItemSize: (id: string, size: number) => void
+  setItemShape: (id: string, shape: PlayerShape) => void
   /** Gives every item of the current scene the same size. */
   setAllItemSizes: (size: number) => void
   /** Adds a straight line (meters) and returns its id. */
@@ -82,11 +83,11 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${idCounter}`
 }
 
-/** Next free shirt number for players of the given color. */
-export function nextPlayerNumber(items: Item[], color: string): number {
+/** Next free shirt number for players of the given color and shape (e.g. red triangles count separately). */
+export function nextPlayerNumber(items: Item[], color: string, shape: PlayerShape = 'circle'): number {
   let max = 0
   for (const item of items) {
-    if (item.type !== 'player' || item.color !== color) continue
+    if (item.type !== 'player' || item.color !== color || item.shape !== shape) continue
     const n = Number.parseInt(item.label, 10)
     if (!Number.isNaN(n) && n > max) max = n
   }
@@ -221,14 +222,16 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     const s = get()
     const items = currentScene(s).items
     const label =
-      item.label ?? (item.type === 'player' ? String(nextPlayerNumber(items, item.color)) : '')
+      item.label ??
+      (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : '')
     const newItem: Item = {
       id: createId('item'),
       type: item.type,
       x,
       y,
       rotation: item.rotation ?? 0,
-      size: clampItemSize(item.size ?? 1),
+      size: clampItemSize(item.size ?? (item.type === 'player' ? DEFAULT_PLAYER_SIZE : 1)),
+      shape: item.shape ?? 'circle',
       color: item.color,
       label,
     }
@@ -254,6 +257,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       scenes: editScene(s, (scene) => ({
         items: updateItem(scene.items, id, { size: clampItemSize(size) }),
       })),
+    })),
+  setItemShape: (id, shape) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { shape }) })),
     })),
   setAllItemSizes: (size) =>
     set((s) => ({
@@ -334,7 +342,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       x: element.x + COPY_OFFSET,
       y: element.y + COPY_OFFSET,
       label: numbered
-        ? String(nextPlayerNumber(currentScene(s).items, element.color))
+        ? String(nextPlayerNumber(currentScene(s).items, element.color, element.shape))
         : element.label,
     }
     set({

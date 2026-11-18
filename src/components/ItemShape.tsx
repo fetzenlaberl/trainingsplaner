@@ -3,6 +3,8 @@ import { contrastTextColor } from '../items/colors'
 import type { Item } from '../model/types'
 
 const PLAYER_RADIUS = 1
+const TRIANGLE_RADIUS = 1.3
+const CROSS_HALF = 0.85
 const BALL_RADIUS = 0.55
 const CONE_RADIUS = 0.5
 const POLE_RADIUS = 0.25
@@ -11,41 +13,13 @@ const GOAL_DEPTH = 2
 const TEXT_SIZE = 2
 const TEXT_BOX_WIDTH = 16
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation'>
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'>
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape }: ShapeProps) {
   switch (type) {
     case 'player':
-      return (
-        <Group>
-          <Group rotation={rotation}>
-            {/* Facing marker */}
-            <RegularPolygon
-              x={PLAYER_RADIUS + 0.15}
-              sides={3}
-              radius={0.35}
-              rotation={90}
-              fill={color}
-              stroke="#ffffff"
-              strokeWidth={0.08}
-            />
-          </Group>
-          <Circle radius={PLAYER_RADIUS} fill={color} stroke="#ffffff" strokeWidth={0.15} />
-          <Text
-            text={label}
-            width={PLAYER_RADIUS * 2}
-            height={PLAYER_RADIUS * 2}
-            offsetX={PLAYER_RADIUS}
-            offsetY={PLAYER_RADIUS}
-            align="center"
-            verticalAlign="middle"
-            fontSize={1.05}
-            fontStyle="bold"
-            fill={contrastTextColor(color)}
-          />
-        </Group>
-      )
+      return <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} />
     case 'ball':
       return (
         <Group>
@@ -126,4 +100,93 @@ export function ItemShape({ type, color, label, rotation }: ShapeProps) {
         />
       )
   }
+}
+
+/** Facing marker in front of a circle or cross player (rotation 0 = facing right). */
+function FacingMarker({ color, rotation, distance }: { color: string; rotation: number; distance: number }) {
+  return (
+    <Group rotation={rotation}>
+      <RegularPolygon
+        x={distance}
+        sides={3}
+        radius={0.55}
+        rotation={90}
+        fill={color}
+        stroke="#ffffff"
+        strokeWidth={0.1}
+      />
+    </Group>
+  )
+}
+
+function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'type'>) {
+  if (shape === 'triangle') {
+    // The tip of the triangle shows the facing direction, so no extra marker.
+    return (
+      <Group>
+        <RegularPolygon
+          sides={3}
+          radius={TRIANGLE_RADIUS}
+          rotation={rotation + 90}
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth={0.15}
+          lineJoin="round"
+        />
+        <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 1.6} />
+      </Group>
+    )
+  }
+  if (shape === 'cross') {
+    const arms = [
+      [-CROSS_HALF, -CROSS_HALF, CROSS_HALF, CROSS_HALF],
+      [-CROSS_HALF, CROSS_HALF, CROSS_HALF, -CROSS_HALF],
+    ]
+    return (
+      <Group>
+        <FacingMarker color={color} rotation={rotation} distance={CROSS_HALF + 0.6} />
+        {arms.map((points, i) => (
+          <Line key={`outline-${i}`} points={points} stroke="#ffffff" strokeWidth={0.6} lineCap="round" />
+        ))}
+        {arms.map((points, i) => (
+          <Line key={`arm-${i}`} points={points} stroke={color} strokeWidth={0.36} lineCap="round" />
+        ))}
+        {/* The number sits next to the cross, it would not fit inside. */}
+        <Text
+          text={label}
+          x={CROSS_HALF * 0.7}
+          y={CROSS_HALF * 0.55}
+          fontSize={0.85}
+          fontStyle="bold"
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth={0.06}
+        />
+      </Group>
+    )
+  }
+  return (
+    <Group>
+      <FacingMarker color={color} rotation={rotation} distance={PLAYER_RADIUS + 0.3} />
+      <Circle radius={PLAYER_RADIUS} fill={color} stroke="#ffffff" strokeWidth={0.15} />
+      <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 2} />
+    </Group>
+  )
+}
+
+function PlayerLabel({ label, color, box }: { label: string; color: string; box: number }) {
+  return (
+    <Text
+      text={label}
+      width={box}
+      height={box}
+      offsetX={box / 2}
+      offsetY={box / 2}
+      align="center"
+      verticalAlign="middle"
+      fontSize={1.05}
+      fontStyle="bold"
+      fill={color}
+    />
+  )
 }

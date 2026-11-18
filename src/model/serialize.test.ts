@@ -19,8 +19,8 @@ const drill: Drill = {
     {
       durationMs: 2000,
       items: [
-        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, size: 1.5, color: '#dc2626', label: '9' },
-        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, size: 1, color: '#ffffff', label: '' },
+        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, size: 1.5, shape: 'triangle', color: '#dc2626', label: '9' },
+        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, size: 1, shape: 'circle', color: '#ffffff', label: '' },
       ],
       lines: [
         {
@@ -106,6 +106,13 @@ describe('serializeDrill / parseDrill', () => {
     expect(straight.points).toHaveLength(2)
   })
 
+  it('reads older files without player shape as circles', () => {
+    const text = tamper((d) => {
+      delete d.scenes[0].items[0].shape
+    })
+    expect(parseDrill(text).scenes[0].items[0].shape).toBe('circle')
+  })
+
   it('reads older files without item size', () => {
     const text = tamper((d) => {
       delete d.scenes[0].items[0].size
@@ -151,6 +158,7 @@ describe('parseDrill rejects invalid files', () => {
     ['position not a number', (d) => (d.scenes[0].items[0].x = '30')],
     ['missing rotation', (d) => delete d.scenes[0].items[0].rotation],
     ['size not a number', (d) => (d.scenes[0].items[0].size = 'groß')],
+    ['unknown player shape', (d) => (d.scenes[0].items[0].shape = 'star')],
     ['unknown line type', (d) => (d.scenes[0].lines[0].type = 'header')],
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],
     ['broken waypoint', (d) => (d.scenes[0].lines[0].points[1] = { x: 1 })],

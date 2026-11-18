@@ -12,7 +12,7 @@ import {
 } from './interpolate'
 
 function item(id: string, x: number, y: number, rotation = 0, type: Item['type'] = 'player'): Item {
-  return { id, type, x, y, rotation, size: 1, color: '#fff', label: '' }
+  return { id, type, x, y, rotation, size: 1, shape: 'circle', color: '#fff', label: '' }
 }
 
 function scene(items: Item[], lines: Line[] = [], durationMs = 1000): Scene {

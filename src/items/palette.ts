@@ -1,6 +1,12 @@
-import type { Item, ItemType } from '../model/types'
+import type { Item, ItemType, PlayerShape } from '../model/types'
 
-export type NewItem = Pick<Item, 'type' | 'color'> & Partial<Pick<Item, 'label' | 'rotation' | 'size'>>
+export type NewItem = Pick<Item, 'type' | 'color'> &
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape'>>
+
+export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross']
+
+/** Players start larger so they are easy to see on the full field. */
+export const DEFAULT_PLAYER_SIZE = 1.5
 
 export const MIN_ITEM_SIZE = 0.5
 export const MAX_ITEM_SIZE = 2.5
@@ -25,10 +31,18 @@ export const TEAM_COLORS = {
   keeper: '#facc15',
 } as const
 
+function player(color: string, shape: PlayerShape): NewItem {
+  return { type: 'player', color, shape, size: DEFAULT_PLAYER_SIZE }
+}
+
 export const ITEM_TEMPLATES: ItemTemplate[] = [
-  { key: 'player-red', name: 'Spieler Rot', item: { type: 'player', color: TEAM_COLORS.red } },
-  { key: 'player-blue', name: 'Spieler Blau', item: { type: 'player', color: TEAM_COLORS.blue } },
-  { key: 'keeper', name: 'Torwart', item: { type: 'player', color: TEAM_COLORS.keeper } },
+  { key: 'player-red', name: 'Spieler Rot', item: player(TEAM_COLORS.red, 'circle') },
+  { key: 'player-blue', name: 'Spieler Blau', item: player(TEAM_COLORS.blue, 'circle') },
+  { key: 'keeper', name: 'Torwart', item: player(TEAM_COLORS.keeper, 'circle') },
+  { key: 'triangle-red', name: 'Dreieck Rot', item: player(TEAM_COLORS.red, 'triangle') },
+  { key: 'triangle-blue', name: 'Dreieck Blau', item: player(TEAM_COLORS.blue, 'triangle') },
+  { key: 'cross-red', name: 'Kreuz Rot', item: player(TEAM_COLORS.red, 'cross') },
+  { key: 'cross-blue', name: 'Kreuz Blau', item: player(TEAM_COLORS.blue, 'cross') },
   { key: 'ball', name: 'Ball', item: { type: 'ball', color: '#ffffff' } },
   { key: 'cone', name: 'Hütchen', item: { type: 'cone', color: '#f97316' } },
   { key: 'pole', name: 'Stange', item: { type: 'pole', color: '#facc15' } },
@@ -38,7 +52,7 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
 
 /** Approximate size of each item type in meters (used for previews and hit areas). */
 export const ITEM_EXTENT: Record<ItemType, number> = {
-  player: 2.4,
+  player: 3.4,
   ball: 1.2,
   cone: 1.1,
   pole: 0.7,

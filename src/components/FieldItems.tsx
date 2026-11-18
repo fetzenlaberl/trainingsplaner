@@ -85,6 +85,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
                 color={item.color}
                 label={item.label}
                 rotation={item.rotation}
+                shape={item.shape}
               />
             </Group>
           </Group>

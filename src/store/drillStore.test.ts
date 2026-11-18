@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
+import { DEFAULT_PLAYER_SIZE, MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
 import {
@@ -24,7 +24,7 @@ describe('items', () => {
   it('adds an item at the given position in meters', () => {
     const id = store().addItem({ type: 'cone', color: ORANGE }, 20.5, 30)
     expect(items()).toEqual([
-      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, size: 1, color: ORANGE, label: '' },
+      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, size: 1, shape: 'circle', color: ORANGE, label: '' },
     ])
   })
 
@@ -264,7 +264,7 @@ describe('load / new', () => {
     scenes: [
       {
         durationMs: 2000,
-        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, color: '#dc2626', label: '1' }],
+        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, shape: 'circle', color: '#dc2626', label: '1' }],
         lines: [],
       },
     ],
@@ -299,9 +299,9 @@ describe('title, description and category', () => {
 describe('item size', () => {
   it('sets the size of one item, clamped to the allowed range, with undo', () => {
     const id = store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
-    expect(items()[0].size).toBe(1)
-    store().setItemSize(id, 1.5)
-    expect(items()[0].size).toBe(1.5)
+    expect(items()[0].size).toBe(DEFAULT_PLAYER_SIZE)
+    store().setItemSize(id, 2)
+    expect(items()[0].size).toBe(2)
     store().setItemSize(id, 10)
     expect(items()[0].size).toBe(MAX_ITEM_SIZE)
     store().setItemSize(id, 0)
@@ -316,13 +316,44 @@ describe('item size', () => {
     store().addScene()
     store().setAllItemSizes(2)
     expect(items().map((i) => i.size)).toEqual([2, 2])
-    expect(store().scenes[0].items.map((i) => i.size)).toEqual([1, 1])
+    expect(store().scenes[0].items.map((i) => i.size)).toEqual([DEFAULT_PLAYER_SIZE, 1])
+  })
+
+  it('starts players at 150 % and other items at 100 %', () => {
+    store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    store().addItem({ type: 'ball', color: '#fff' }, 0, 0)
+    expect(items().map((i) => i.size)).toEqual([1.5, 1])
+  })
+})
+
+describe('player shapes', () => {
+  it('starts as a circle unless a shape is given', () => {
+    store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    store().addItem({ type: 'player', color: TEAM_COLORS.red, shape: 'triangle' }, 0, 0)
+    expect(items().map((i) => i.shape)).toEqual(['circle', 'triangle'])
+  })
+
+  it('numbers each shape of a color separately', () => {
+    const red = TEAM_COLORS.red
+    store().addItem({ type: 'player', color: red }, 0, 0)
+    store().addItem({ type: 'player', color: red }, 0, 0)
+    store().addItem({ type: 'player', color: red, shape: 'triangle' }, 0, 0)
+    store().addItem({ type: 'player', color: red, shape: 'cross' }, 0, 0)
+    expect(items().map((i) => i.label)).toEqual(['1', '2', '1', '1'])
+  })
+
+  it('changes the shape with undo', () => {
+    const id = store().addItem({ type: 'player', color: TEAM_COLORS.blue }, 0, 0)
+    store().setItemShape(id, 'cross')
+    expect(items()[0].shape).toBe('cross')
+    store().undo()
+    expect(items()[0].shape).toBe('circle')
   })
 })
 
 describe('helpers', () => {
   it('nextPlayerNumber continues after the highest number of that color', () => {
-    const base = { type: 'player' as const, x: 0, y: 0, rotation: 0, size: 1 }
+    const base = { type: 'player' as const, x: 0, y: 0, rotation: 0, size: 1, shape: 'circle' as const }
     const items = [
       { ...base, id: 'a', color: 'red', label: '7' },
       { ...base, id: 'b', color: 'red', label: 'TW' },

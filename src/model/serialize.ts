@@ -1,7 +1,7 @@
 import { FIELD_TYPES, type FieldType } from '../field/dimensions'
-import { clampItemSize } from '../items/palette'
+import { clampItemSize, PLAYER_SHAPES } from '../items/palette'
 import { legacyBendToPoints } from '../lines/geometry'
-import type { Category, Drill, Item, ItemType, Line, LineType, Point, Scene } from './types'
+import type { Category, Drill, Item, ItemType, Line, LineType, PlayerShape, Point, Scene } from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 2: lines with any number of waypoints (version 1 had start, end and one control point).
@@ -116,6 +116,8 @@ function parseItem(value: unknown): Item {
     !isNumber(value.rotation) ||
     // Size was added later; older files have none.
     !(value.size === undefined || isNumber(value.size)) ||
+    // Shape was added later; older files only have circles.
+    !(value.shape === undefined || PLAYER_SHAPES.includes(value.shape as PlayerShape)) ||
     typeof value.color !== 'string' ||
     typeof value.label !== 'string'
   ) {
@@ -128,6 +130,7 @@ function parseItem(value: unknown): Item {
     y: value.y,
     rotation: value.rotation,
     size: value.size === undefined ? 1 : clampItemSize(value.size),
+    shape: (value.shape as PlayerShape | undefined) ?? 'circle',
     color: value.color,
     label: value.label,
   }

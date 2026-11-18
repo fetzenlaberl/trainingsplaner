@@ -2,6 +2,9 @@ import type { FieldType } from '../field/dimensions'
 
 export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text'
 
+/** How a player is drawn; other item types ignore it. */
+export type PlayerShape = 'circle' | 'triangle' | 'cross'
+
 export interface Item {
   id: string
   type: ItemType
@@ -12,6 +15,7 @@ export interface Item {
   rotation: number
   /** Display size factor, 1 = default size */
   size: number
+  shape: PlayerShape
   color: string
   label: string
 }

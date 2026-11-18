@@ -84,7 +84,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
               <span className="pointer-events-none flex h-10 items-center justify-center">
                 <ItemPreview
                   item={template.item}
-                  scale={ICON_SIZE_PX / ITEM_EXTENT[template.item.type]}
+                  scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
                 />
               </span>
               {template.name}

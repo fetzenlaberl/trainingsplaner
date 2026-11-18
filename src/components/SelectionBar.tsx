@@ -1,16 +1,24 @@
 import { useRef } from 'react'
-import { ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, ROTATABLE_TYPES } from '../items/palette'
+import { ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_SHAPES, ROTATABLE_TYPES } from '../items/palette'
+import type { PlayerShape } from '../model/types'
 import { currentScene, findElement, isLine, useDrillStore, type DrillContent } from '../store/drillStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
 
-/** Actions for the selected item or line: size, rotate, label, bends, duplicate, delete. */
+const SHAPE_LABELS: Record<PlayerShape, { icon: string; name: string }> = {
+  circle: { icon: '●', name: 'Kreis' },
+  triangle: { icon: '▲', name: 'Dreieck' },
+  cross: { icon: '✕', name: 'Kreuz' },
+}
+
+/** Actions for the selected item or line: size, shape, rotate, label, bends, duplicate, delete. */
 export function SelectionBar() {
   const selected = useDrillStore((s) => findElement(currentScene(s), s.selectedId))
   const rotateItem = useDrillStore((s) => s.rotateItem)
   const setItemSize = useDrillStore((s) => s.setItemSize)
   const setAllItemSizes = useDrillStore((s) => s.setAllItemSizes)
+  const setItemShape = useDrillStore((s) => s.setItemShape)
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
   const setLineSmooth = useDrillStore((s) => s.setLineSmooth)
   const clearLineBends = useDrillStore((s) => s.clearLineBends)
@@ -57,6 +65,26 @@ export function SelectionBar() {
           >
             Auf alle anwenden
           </button>
+        </div>
+      )}
+
+      {!isLine(selected) && selected.type === 'player' && (
+        <div role="group" aria-label="Form" className="flex gap-1 rounded-lg bg-slate-800 p-1">
+          {PLAYER_SHAPES.map((shape) => (
+            <button
+              key={shape}
+              type="button"
+              title={SHAPE_LABELS[shape].name}
+              aria-label={SHAPE_LABELS[shape].name}
+              aria-pressed={selected.shape === shape}
+              onClick={() => setItemShape(selected.id, shape)}
+              className={`min-h-8 min-w-8 rounded-md text-sm ${
+                selected.shape === shape ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {SHAPE_LABELS[shape].icon}
+            </button>
+          ))}
         </div>
       )}
 
