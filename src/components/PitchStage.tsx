@@ -38,6 +38,7 @@ interface PitchStageProps {
 /** Konva stage that fills its container and scales the pitch to fit. */
 export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
+  const pitch = useDrillStore((s) => s.pitch)
   const addLine = useDrillStore((s) => s.addLine)
   const select = useDrillStore((s) => s.select)
   const scenes = useDrillStore((s) => s.scenes)
@@ -186,6 +187,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           <Layer>
             <FieldView
               fieldType={fieldType}
+              pitch={pitch}
               items={items}
               lines={lines}
               viewport={viewport}

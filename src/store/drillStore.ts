@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
+import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
 import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene } from '../model/types'
@@ -8,6 +9,7 @@ import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene }
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
   fieldType: FieldType
+  pitch: PitchStyle
   scenes: Scene[]
   sceneIndex: number
 }
@@ -31,6 +33,8 @@ export interface DrillState extends DrillContent {
   setDescription: (description: string) => void
   setCategory: (category: Category | null) => void
   setFieldType: (fieldType: FieldType) => void
+  setPitchColor: (color: PitchColor) => void
+  setGrid: (grid: GridType) => void
   select: (id: string | null) => void
 
   selectScene: (index: number) => void
@@ -115,13 +119,14 @@ export function findElement(
 
 /** Builds the drill (as saved to a file) from the current state. */
 export function currentDrill(
-  state: Pick<DrillState, 'title' | 'description' | 'category' | 'fieldType' | 'scenes'>,
+  state: Pick<DrillState, 'title' | 'description' | 'category' | 'fieldType' | 'pitch' | 'scenes'>,
 ): Drill {
   return {
     title: state.title,
     description: state.description,
     category: state.category,
     fieldType: state.fieldType,
+    pitch: state.pitch,
     scenes: state.scenes,
   }
 }
@@ -131,7 +136,7 @@ export function normalizeAngle(degrees: number): number {
 }
 
 function contentOf(state: DrillContent): DrillContent {
-  return { fieldType: state.fieldType, scenes: state.scenes, sceneIndex: state.sceneIndex }
+  return { fieldType: state.fieldType, pitch: state.pitch, scenes: state.scenes, sceneIndex: state.sceneIndex }
 }
 
 /** History fields for a state change that should be undoable. */
@@ -172,6 +177,7 @@ function stateFromDrill(drill: Drill) {
     description: drill.description,
     category: drill.category,
     fieldType: drill.fieldType,
+    pitch: drill.pitch,
     scenes: drill.scenes.length > 0 ? drill.scenes : emptyDrill().scenes,
     sceneIndex: 0,
     selectedId: null,
@@ -188,6 +194,10 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   setCategory: (category) => set({ category }),
   setFieldType: (fieldType) =>
     set((s) => (s.fieldType === fieldType ? {} : { ...recorded(s), fieldType })),
+  setPitchColor: (color) =>
+    set((s) => (s.pitch.color === color ? {} : { ...recorded(s), pitch: { ...s.pitch, color } })),
+  setGrid: (grid) =>
+    set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
   select: (selectedId) => set({ selectedId }),
 
   selectScene: (index) =>
@@ -399,7 +409,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   snapshot: () => contentOf(get()),
   pushHistory: (before) =>
     set((s) => {
-      const changed = before.fieldType !== s.fieldType || before.scenes !== s.scenes
+      const changed =
+        before.fieldType !== s.fieldType || before.pitch !== s.pitch || before.scenes !== s.scenes
       return changed ? recorded(s, before) : {}
     }),
 

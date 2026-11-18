@@ -5,6 +5,7 @@ import { ItemSidebar } from './components/ItemSidebar'
 import { LibraryView } from './components/LibraryView'
 import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
+import { PitchStyleMenu } from './components/PitchStyleMenu'
 import { SessionsView } from './components/SessionsView'
 import { Timeline } from './components/Timeline'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -47,7 +48,8 @@ export default function App() {
         {view === 'editor' && (
           <>
             <FileBar />
-            <div className="ml-auto">
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <PitchStyleMenu />
               <FieldTypeSwitcher />
             </div>
           </>

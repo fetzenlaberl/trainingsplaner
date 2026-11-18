@@ -1,4 +1,5 @@
 import type { FieldType } from '../field/dimensions'
+import type { PitchStyle } from '../field/pitchStyle'
 
 export type ItemType = 'player' | 'ball' | 'cone' | 'goal' | 'pole' | 'text'
 
@@ -57,5 +58,7 @@ export interface Drill {
   description: string
   category: Category | null
   fieldType: FieldType
+  /** Pitch color and grid overlay */
+  pitch: PitchStyle
   scenes: Scene[]
 }

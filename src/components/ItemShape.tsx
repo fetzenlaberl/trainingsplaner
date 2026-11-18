@@ -1,5 +1,8 @@
 import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
+import { useContext } from 'react'
+import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
+import { PitchColorContext } from './pitchColorContext'
 import type { Item } from '../model/types'
 
 const PLAYER_RADIUS = 1
@@ -17,6 +20,8 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'>
 
 /** Draws an item centered at (0, 0) in meter units. */
 export function ItemShape({ type, color, label, rotation, shape }: ShapeProps) {
+  const pitchColor = useContext(PitchColorContext)
+  const onWhite = pitchColor === 'white'
   switch (type) {
     case 'player':
       return <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} />
@@ -66,19 +71,19 @@ export function ItemShape({ type, color, label, rotation, shape }: ShapeProps) {
             y={-halfW}
             width={GOAL_DEPTH}
             height={GOAL_WIDTH}
-            fill="rgba(255,255,255,0.15)"
+            fill={onWhite ? 'rgba(31,41,55,0.06)' : 'rgba(255,255,255,0.15)'}
           />
           {netLines.map((points, i) => (
-            <Line key={i} points={points} stroke="rgba(255,255,255,0.6)" strokeWidth={0.04} />
+            <Line key={i} points={points} stroke={onWhite ? 'rgba(31,41,55,0.45)' : 'rgba(255,255,255,0.6)'} strokeWidth={0.04} />
           ))}
           <Line
             points={[0, -halfW, -GOAL_DEPTH, -halfW, -GOAL_DEPTH, halfW, 0, halfW]}
-            stroke={color}
+            stroke={displayColor(color, pitchColor)}
             strokeWidth={0.1}
             lineJoin="round"
           />
           {/* Posts and crossbar */}
-          <Line points={[0, -halfW, 0, halfW]} stroke={color} strokeWidth={0.25} lineCap="round" />
+          <Line points={[0, -halfW, 0, halfW]} stroke={displayColor(color, pitchColor)} strokeWidth={0.25} lineCap="round" />
         </Group>
       )
     }
@@ -93,9 +98,9 @@ export function ItemShape({ type, color, label, rotation, shape }: ShapeProps) {
           align="center"
           fontSize={TEXT_SIZE}
           fontStyle="bold"
-          fill={color}
+          fill={displayColor(color, pitchColor)}
           shadowColor="#000000"
-          shadowBlur={0.3}
+          shadowBlur={onWhite ? 0 : 0.3}
           shadowOpacity={0.6}
         />
       )

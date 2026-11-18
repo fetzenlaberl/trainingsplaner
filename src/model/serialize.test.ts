@@ -15,6 +15,7 @@ const drill: Drill = {
   description: 'Flanke und Abschluss',
   category: 'shooting',
   fieldType: 'half',
+  pitch: { color: 'white', grid: 'positional' },
   scenes: [
     {
       durationMs: 2000,
@@ -106,6 +107,13 @@ describe('serializeDrill / parseDrill', () => {
     expect(straight.points).toHaveLength(2)
   })
 
+  it('reads older files without pitch style as green pitch without grid', () => {
+    const text = tamper((d) => {
+      delete d.pitch
+    })
+    expect(parseDrill(text).pitch).toEqual({ color: 'grass', grid: 'none' })
+  })
+
   it('reads older files without player shape as circles', () => {
     const text = tamper((d) => {
       delete d.scenes[0].items[0].shape
@@ -159,6 +167,8 @@ describe('parseDrill rejects invalid files', () => {
     ['missing rotation', (d) => delete d.scenes[0].items[0].rotation],
     ['size not a number', (d) => (d.scenes[0].items[0].size = 'groß')],
     ['unknown player shape', (d) => (d.scenes[0].items[0].shape = 'star')],
+    ['unknown pitch color', (d) => (d.pitch.color = 'pink')],
+    ['unknown grid', (d) => (d.pitch.grid = 'hexagons')],
     ['unknown line type', (d) => (d.scenes[0].lines[0].type = 'header')],
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],
     ['broken waypoint', (d) => (d.scenes[0].lines[0].points[1] = { x: 1 })],

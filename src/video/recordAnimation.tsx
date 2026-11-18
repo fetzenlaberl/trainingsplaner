@@ -5,6 +5,7 @@ import { Layer, Stage } from 'react-konva'
 import { frameAt, totalDuration } from '../animation/interpolate'
 import { FieldView } from '../components/FieldView'
 import { getViewport, type FieldType } from '../field/dimensions'
+import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import {
   animationTimeAt,
@@ -20,6 +21,7 @@ export class VideoExportError extends Error {}
 
 interface RecordOptions {
   fieldType: FieldType
+  pitch: PitchStyle
   scenes: Scene[]
   speed: number
   /** Called with 0..1 */
@@ -33,6 +35,7 @@ interface RecordOptions {
  */
 export async function recordAnimation({
   fieldType,
+  pitch,
   scenes,
   speed,
   onProgress,
@@ -79,6 +82,7 @@ export async function recordAnimation({
           <Layer>
             <FieldView
               fieldType={fieldType}
+              pitch={pitch}
               items={frame.items}
               lines={frame.lines}
               viewport={viewport}

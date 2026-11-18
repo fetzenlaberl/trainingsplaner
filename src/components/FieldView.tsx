@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react'
 import { Group } from 'react-konva'
 import type { FieldType, Rect as ViewRect } from '../field/dimensions'
+import type { PitchStyle } from '../field/pitchStyle'
 import type { Item, Line } from '../model/types'
 import { FieldItems } from './FieldItems'
 import { FieldLines } from './FieldLines'
 import { Pitch } from './Pitch'
+import { PitchColorContext } from './pitchColorContext'
 
 interface FieldViewProps {
   fieldType: FieldType
+  pitch: PitchStyle
   items: (Item & { opacity?: number })[]
   lines: Line[]
   viewport: ViewRect
@@ -25,6 +28,7 @@ interface FieldViewProps {
 /** Pitch, lines and items, converted from meters to pixels. Used on screen and for export. */
 export function FieldView({
   fieldType,
+  pitch,
   items,
   lines,
   viewport,
@@ -45,10 +49,12 @@ export function FieldView({
       clipWidth={viewport.width}
       clipHeight={viewport.height}
     >
-      <Pitch fieldType={fieldType} viewport={viewport} scale={scale} />
-      <FieldLines lines={lines} scale={scale} interactive={interactive} />
-      <FieldItems items={items} viewport={viewport} scale={scale} interactive={interactive} />
-      {children}
+      <PitchColorContext.Provider value={pitch.color}>
+        <Pitch fieldType={fieldType} pitch={pitch} viewport={viewport} scale={scale} />
+        <FieldLines lines={lines} scale={scale} interactive={interactive} />
+        <FieldItems items={items} viewport={viewport} scale={scale} interactive={interactive} />
+        {children}
+      </PitchColorContext.Provider>
     </Group>
   )
 }

@@ -9,7 +9,10 @@ import {
   trimEnd,
   wavePolyline,
 } from '../lines/geometry'
+import { useContext } from 'react'
+import { displayColor } from '../field/pitchStyle'
 import type { Line } from '../model/types'
+import { PitchColorContext } from './pitchColorContext'
 
 type LineShapeProps = Pick<Line, 'type' | 'points' | 'smooth' | 'color'> & {
   /** Pixels per meter, used to keep lines readable at small sizes */
@@ -18,7 +21,8 @@ type LineShapeProps = Pick<Line, 'type' | 'points' | 'smooth' | 'color'> & {
 }
 
 /** Draws a pass, run, dribble or shot line in meter units, with an arrowhead at the end. */
-export function LineShape({ type, points, smooth, color, scale, opacity = 1 }: LineShapeProps) {
+export function LineShape({ type, points, smooth, color: chosenColor, scale, opacity = 1 }: LineShapeProps) {
+  const color = displayColor(chosenColor, useContext(PitchColorContext))
   const path = samplePath(points, smooth)
   const end = path[path.length - 1]
   const total = polylineLength(path)

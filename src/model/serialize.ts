@@ -1,4 +1,12 @@
 import { FIELD_TYPES, type FieldType } from '../field/dimensions'
+import {
+  DEFAULT_PITCH_STYLE,
+  GRID_ORDER,
+  PITCH_COLOR_ORDER,
+  type GridType,
+  type PitchColor,
+  type PitchStyle,
+} from '../field/pitchStyle'
 import { clampItemSize, PLAYER_SHAPES } from '../items/palette'
 import { legacyBendToPoints } from '../lines/geometry'
 import type { Category, Drill, Item, ItemType, Line, LineType, PlayerShape, Point, Scene } from './types'
@@ -30,6 +38,7 @@ export function emptyDrill(): Drill {
     description: '',
     category: null,
     fieldType: 'full',
+    pitch: { ...DEFAULT_PITCH_STYLE },
     scenes: [{ durationMs: DEFAULT_SCENE_DURATION_MS, items: [], lines: [] }],
   }
 }
@@ -75,6 +84,7 @@ export function drillFromData(data: unknown): Drill {
     description: data.description,
     category: (data.category as Category | undefined) ?? null,
     fieldType: data.fieldType as FieldType,
+    pitch: parsePitchStyle(data.pitch),
     scenes: data.scenes.map(parseScene),
   }
 }
@@ -99,6 +109,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
+}
+
+/** Pitch style was added later; older files get the default green pitch without grid. */
+function parsePitchStyle(value: unknown): PitchStyle {
+  if (value === undefined) return { ...DEFAULT_PITCH_STYLE }
+  if (
+    !isRecord(value) ||
+    !PITCH_COLOR_ORDER.includes(value.color as PitchColor) ||
+    !GRID_ORDER.includes(value.grid as GridType)
+  ) {
+    throw corrupt()
+  }
+  return { color: value.color as PitchColor, grid: value.grid as GridType }
 }
 
 function parsePoint(value: unknown): Point {

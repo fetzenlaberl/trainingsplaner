@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Layer, Stage } from 'react-konva'
 import { FieldView } from '../components/FieldView'
 import { getViewport, type FieldType } from '../field/dimensions'
+import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { EXPORT_SCALE, exportSize } from './layout'
@@ -10,7 +11,7 @@ import { EXPORT_SCALE, exportSize } from './layout'
 /** Renders the scene shown in the editor (see renderSceneToCanvas). */
 export function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanvasElement> {
   const state = useDrillStore.getState()
-  return renderSceneToCanvas(state.fieldType, currentScene(state), pxPerMeter)
+  return renderSceneToCanvas(state.fieldType, state.pitch, currentScene(state), pxPerMeter)
 }
 
 /**
@@ -19,6 +20,7 @@ export function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanv
  */
 export async function renderSceneToCanvas(
   fieldType: FieldType,
+  pitch: PitchStyle,
   { items, lines }: Scene,
   pxPerMeter = EXPORT_SCALE,
 ): Promise<HTMLCanvasElement> {
@@ -46,6 +48,7 @@ export async function renderSceneToCanvas(
           <Layer>
             <FieldView
               fieldType={fieldType}
+              pitch={pitch}
               items={items}
               lines={lines}
               viewport={viewport}

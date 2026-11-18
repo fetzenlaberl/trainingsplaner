@@ -19,11 +19,12 @@ export async function exportVideo(
   signal: AbortSignal,
 ): Promise<void> {
   // Take a copy of the drill now, so edits during the export do not affect the video.
-  const { title, fieldType, scenes } = useDrillStore.getState()
+  const { title, fieldType, pitch, scenes } = useDrillStore.getState()
   const { speed } = usePlaybackStore.getState()
 
   const recording = await recordAnimation({
     fieldType,
+    pitch,
     scenes,
     speed,
     signal,

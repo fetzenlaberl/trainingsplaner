@@ -261,6 +261,7 @@ describe('load / new', () => {
     description: 'Aufwärmen',
     category: 'warmup',
     fieldType: 'penalty',
+    pitch: { color: 'darkGreen', grid: 'thirds' },
     scenes: [
       {
         durationMs: 2000,
@@ -323,6 +324,24 @@ describe('item size', () => {
     store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
     store().addItem({ type: 'ball', color: '#fff' }, 0, 0)
     expect(items().map((i) => i.size)).toEqual([1.5, 1])
+  })
+})
+
+describe('pitch style', () => {
+  it('changes pitch color and grid with undo', () => {
+    store().setPitchColor('white')
+    store().setGrid('positional')
+    expect(store().pitch).toEqual({ color: 'white', grid: 'positional' })
+    store().undo()
+    expect(store().pitch.grid).toBe('none')
+    store().undo()
+    expect(store().pitch.color).toBe('grass')
+  })
+
+  it('ignores setting the same value again', () => {
+    store().setPitchColor('grass')
+    store().setGrid('none')
+    expect(store().past).toEqual([])
   })
 })
 
