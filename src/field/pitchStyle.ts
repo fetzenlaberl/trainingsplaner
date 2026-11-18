@@ -1,4 +1,5 @@
 import { PITCH } from './dimensions'
+import type { Orientation } from './orientation'
 
 export type PitchColor = 'grass' | 'grassPlain' | 'darkGreen' | 'lightGreen' | 'blue' | 'grey' | 'white'
 
@@ -8,9 +9,16 @@ export type GridType = 'none' | 'thirds' | 'lanes' | 'positional' | 'squares5' |
 export interface PitchStyle {
   color: PitchColor
   grid: GridType
+  /** Shown lying (landscape) or upright (portrait); also used for exports */
+  orientation: Orientation
 }
 
-export const DEFAULT_PITCH_STYLE: PitchStyle = { color: 'grass', grid: 'none' }
+export const DEFAULT_PITCH_STYLE: PitchStyle = { color: 'grass', grid: 'none', orientation: 'landscape' }
+
+export const ORIENTATION_LABELS: Record<Orientation, string> = {
+  landscape: 'Querformat',
+  portrait: 'Hochformat',
+}
 
 interface ColorScheme {
   label: string

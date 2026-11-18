@@ -6,6 +6,7 @@ import { zoneGoalPositions } from '../items/zones'
 import type { Zone } from '../model/types'
 import { GoalShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
+import { ViewRotationContext } from './viewRotationContext'
 
 type ZoneShapeProps = Pick<
   Zone,
@@ -31,6 +32,9 @@ export function ZoneShape({
   const pitchColor = useContext(PitchColorContext)
   const color = displayColor(chosenColor, pitchColor)
   const fill = displayColor(chosenFill, pitchColor)
+  // In portrait the label turns back upright; its box then spans the zone's height.
+  const upright = -useContext(ViewRotationContext)
+  const labelWidth = upright === 0 ? width : height
   const strokeWidth = Math.max(0.15, 1.5 / scale)
   // Fill and outline are separate shapes: only the fill is see-through.
   const outline = {
@@ -40,7 +44,7 @@ export function ZoneShape({
   }
   const halfW = width / 2
   const halfH = height / 2
-  const fontSize = Math.min(2, height / 3, width / Math.max(label.length * 0.6, 1))
+  const fontSize = Math.min(2, (upright === 0 ? height : width) / 3, labelWidth / Math.max(label.length * 0.6, 1))
 
   return (
     <>
@@ -77,8 +81,9 @@ export function ZoneShape({
       {label && (
         <Text
           text={label}
-          width={width}
-          offsetX={halfW}
+          rotation={upright}
+          width={labelWidth}
+          offsetX={labelWidth / 2}
           // Inside a triangle the label sits lower, where there is more room.
           y={shape === 'triangle' ? halfH / 3 - fontSize / 2 : -fontSize / 2}
           align="center"

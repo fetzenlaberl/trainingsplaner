@@ -16,7 +16,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek und Einheiten)
 
 ## Datenmodell (Kern)
-- `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Feld-Darstellung (Farbe, Raster), Liste von `Scene`
+- `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Feld-Darstellung (Farbe, Raster, Ausrichtung quer/hoch; hoch = Ansicht um -90° gedreht, Daten bleiben unverändert), Liste von `Scene`
 - `Scene`: Dauer in ms, Liste von `Item`-Zuständen, Liste von `Line`, Liste von `Zone`
 - `Zone` (Feldmarkierung): id, Form (rect | triangle | ellipse), Mittelpunkt x/y, Breite, Höhe (Meter), Drehung, Randfarbe, Füllfarbe, Deckkraft der Füllung, gestrichelt ja/nein, Beschriftung, eingebaute Minitore (0 | 4 | 6, je Hälfte an den kurzen Seiten = Kleinspielfeld); behält die id über Szenen und wird interpoliert
 - `Item`: id, Typ (player | ball | cone | goal | minigoal | pole | slalom | dummy | wall | ladder | text | textbox), x, y, Drehung, Größe (Faktor, 1 = Standard; Spieler starten mit 1,5), Form (nur Spieler: Kreis | Dreieck | Kreuz), Farbe (beim Textfeld: Hintergrund), Beschriftung (Nummer bzw. Text), Name (Namensschild unter dem Spieler), Hervorheben (Leuchtrahmen)

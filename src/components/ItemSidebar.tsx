@@ -19,6 +19,7 @@ interface DragState {
   clientX: number
   clientY: number
   scale: number
+  rotation: number
 }
 
 interface ItemSidebarProps {
@@ -49,6 +50,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       clientX: e.clientX,
       clientY: e.clientY,
       scale: dropTargetRef.current?.scale ?? FALLBACK_SCALE,
+      rotation: dropTargetRef.current?.rotation ?? 0,
     })
 
     const onMove = (ev: PointerEvent) =>
@@ -124,7 +126,8 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       {drag && (
         <div
           className="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 opacity-80"
-          style={{ left: drag.clientX, top: drag.clientY }}
+          // The preview turns with the field, so it looks like the object will after dropping.
+          style={{ left: drag.clientX, top: drag.clientY, rotate: `${drag.rotation}deg` }}
         >
           {drag.dragged.kind === 'item' ? (
             <ItemPreview item={drag.dragged.template.item} scale={drag.scale} />

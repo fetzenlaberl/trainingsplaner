@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
+import type { Orientation } from '../field/orientation'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import {
@@ -42,6 +43,7 @@ export interface DrillState extends DrillContent {
   setFieldType: (fieldType: FieldType) => void
   setPitchColor: (color: PitchColor) => void
   setGrid: (grid: GridType) => void
+  setOrientation: (orientation: Orientation) => void
   select: (id: string | null) => void
 
   selectScene: (index: number) => void
@@ -226,6 +228,10 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => (s.pitch.color === color ? {} : { ...recorded(s), pitch: { ...s.pitch, color } })),
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
+  setOrientation: (orientation) =>
+    set((s) =>
+      s.pitch.orientation === orientation ? {} : { ...recorded(s), pitch: { ...s.pitch, orientation } },
+    ),
   select: (selectedId) => set({ selectedId }),
 
   selectScene: (index) =>

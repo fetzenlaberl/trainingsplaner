@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Layer, Stage, Transformer } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
+import { fromView, viewRect, viewRotation } from '../field/orientation'
 import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
 import { MIN_ZONE_SIZE } from '../items/zones'
@@ -31,6 +32,8 @@ export interface DropTarget {
   toMeters: (clientX: number, clientY: number) => { x: number; y: number } | null
   /** Current pixels per meter */
   scale: number
+  /** Screen rotation of the field in degrees (portrait: -90) */
+  rotation: number
 }
 
 interface PitchStageProps {
@@ -60,7 +63,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   /** Size (meters) shown while a zone is being resized */
   const [resizeInfo, setResizeInfo] = useState<{ width: number; height: number } | null>(null)
   // Zoom belongs to one field type; switching the field type shows the whole field again.
-  const [zoomState, setZoomState] = useState<{ fieldType: string; view: ViewState } | null>(null)
+  const [zoomState, setZoomState] = useState<{ key: string; view: ViewState } | null>(null)
   const latestRef = useRef<ViewGestureState | null>(null)
 
   useEffect(() => {
@@ -77,11 +80,15 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   useEffect(() => () => cleanupRef.current?.(), [])
 
   const viewport = getViewport(fieldType)
-  const baseLayout = fitViewport(viewport, size.width, size.height, PADDING)
-  const zoomCtx: ZoomContext = { viewport, container: size, baseScale: baseLayout.scale }
-  const view = zoomState?.fieldType === fieldType ? zoomState.view : defaultView(viewport)
+  // Fitting and zooming work on the (possibly rotated) view of the field.
+  const vr = viewRect(viewport, pitch.orientation)
+  const baseLayout = fitViewport(vr, size.width, size.height, PADDING)
+  const zoomCtx: ZoomContext = { viewport: vr, container: size, baseScale: baseLayout.scale }
+  // Zoom belongs to one field type and orientation; switching shows the whole field again.
+  const zoomKey = `${fieldType}-${pitch.orientation}`
+  const view = zoomState?.key === zoomKey ? zoomState.view : defaultView(vr)
   const layout = baseLayout.scale > 0 ? zoomedLayout(view, zoomCtx) : baseLayout
-  const setView = (next: ViewState) => setZoomState({ fieldType, view: next })
+  const setView = (next: ViewState) => setZoomState({ key: zoomKey, view: next })
 
   useEffect(() => {
     latestRef.current = { view, ctx: zoomCtx }
@@ -117,12 +124,13 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     const el = containerRef.current
     if (!el || layout.scale <= 0) return null
     const rect = el.getBoundingClientRect()
-    return pixelsToMeters(layout, viewport, clientX - rect.left, clientY - rect.top)
+    return fromView(pixelsToMeters(layout, vr, clientX - rect.left, clientY - rect.top), pitch.orientation)
   }
 
   useEffect(() => {
     dropTargetRef.current = {
       scale: layout.scale,
+      rotation: viewRotation(pitch.orientation),
       toMeters: (clientX, clientY) => {
         const pos = clientToMeters(clientX, clientY)
         return pos && isInsideRect(viewport, pos.x, pos.y) ? pos : null
@@ -138,7 +146,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       const latest = latestRef.current
       if (!latest) return
       setZoomState({
-        fieldType,
+        key: zoomKey,
         view: panBy(latest.view, latest.ctx, ev.clientX - last.x, ev.clientY - last.y),
       })
       last = { x: ev.clientX, y: ev.clientY }
@@ -285,7 +293,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           zoom={view.zoom}
           onZoomIn={() => zoomByButton(BUTTON_ZOOM_FACTOR)}
           onZoomOut={() => zoomByButton(1 / BUTTON_ZOOM_FACTOR)}
-          onFit={() => setView(defaultView(viewport))}
+          onFit={() => setView(defaultView(vr))}
         />
       )}
     </div>

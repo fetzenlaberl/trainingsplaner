@@ -1,4 +1,5 @@
 import { FIELD_TYPES, type FieldType } from '../field/dimensions'
+import type { Orientation } from '../field/orientation'
 import {
   DEFAULT_PITCH_STYLE,
   GRID_ORDER,
@@ -157,7 +158,15 @@ function parsePitchStyle(value: unknown): PitchStyle {
   ) {
     throw corrupt()
   }
-  return { color: value.color as PitchColor, grid: value.grid as GridType }
+  // Orientation was added later; older files are landscape.
+  if (!(value.orientation === undefined || value.orientation === 'landscape' || value.orientation === 'portrait')) {
+    throw corrupt()
+  }
+  return {
+    color: value.color as PitchColor,
+    grid: value.grid as GridType,
+    orientation: (value.orientation as Orientation | undefined) ?? 'landscape',
+  }
 }
 
 function parsePoint(value: unknown): Point {

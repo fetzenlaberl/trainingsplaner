@@ -6,6 +6,7 @@ import { contrastTextColor } from '../items/colors'
 import { MINIGOAL } from '../items/equipment'
 import { DummyShape, GoalShape, LadderShape, PoleShape, SlalomShape, WallShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
+import { ViewRotationContext } from './viewRotationContext'
 import type { Item } from '../model/types'
 
 const PLAYER_RADIUS = 1
@@ -33,6 +34,7 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'> 
 /** Draws an item centered at (0, 0) in meter units. */
 export function ItemShape({ type, color, label, rotation, shape, name = '', glow = 0 }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
+  const upright = -useContext(ViewRotationContext)
   const onWhite = pitchColor === 'white'
   switch (type) {
     case 'player':
@@ -44,7 +46,7 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
         </Group>
       )
     case 'textbox':
-      return <TextBox text={label} background={color} rotation={rotation} />
+      return <TextBox text={label} background={color} rotation={rotation + upright} />
     case 'ball':
       return (
         <Group>
@@ -93,7 +95,7 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return (
         <Text
           text={label}
-          rotation={rotation}
+          rotation={rotation + upright}
           width={TEXT_BOX_WIDTH}
           offsetX={TEXT_BOX_WIDTH / 2}
           offsetY={TEXT_SIZE / 2}
@@ -127,6 +129,7 @@ function FacingMarker({ color, rotation, distance }: { color: string; rotation: 
 }
 
 function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'type'>) {
+  const upright = -useContext(ViewRotationContext)
   if (shape === 'triangle') {
     // The tip of the triangle shows the facing direction, so no extra marker.
     return (
@@ -140,7 +143,9 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
           strokeWidth={0.15}
           lineJoin="round"
         />
-        <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 1.6} />
+        <Group rotation={upright}>
+          <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 1.6} />
+        </Group>
       </Group>
     )
   }
@@ -159,16 +164,18 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
           <Line key={`arm-${i}`} points={points} stroke={color} strokeWidth={0.36} lineCap="round" />
         ))}
         {/* The number sits next to the cross, it would not fit inside. */}
-        <Text
-          text={label}
-          x={CROSS_HALF * 0.7}
-          y={CROSS_HALF * 0.55}
-          fontSize={0.85}
-          fontStyle="bold"
-          fill={color}
-          stroke="#ffffff"
-          strokeWidth={0.06}
-        />
+        <Group rotation={upright}>
+          <Text
+            text={label}
+            x={CROSS_HALF * 0.7}
+            y={CROSS_HALF * 0.55}
+            fontSize={0.85}
+            fontStyle="bold"
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.06}
+          />
+        </Group>
       </Group>
     )
   }
@@ -176,7 +183,9 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
     <Group>
       <FacingMarker color={color} rotation={rotation} distance={PLAYER_RADIUS + 0.3} />
       <Circle radius={PLAYER_RADIUS} fill={color} stroke="#ffffff" strokeWidth={0.15} />
-      <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 2} />
+      <Group rotation={upright}>
+        <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 2} />
+      </Group>
     </Group>
   )
 }
@@ -212,12 +221,13 @@ function HighlightRing({ strength }: { strength: number }) {
 
 /** Name tag below a player, for line-ups. Not rotated, so it always reads straight. */
 function NameTag({ name }: { name: string }) {
+  const upright = -useContext(ViewRotationContext)
   // Rough text width: average character is about half the font size wide.
   const width = Math.max(2, name.length * NAME_FONT_SIZE * 0.55 + 0.8)
   const height = NAME_FONT_SIZE + 0.4
   const top = 1.55
   return (
-    <Group listening={false}>
+    <Group listening={false} rotation={upright}>
       <Rect
         x={-width / 2}
         y={top}

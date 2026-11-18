@@ -266,7 +266,7 @@ describe('load / new', () => {
     description: 'Aufwärmen',
     category: 'warmup',
     fieldType: 'penalty',
-    pitch: { color: 'darkGreen', grid: 'thirds' },
+    pitch: { color: 'darkGreen', grid: 'thirds', orientation: 'portrait' },
     scenes: [
       {
         durationMs: 2000,
@@ -449,11 +449,18 @@ describe('pitch style', () => {
   it('changes pitch color and grid with undo', () => {
     store().setPitchColor('white')
     store().setGrid('positional')
-    expect(store().pitch).toEqual({ color: 'white', grid: 'positional' })
+    expect(store().pitch).toEqual({ color: 'white', grid: 'positional', orientation: 'landscape' })
     store().undo()
     expect(store().pitch.grid).toBe('none')
     store().undo()
     expect(store().pitch.color).toBe('grass')
+  })
+
+  it('switches between landscape and portrait with undo', () => {
+    store().setOrientation('portrait')
+    expect(store().pitch.orientation).toBe('portrait')
+    store().undo()
+    expect(store().pitch.orientation).toBe('landscape')
   })
 
   it('ignores setting the same value again', () => {

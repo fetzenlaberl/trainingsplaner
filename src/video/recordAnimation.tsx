@@ -5,6 +5,7 @@ import { Layer, Stage } from 'react-konva'
 import { frameAt, totalDuration } from '../animation/interpolate'
 import { FieldView } from '../components/FieldView'
 import { getViewport, type FieldType } from '../field/dimensions'
+import { viewRect } from '../field/orientation'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import {
@@ -50,7 +51,7 @@ export async function recordAnimation({
   const animationMs = totalDuration(scenes)
   const lengthMs = recordingLength(animationMs, speed)
   const viewport = getViewport(fieldType)
-  const { width, height, pxPerMeter } = videoSize(viewport)
+  const { width, height, pxPerMeter } = videoSize(viewRect(viewport, pitch.orientation))
 
   // Recording canvas: the Konva layer is copied into it, independent of the screen's pixel ratio.
   const output = document.createElement('canvas')

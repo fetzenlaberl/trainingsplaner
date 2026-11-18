@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Layer, Stage } from 'react-konva'
 import { FieldView } from '../components/FieldView'
 import { getViewport, type FieldType } from '../field/dimensions'
+import { viewRect } from '../field/orientation'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import { currentScene, useDrillStore } from '../store/drillStore'
@@ -25,7 +26,7 @@ export async function renderSceneToCanvas(
   pxPerMeter = EXPORT_SCALE,
 ): Promise<HTMLCanvasElement> {
   const viewport = getViewport(fieldType)
-  const { width, height } = exportSize(viewport, pxPerMeter)
+  const { width, height } = exportSize(viewRect(viewport, pitch.orientation), pxPerMeter)
 
   const container = document.createElement('div')
   container.style.position = 'fixed'
