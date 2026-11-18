@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_PLAYER_SIZE, MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
+import { MAX_ZONE_SIZE, MIN_ZONE_SIZE } from '../items/zones'
 import { emptyDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
 import {
@@ -267,6 +268,7 @@ describe('load / new', () => {
         durationMs: 2000,
         items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, shape: 'circle', color: '#dc2626', label: '1' }],
         lines: [],
+        zones: [],
       },
     ],
   }
@@ -324,6 +326,71 @@ describe('item size', () => {
     store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
     store().addItem({ type: 'ball', color: '#fff' }, 0, 0)
     expect(items().map((i) => i.size)).toEqual([1.5, 1])
+  })
+})
+
+describe('zones', () => {
+  const zones = () => currentScene(store()).zones
+
+  it('adds a zone with default size, centered at the drop position', () => {
+    const id = store().addZone('rect', 30, 20)
+    expect(zones()).toEqual([
+      {
+        id,
+        shape: 'rect',
+        x: 30,
+        y: 20,
+        width: 20,
+        height: 15,
+        rotation: 0,
+        color: '#facc15',
+        dashed: false,
+        label: '',
+      },
+    ])
+  })
+
+  it('changes position, size, rotation and style as single undo steps', () => {
+    const id = store().addZone('ellipse', 30, 20)
+    store().updateZone(id, { x: 40, width: 30, height: 12, rotation: -90 })
+    store().updateZone(id, { color: '#2563eb', dashed: true })
+    expect(zones()[0]).toMatchObject({ x: 40, width: 30, height: 12, rotation: 270, color: '#2563eb', dashed: true })
+    store().undo()
+    expect(zones()[0].dashed).toBe(false)
+    store().undo()
+    expect(zones()[0].width).toBe(18)
+  })
+
+  it('keeps zones within the allowed size', () => {
+    const id = store().addZone('rect', 30, 20)
+    store().updateZone(id, { width: 0.1, height: 999 })
+    expect([zones()[0].width, zones()[0].height]).toEqual([MIN_ZONE_SIZE, MAX_ZONE_SIZE])
+  })
+
+  it('copies, finds and deletes zones like other elements', () => {
+    const id = store().addZone('triangle', 30, 20)
+    const copyId = store().insertCopy(zones()[0])
+    expect(zones()[1]).toMatchObject({ x: 30 + COPY_OFFSET, y: 20 + COPY_OFFSET, shape: 'triangle' })
+    expect(store().selectedId).toBe(copyId)
+    store().deleteElement(id)
+    expect(zones().map((z) => z.id)).toEqual([copyId])
+  })
+
+  it('carries zones into a new scene', () => {
+    store().addZone('rect', 30, 20)
+    store().addScene()
+    expect(zones()).toHaveLength(1)
+  })
+
+  it('edits the label live, recorded as one step via pushHistory', () => {
+    const id = store().addZone('rect', 30, 20)
+    const before = store().snapshot()
+    store().setZoneLabel(id, 'Z')
+    store().setZoneLabel(id, 'Zone A')
+    store().pushHistory(before)
+    expect(zones()[0].label).toBe('Zone A')
+    store().undo()
+    expect(zones()[0].label).toBe('')
   })
 })
 

@@ -8,12 +8,26 @@ import {
   type PitchStyle,
 } from '../field/pitchStyle'
 import { clampItemSize, PLAYER_SHAPES } from '../items/palette'
+import { clampZoneSize, ZONE_SHAPES } from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
-import type { Category, Drill, Item, ItemType, Line, LineType, PlayerShape, Point, Scene } from './types'
+import type {
+  Category,
+  Drill,
+  Item,
+  ItemType,
+  Line,
+  LineType,
+  PlayerShape,
+  Point,
+  Scene,
+  Zone,
+  ZoneShape,
+} from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 2: lines with any number of waypoints (version 1 had start, end and one control point).
-export const FILE_VERSION = 2
+// Version 3: zones in scenes.
+export const FILE_VERSION = 3
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -39,7 +53,7 @@ export function emptyDrill(): Drill {
     category: null,
     fieldType: 'full',
     pitch: { ...DEFAULT_PITCH_STYLE },
-    scenes: [{ durationMs: DEFAULT_SCENE_DURATION_MS, items: [], lines: [] }],
+    scenes: [{ durationMs: DEFAULT_SCENE_DURATION_MS, items: [], lines: [], zones: [] }],
   }
 }
 
@@ -190,13 +204,45 @@ function parseLine(value: unknown): Line {
   }
 }
 
+function parseZone(value: unknown): Zone {
+  if (
+    !isRecord(value) ||
+    typeof value.id !== 'string' ||
+    !ZONE_SHAPES.includes(value.shape as ZoneShape) ||
+    !isNumber(value.x) ||
+    !isNumber(value.y) ||
+    !isNumber(value.width) ||
+    !isNumber(value.height) ||
+    !isNumber(value.rotation) ||
+    typeof value.color !== 'string' ||
+    typeof value.dashed !== 'boolean' ||
+    typeof value.label !== 'string'
+  ) {
+    throw corrupt()
+  }
+  return {
+    id: value.id,
+    shape: value.shape as ZoneShape,
+    x: value.x,
+    y: value.y,
+    width: clampZoneSize(value.width),
+    height: clampZoneSize(value.height),
+    rotation: value.rotation,
+    color: value.color,
+    dashed: value.dashed,
+    label: value.label,
+  }
+}
+
 function parseScene(value: unknown): Scene {
   if (
     !isRecord(value) ||
     !isNumber(value.durationMs) ||
     value.durationMs <= 0 ||
     !Array.isArray(value.items) ||
-    !Array.isArray(value.lines)
+    !Array.isArray(value.lines) ||
+    // Zones were added in version 3.
+    !(value.zones === undefined || Array.isArray(value.zones))
   ) {
     throw corrupt()
   }
@@ -204,8 +250,9 @@ function parseScene(value: unknown): Scene {
     durationMs: value.durationMs,
     items: value.items.map(parseItem),
     lines: value.lines.map(parseLine),
+    zones: ((value.zones as unknown[] | undefined) ?? []).map(parseZone),
   }
-  const ids = [...scene.items, ...scene.lines].map((e) => e.id)
+  const ids = [...scene.items, ...scene.lines, ...scene.zones].map((e) => e.id)
   if (new Set(ids).size !== ids.length) throw corrupt()
   return scene
 }

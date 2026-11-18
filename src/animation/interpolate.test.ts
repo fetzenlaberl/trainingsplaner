@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { pointAtDistance, polylineLength, samplePath } from '../lines/geometry'
-import type { Item, Line, Scene } from '../model/types'
+import type { Item, Line, Scene, Zone } from '../model/types'
 import {
   findPathLine,
   frameAt,
   interpolateScenes,
+  interpolateZones,
   lerpAngle,
   locateTime,
   sceneStartTime,
@@ -16,7 +17,7 @@ function item(id: string, x: number, y: number, rotation = 0, type: Item['type']
 }
 
 function scene(items: Item[], lines: Line[] = [], durationMs = 1000): Scene {
-  return { durationMs, items, lines }
+  return { durationMs, items, lines, zones: [] }
 }
 
 const curvedPass: Line = {
@@ -144,6 +145,42 @@ describe('interpolateScenes', () => {
     const to = scene([item('b', 0, 30, 0, 'ball')])
     const [b] = interpolateScenes(from, to, 0.5)
     expect([b.x, b.y]).toEqual([0, 15])
+  })
+})
+
+describe('interpolateZones', () => {
+  const zone = (id: string, x: number, width: number, rotation = 0): Zone => ({
+    id,
+    shape: 'rect',
+    x,
+    y: 10,
+    width,
+    height: 10,
+    rotation,
+    color: '#fff',
+    dashed: false,
+    label: '',
+  })
+
+  it('moves, resizes and rotates zones evenly', () => {
+    const [z] = interpolateZones([zone('a', 0, 10, 350)], [zone('a', 20, 30, 10)], 0.5)
+    expect([z.x, z.width, z.opacity]).toEqual([10, 20, 1])
+    expect(z.rotation).toBeCloseTo(0)
+  })
+
+  it('fades zones in and out', () => {
+    const frame = interpolateZones([zone('old', 0, 10)], [zone('new', 5, 10)], 0.25)
+    expect(frame.find((z) => z.id === 'old')!.opacity).toBeCloseTo(0.75)
+    expect(frame.find((z) => z.id === 'new')!.opacity).toBeCloseTo(0.25)
+  })
+
+  it('is part of every frame', () => {
+    const scenes = [
+      { ...scene([]), zones: [zone('a', 0, 10)] },
+      { ...scene([]), zones: [zone('a', 10, 10)] },
+    ]
+    expect(frameAt(scenes, 500).zones[0].x).toBeCloseTo(5)
+    expect(frameAt(scenes, 5000).zones[0].x).toBe(10)
   })
 })
 

@@ -3,8 +3,9 @@ import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
+import { clampZoneSize, DEFAULT_ZONE_COLOR, DEFAULT_ZONE_SIZE } from '../items/zones'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene } from '../model/types'
+import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene, Zone, ZoneShape } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -60,14 +61,19 @@ export interface DrillState extends DrillContent {
   /** Removes all bends: only start and end remain. */
   clearLineBends: (id: string) => void
   setLineSmooth: (id: string, smooth: boolean) => void
-  /** Inserts an offset copy of an item or line, selects it and returns its id. */
-  insertCopy: (element: Item | Line) => string
+  /** Adds a zone centered at the given position (meters) and returns its id. */
+  addZone: (shape: ZoneShape, x: number, y: number) => string
+  /** Changes a zone (position, size, rotation, color, outline) as one undo step. */
+  updateZone: (id: string, change: Partial<Omit<Zone, 'id'>>) => void
+  /** Inserts an offset copy of an item, line or zone, selects it and returns its id. */
+  insertCopy: (element: Element) => string
   deleteElement: (id: string) => void
 
   // Live edits (while dragging or typing) do not create history entries on their own.
   // Take a snapshot() before and call pushHistory(snapshot) when the edit is finished.
   setItemRotation: (id: string, rotation: number) => void
   setItemLabel: (id: string, label: string) => void
+  setZoneLabel: (id: string, label: string) => void
   setLinePoint: (id: string, index: number, point: Point) => void
   /** Inserts a bend before waypoint `index` (live edit). */
   insertLinePoint: (id: string, index: number, point: Point) => void
@@ -98,8 +104,15 @@ export function nextPlayerNumber(items: Item[], color: string, shape: PlayerShap
   return max + 1
 }
 
-export function isLine(element: Item | Line): element is Line {
+/** Anything that can be selected on the pitch. */
+export type Element = Item | Line | Zone
+
+export function isLine(element: Element): element is Line {
   return 'points' in element
+}
+
+export function isZone(element: Element): element is Zone {
+  return 'width' in element
 }
 
 export function currentScene(state: Pick<DrillContent, 'scenes' | 'sceneIndex'>): Scene {
@@ -108,13 +121,18 @@ export function currentScene(state: Pick<DrillContent, 'scenes' | 'sceneIndex'>)
 
 export const selectItems = (state: DrillState) => currentScene(state).items
 export const selectLines = (state: DrillState) => currentScene(state).lines
+export const selectZones = (state: DrillState) => currentScene(state).zones
 
 export function findElement(
-  scene: Pick<Scene, 'items' | 'lines'>,
+  scene: Pick<Scene, 'items' | 'lines' | 'zones'>,
   id: string | null,
-): Item | Line | undefined {
+): Element | undefined {
   if (!id) return undefined
-  return scene.items.find((i) => i.id === id) ?? scene.lines.find((l) => l.id === id)
+  return (
+    scene.items.find((i) => i.id === id) ??
+    scene.lines.find((l) => l.id === id) ??
+    scene.zones.find((z) => z.id === id)
+  )
 }
 
 /** Builds the drill (as saved to a file) from the current state. */
@@ -330,8 +348,46 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       })),
     })),
 
+  addZone: (shape, x, y) => {
+    const zone: Zone = {
+      id: createId('zone'),
+      shape,
+      x,
+      y,
+      ...DEFAULT_ZONE_SIZE[shape],
+      rotation: 0,
+      color: DEFAULT_ZONE_COLOR,
+      dashed: false,
+      label: '',
+    }
+    set((s) => ({ ...recorded(s), scenes: editScene(s, (scene) => ({ zones: [...scene.zones, zone] })) }))
+    return zone.id
+  },
+  updateZone: (id, change) =>
+    set((s) => {
+      const clamped = { ...change }
+      if (clamped.width !== undefined) clamped.width = clampZoneSize(clamped.width)
+      if (clamped.height !== undefined) clamped.height = clampZoneSize(clamped.height)
+      if (clamped.rotation !== undefined) clamped.rotation = normalizeAngle(clamped.rotation)
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          zones: scene.zones.map((z) => (z.id === id ? { ...z, ...clamped } : z)),
+        })),
+      }
+    }),
+
   insertCopy: (element) => {
     const s = get()
+    if (isZone(element)) {
+      const copy: Zone = { ...element, id: createId('zone'), x: element.x + COPY_OFFSET, y: element.y + COPY_OFFSET }
+      set({
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({ zones: [...scene.zones, copy] })),
+        selectedId: copy.id,
+      })
+      return copy.id
+    }
     if (isLine(element)) {
       const copy: Line = {
         ...element,
@@ -370,6 +426,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         scenes: editScene(s, (scene) => ({
           items: scene.items.filter((i) => i.id !== id),
           lines: scene.lines.filter((l) => l.id !== id),
+          zones: scene.zones.filter((z) => z.id !== id),
         })),
         selectedId: s.selectedId === id ? null : s.selectedId,
       }
@@ -384,6 +441,12 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   setItemLabel: (id, label) =>
     set((s) => ({
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { label }) })),
+    })),
+  setZoneLabel: (id, label) =>
+    set((s) => ({
+      scenes: editScene(s, (scene) => ({
+        zones: scene.zones.map((z) => (z.id === id ? { ...z, label } : z)),
+      })),
     })),
   setLinePoint: (id, index, point) =>
     set((s) => ({

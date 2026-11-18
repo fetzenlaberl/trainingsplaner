@@ -1,5 +1,5 @@
 import { distance, pointAtDistance, polylineLength, samplePath } from '../lines/geometry'
-import type { Item, Line, Scene } from '../model/types'
+import type { Item, Line, Scene, Zone } from '../model/types'
 import { ATTACH_DISTANCE } from './scenes'
 
 /** An item as shown in an animation frame; opacity < 1 while fading in or out. */
@@ -7,9 +7,15 @@ export interface FrameItem extends Item {
   opacity: number
 }
 
+/** A zone as shown in an animation frame; opacity < 1 while fading in or out. */
+export interface FrameZone extends Zone {
+  opacity: number
+}
+
 export interface Frame {
   items: FrameItem[]
   lines: Line[]
+  zones: FrameZone[]
   /** Scene the current transition starts from */
   sceneIndex: number
   /** Progress of the transition, 0..1 */
@@ -98,6 +104,30 @@ export function interpolateScenes(from: Scene, to: Scene, t: number): FrameItem[
   return result
 }
 
+/** Zone states between two scenes: position, size and rotation change evenly; others fade. */
+export function interpolateZones(from: Zone[], to: Zone[], t: number): FrameZone[] {
+  const targets = new Map(to.map((zone) => [zone.id, zone]))
+  const lerp = (a: number, b: number) => a + (b - a) * t
+  const result: FrameZone[] = from.map((zone) => {
+    const target = targets.get(zone.id)
+    if (!target) return { ...zone, opacity: 1 - t }
+    return {
+      ...zone,
+      x: lerp(zone.x, target.x),
+      y: lerp(zone.y, target.y),
+      width: lerp(zone.width, target.width),
+      height: lerp(zone.height, target.height),
+      rotation: lerpAngle(zone.rotation, target.rotation, t),
+      opacity: 1,
+    }
+  })
+  const existing = new Set(from.map((zone) => zone.id))
+  for (const zone of to) {
+    if (!existing.has(zone.id)) result.push({ ...zone, opacity: t })
+  }
+  return result
+}
+
 /** Everything needed to draw the animation at `time` (ms). */
 export function frameAt(scenes: Scene[], time: number): Frame {
   const { index, progress } = locateTime(scenes, time)
@@ -106,6 +136,7 @@ export function frameAt(scenes: Scene[], time: number): Frame {
   return {
     items: to ? interpolateScenes(from, to, progress) : from.items.map((i) => ({ ...i, opacity: 1 })),
     lines: from.lines,
+    zones: to ? interpolateZones(from.zones, to.zones, progress) : from.zones.map((z) => ({ ...z, opacity: 1 })),
     sceneIndex: index,
     progress,
   }

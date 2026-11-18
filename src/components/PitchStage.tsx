@@ -1,19 +1,21 @@
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { Layer, Stage } from 'react-konva'
+import { Layer, Stage, Transformer } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
 import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
+import { MIN_ZONE_SIZE } from '../items/zones'
 import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
 import { frameAt } from '../animation/interpolate'
-import { useDrillStore } from '../store/drillStore'
+import { selectZones, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
 import { FieldView } from './FieldView'
+import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
 import { ZoomControls } from './ZoomControls'
 
@@ -41,6 +43,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const pitch = useDrillStore((s) => s.pitch)
   const addLine = useDrillStore((s) => s.addLine)
   const select = useDrillStore((s) => s.select)
+  const selectedId = useDrillStore((s) => s.selectedId)
+  const updateZone = useDrillStore((s) => s.updateZone)
+  const sceneZones = useDrillStore(selectZones)
   const scenes = useDrillStore((s) => s.scenes)
   const sceneIndex = useDrillStore((s) => s.sceneIndex)
   const time = usePlaybackStore((s) => s.time)
@@ -51,6 +56,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const stageRef = useRef<Konva.Stage>(null)
+  const transformerRef = useRef<Konva.Transformer>(null)
+  /** Size (meters) shown while a zone is being resized */
+  const [resizeInfo, setResizeInfo] = useState<{ width: number; height: number } | null>(null)
   // Zoom belongs to one field type; switching the field type shows the whole field again.
   const [zoomState, setZoomState] = useState<{ fieldType: string; view: ViewState } | null>(null)
   const latestRef = useRef<ViewGestureState | null>(null)
@@ -92,6 +100,18 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const frame = animating ? frameAt(scenes, time) : null
   const items = frame ? frame.items : scenes[sceneIndex].items
   const lines = frame ? frame.lines : scenes[sceneIndex].lines
+  const zones = frame ? frame.zones : scenes[sceneIndex].zones
+  const selectedZone =
+    tool === 'select' && !animating ? sceneZones.find((z) => z.id === selectedId) : undefined
+
+  // Attach the resize/rotate handles to the selected zone's Konva node.
+  useEffect(() => {
+    const transformer = transformerRef.current
+    if (!transformer) return
+    const node = selectedZone ? stageRef.current?.findOne(`#${selectedZone.id}`) : undefined
+    transformer.nodes(node ? [node] : [])
+    transformer.getLayer()?.batchDraw()
+  }, [selectedZone])
 
   function clientToMeters(clientX: number, clientY: number): Point | null {
     const el = containerRef.current
@@ -190,6 +210,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
               pitch={pitch}
               items={items}
               lines={lines}
+              zones={zones}
               viewport={viewport}
               scale={layout.scale}
               offsetX={layout.offsetX}
@@ -208,8 +229,56 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
               )}
               {tool === 'select' && !animating && <LineHandles scale={layout.scale} />}
             </FieldView>
+            <Transformer
+              ref={transformerRef}
+              visible={selectedZone !== undefined}
+              rotateEnabled
+              flipEnabled={false}
+              ignoreStroke
+              keepRatio={false}
+              anchorSize={14}
+              anchorCornerRadius={3}
+              rotateAnchorOffset={28}
+              rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+              rotationSnapTolerance={6}
+              borderStroke={SELECTION_COLOR}
+              anchorStroke={SELECTION_COLOR}
+              boundBoxFunc={(oldBox, newBox) =>
+                Math.abs(newBox.width) < MIN_ZONE_SIZE * layout.scale ||
+                Math.abs(newBox.height) < MIN_ZONE_SIZE * layout.scale
+                  ? oldBox
+                  : newBox
+              }
+              onTransform={(e) => {
+                if (!selectedZone) return
+                setResizeInfo({
+                  width: selectedZone.width * e.target.scaleX(),
+                  height: selectedZone.height * e.target.scaleY(),
+                })
+              }}
+              onTransformEnd={(e) => {
+                setResizeInfo(null)
+                if (!selectedZone) return
+                const node = e.target
+                const change = {
+                  x: node.x(),
+                  y: node.y(),
+                  width: selectedZone.width * node.scaleX(),
+                  height: selectedZone.height * node.scaleY(),
+                  rotation: node.rotation(),
+                }
+                // The size is stored in meters; the node itself is never left scaled.
+                node.scale({ x: 1, y: 1 })
+                updateZone(selectedZone.id, change)
+              }}
+            />
           </Layer>
         </Stage>
+      )}
+      {resizeInfo && (
+        <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 rounded-md bg-slate-900/85 px-3 py-1 text-sm text-white tabular-nums">
+          {resizeInfo.width.toFixed(1).replace('.', ',')} × {resizeInfo.height.toFixed(1).replace('.', ',')} m
+        </div>
       )}
       {layout.scale > 0 && (
         <ZoomControls

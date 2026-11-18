@@ -45,5 +45,6 @@ export function nextSceneFrom(scene: Scene): Scene {
       return target ? { ...item, x: target.x, y: target.y } : item
     }),
     lines: [],
+    zones: scene.zones,
   }
 }

@@ -38,10 +38,30 @@ export interface Line {
   color: string
 }
 
+export type ZoneShape = 'rect' | 'triangle' | 'ellipse'
+
+/** Marked area on the pitch (e.g. playing field, zone, area around a position). */
+export interface Zone {
+  id: string
+  shape: ZoneShape
+  /** Center in meters */
+  x: number
+  y: number
+  /** Size in meters (bounding box before rotation) */
+  width: number
+  height: number
+  rotation: number
+  color: string
+  /** Dashed instead of solid outline */
+  dashed: boolean
+  label: string
+}
+
 export interface Scene {
   durationMs: number
   items: Item[]
   lines: Line[]
+  zones: Zone[]
 }
 
 export type Category =

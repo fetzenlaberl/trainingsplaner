@@ -85,6 +85,7 @@ export async function recordAnimation({
               pitch={pitch}
               items={frame.items}
               lines={frame.lines}
+              zones={frame.zones}
               viewport={viewport}
               scale={pxPerMeter}
               offsetX={0}

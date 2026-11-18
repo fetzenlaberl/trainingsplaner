@@ -21,7 +21,7 @@ export function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanv
 export async function renderSceneToCanvas(
   fieldType: FieldType,
   pitch: PitchStyle,
-  { items, lines }: Scene,
+  { items, lines, zones }: Scene,
   pxPerMeter = EXPORT_SCALE,
 ): Promise<HTMLCanvasElement> {
   const viewport = getViewport(fieldType)
@@ -51,6 +51,7 @@ export async function renderSceneToCanvas(
               pitch={pitch}
               items={items}
               lines={lines}
+              zones={zones}
               viewport={viewport}
               scale={pxPerMeter}
               offsetX={0}

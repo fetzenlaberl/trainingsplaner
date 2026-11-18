@@ -46,6 +46,20 @@ const drill: Drill = {
           color: '#facc15',
         },
       ],
+      zones: [
+        {
+          id: 'z1',
+          shape: 'rect',
+          x: 20,
+          y: 30,
+          width: 25,
+          height: 18,
+          rotation: 15,
+          color: '#facc15',
+          dashed: true,
+          label: 'Zone A',
+        },
+      ],
     },
   ],
 }
@@ -105,6 +119,24 @@ describe('serializeDrill / parseDrill', () => {
     expect(curved.smooth).toBe(true)
     expect(curved).not.toHaveProperty('control')
     expect(straight.points).toHaveLength(2)
+  })
+
+  it('reads older files without zones', () => {
+    const text = tamper((d) => {
+      d.version = 2
+      delete d.scenes[0].zones
+    })
+    expect(parseDrill(text).scenes[0].zones).toEqual([])
+  })
+
+  it('clamps zone sizes to the allowed range', () => {
+    const text = tamper((d) => {
+      d.scenes[0].zones[0].width = 0
+      d.scenes[0].zones[0].height = 9999
+    })
+    const [zone] = parseDrill(text).scenes[0].zones
+    expect(zone.width).toBe(1)
+    expect(zone.height).toBe(140)
   })
 
   it('reads older files without pitch style as green pitch without grid', () => {
@@ -168,6 +200,9 @@ describe('parseDrill rejects invalid files', () => {
     ['size not a number', (d) => (d.scenes[0].items[0].size = 'groß')],
     ['unknown player shape', (d) => (d.scenes[0].items[0].shape = 'star')],
     ['unknown pitch color', (d) => (d.pitch.color = 'pink')],
+    ['unknown zone shape', (d) => (d.scenes[0].zones[0].shape = 'hexagon')],
+    ['zone without size', (d) => delete d.scenes[0].zones[0].width],
+    ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],
     ['unknown grid', (d) => (d.pitch.grid = 'hexagons')],
     ['unknown line type', (d) => (d.scenes[0].lines[0].type = 'header')],
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],

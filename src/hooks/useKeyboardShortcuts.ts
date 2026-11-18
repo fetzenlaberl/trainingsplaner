@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { saveToLibraryWithFeedback } from '../library/libraryActions'
-import type { Item, Line } from '../model/types'
-import { currentScene, findElement, useDrillStore } from '../store/drillStore'
+import { currentScene, findElement, useDrillStore, type Element } from '../store/drillStore'
 import { togglePlayback } from '../store/playbackActions'
 import { usePlaybackStore } from '../store/playbackStore'
 
@@ -22,7 +21,7 @@ function isTyping(target: EventTarget | null): boolean {
 export function useKeyboardShortcuts(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
-    let clipboard: Item | Line | null = null
+    let clipboard: Element | null = null
 
     function onKeyDown(e: KeyboardEvent) {
       if (document.querySelector('[aria-modal="true"]')) return

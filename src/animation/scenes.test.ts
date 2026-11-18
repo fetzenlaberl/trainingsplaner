@@ -25,11 +25,29 @@ const pos = (scene: Scene, id: string) => {
 }
 
 describe('nextSceneFrom', () => {
+  it('copies the zones into the next scene', () => {
+    const zone = {
+      id: 'z',
+      shape: 'rect' as const,
+      x: 10,
+      y: 10,
+      width: 20,
+      height: 15,
+      rotation: 0,
+      color: '#facc15',
+      dashed: false,
+      label: '',
+    }
+    const scene: Scene = { durationMs: 2000, items: [], lines: [], zones: [zone] }
+    expect(nextSceneFrom(scene).zones).toEqual([zone])
+  })
+
   it('keeps items and ids, drops lines and keeps the duration', () => {
     const scene: Scene = {
       durationMs: 3000,
       items: [item('c', 'cone', 1, 1)],
       lines: [line('l', 'run', 50, 50, 60, 60)],
+      zones: [],
     }
     const next = nextSceneFrom(scene)
     expect(next.items).toEqual(scene.items)
@@ -42,6 +60,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('p', 'player', 10, 10), item('b', 'ball', 11, 10)],
       lines: [line('l', 'pass', 10, 10, 40, 20)],
+      zones: [],
     }
     const next = nextSceneFrom(scene)
     expect(pos(next, 'b')).toEqual([40, 20])
@@ -53,6 +72,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('b', 'ball', 20, 34)],
       lines: [line('l', 'shot', 20, 34, 0, 34)],
+      zones: [],
     }
     expect(pos(nextSceneFrom(scene), 'b')).toEqual([0, 34])
   })
@@ -62,6 +82,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('p', 'player', 10, 10), item('b', 'ball', 10.5, 10)],
       lines: [line('l', 'run', 10, 10, 30, 30)],
+      zones: [],
     }
     const next = nextSceneFrom(scene)
     expect(pos(next, 'p')).toEqual([30, 30])
@@ -73,6 +94,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('p', 'player', 10, 10), item('b', 'ball', 11, 10)],
       lines: [line('l', 'dribble', 10, 10, 30, 10)],
+      zones: [],
     }
     const next = nextSceneFrom(scene)
     expect(pos(next, 'p')).toEqual([30, 10])
@@ -84,6 +106,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('b', 'ball', 10 + ATTACH_DISTANCE + 0.1, 10)],
       lines: [line('l', 'pass', 10, 10, 40, 10)],
+      zones: [],
     }
     expect(pos(nextSceneFrom(scene), 'b')).toEqual([10 + ATTACH_DISTANCE + 0.1, 10])
   })
@@ -93,6 +116,7 @@ describe('nextSceneFrom', () => {
       durationMs: 2000,
       items: [item('far', 'player', 11.5, 10), item('near', 'player', 10.2, 10)],
       lines: [line('a', 'run', 10, 10, 30, 10), line('b', 'run', 10, 10, 10, 30)],
+      zones: [],
     }
     const next = nextSceneFrom(scene)
     expect(pos(next, 'near')).toEqual([30, 10])
