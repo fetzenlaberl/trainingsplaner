@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { TEAM_COLORS } from '../items/palette'
+import { MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
 import {
@@ -24,7 +24,7 @@ describe('items', () => {
   it('adds an item at the given position in meters', () => {
     const id = store().addItem({ type: 'cone', color: ORANGE }, 20.5, 30)
     expect(items()).toEqual([
-      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, color: ORANGE, label: '' },
+      { id, type: 'cone', x: 20.5, y: 30, rotation: 0, size: 1, color: ORANGE, label: '' },
     ])
   })
 
@@ -233,7 +233,7 @@ describe('load / new', () => {
     scenes: [
       {
         durationMs: 2000,
-        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, color: '#dc2626', label: '1' }],
+        items: [{ id: 'p1', type: 'player', x: 1, y: 2, rotation: 0, size: 1, color: '#dc2626', label: '1' }],
         lines: [],
       },
     ],
@@ -265,9 +265,33 @@ describe('title, description and category', () => {
   })
 })
 
+describe('item size', () => {
+  it('sets the size of one item, clamped to the allowed range, with undo', () => {
+    const id = store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    expect(items()[0].size).toBe(1)
+    store().setItemSize(id, 1.5)
+    expect(items()[0].size).toBe(1.5)
+    store().setItemSize(id, 10)
+    expect(items()[0].size).toBe(MAX_ITEM_SIZE)
+    store().setItemSize(id, 0)
+    expect(items()[0].size).toBe(MIN_ITEM_SIZE)
+    store().undo()
+    expect(items()[0].size).toBe(MAX_ITEM_SIZE)
+  })
+
+  it('applies one size to all items of the current scene only', () => {
+    store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    store().addItem({ type: 'cone', color: ORANGE }, 5, 5)
+    store().addScene()
+    store().setAllItemSizes(2)
+    expect(items().map((i) => i.size)).toEqual([2, 2])
+    expect(store().scenes[0].items.map((i) => i.size)).toEqual([1, 1])
+  })
+})
+
 describe('helpers', () => {
   it('nextPlayerNumber continues after the highest number of that color', () => {
-    const base = { type: 'player' as const, x: 0, y: 0, rotation: 0 }
+    const base = { type: 'player' as const, x: 0, y: 0, rotation: 0, size: 1 }
     const items = [
       { ...base, id: 'a', color: 'red', label: '7' },
       { ...base, id: 'b', color: 'red', label: 'TW' },

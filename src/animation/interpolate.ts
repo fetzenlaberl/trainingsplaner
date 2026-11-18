@@ -84,6 +84,7 @@ export function interpolateScenes(from: Scene, to: Scene, t: number): FrameItem[
       ...item,
       ...positionAt(item, target, path, t),
       rotation: lerpAngle(item.rotation, target.rotation, t),
+      size: item.size + (target.size - item.size) * t,
       opacity: 1,
     }
   })

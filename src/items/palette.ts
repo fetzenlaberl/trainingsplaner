@@ -1,6 +1,16 @@
 import type { Item, ItemType } from '../model/types'
 
-export type NewItem = Pick<Item, 'type' | 'color'> & Partial<Pick<Item, 'label' | 'rotation'>>
+export type NewItem = Pick<Item, 'type' | 'color'> & Partial<Pick<Item, 'label' | 'rotation' | 'size'>>
+
+export const MIN_ITEM_SIZE = 0.5
+export const MAX_ITEM_SIZE = 2.5
+export const ITEM_SIZE_STEP = 0.25
+
+/** Keeps a size factor in the allowed range (rounded to 2 decimals). */
+export function clampItemSize(size: number): number {
+  if (!Number.isFinite(size)) return 1
+  return Math.round(Math.min(Math.max(size, MIN_ITEM_SIZE), MAX_ITEM_SIZE) * 100) / 100
+}
 
 export interface ItemTemplate {
   key: string

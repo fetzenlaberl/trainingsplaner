@@ -44,6 +44,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
     <Group listening={interactive}>
       {items.map((item) => {
         const selected = item.id === selectedItem?.id
+        const extent = ITEM_EXTENT[item.type] * item.size
         return (
           <Group
             key={item.id}
@@ -66,24 +67,26 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             }}
           >
             <Circle
-              radius={Math.max(ITEM_EXTENT[item.type] / 2, MIN_HIT_RADIUS_PX / scale)}
+              radius={Math.max(extent / 2, MIN_HIT_RADIUS_PX / scale)}
               fill="transparent"
             />
             {selected && (
               <Circle
-                radius={ITEM_EXTENT[item.type] / 2 + 0.3}
+                radius={extent / 2 + 0.3}
                 stroke={SELECTION_COLOR}
                 strokeWidth={Math.max(0.12, 2 / scale)}
                 dash={[0.5, 0.35]}
                 listening={false}
               />
             )}
-            <ItemShape
-              type={item.type}
-              color={item.color}
-              label={item.label}
-              rotation={item.rotation}
-            />
+            <Group scaleX={item.size} scaleY={item.size}>
+              <ItemShape
+                type={item.type}
+                color={item.color}
+                label={item.label}
+                rotation={item.rotation}
+              />
+            </Group>
           </Group>
         )
       })}
@@ -103,7 +106,7 @@ function RotationHandle({ item, scale }: { item: Item; scale: number }) {
   const pushHistory = useDrillStore((s) => s.pushHistory)
   const beforeRef = useRef<DrillContent | null>(null)
 
-  const distance = ITEM_EXTENT[item.type] / 2 + Math.max(0.8, 16 / scale)
+  const distance = (ITEM_EXTENT[item.type] * item.size) / 2 + Math.max(0.8, 16 / scale)
   const radius = Math.max(0.35, 8 / scale)
   const rad = (item.rotation * Math.PI) / 180
   const hx = item.x + Math.cos(rad) * distance

@@ -1,14 +1,16 @@
 import { useRef } from 'react'
-import { ROTATABLE_TYPES } from '../items/palette'
+import { ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, ROTATABLE_TYPES } from '../items/palette'
 import { currentScene, findElement, isLine, useDrillStore, type DrillContent } from '../store/drillStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
 
-/** Actions for the selected item or line: rotate, label, straighten, duplicate, delete. */
+/** Actions for the selected item or line: size, rotate, label, straighten, duplicate, delete. */
 export function SelectionBar() {
   const selected = useDrillStore((s) => findElement(currentScene(s), s.selectedId))
   const rotateItem = useDrillStore((s) => s.rotateItem)
+  const setItemSize = useDrillStore((s) => s.setItemSize)
+  const setAllItemSizes = useDrillStore((s) => s.setAllItemSizes)
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
   const setLineControl = useDrillStore((s) => s.setLineControl)
   const insertCopy = useDrillStore((s) => s.insertCopy)
@@ -27,6 +29,42 @@ export function SelectionBar() {
 
   return (
     <div role="group" aria-label="Auswahl bearbeiten" className="flex flex-wrap items-center gap-1.5">
+      {!isLine(selected) && (
+        <div role="group" aria-label="Größe" className="flex items-center gap-1">
+          <button
+            type="button"
+            className={buttonClass}
+            title="Kleiner"
+            aria-label="Kleiner"
+            disabled={selected.size <= MIN_ITEM_SIZE}
+            onClick={() => setItemSize(selected.id, selected.size - ITEM_SIZE_STEP)}
+          >
+            −
+          </button>
+          <span className="w-12 text-center text-sm text-slate-300 tabular-nums">
+            {Math.round(selected.size * 100)} %
+          </span>
+          <button
+            type="button"
+            className={buttonClass}
+            title="Größer"
+            aria-label="Größer"
+            disabled={selected.size >= MAX_ITEM_SIZE}
+            onClick={() => setItemSize(selected.id, selected.size + ITEM_SIZE_STEP)}
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className={buttonClass}
+            title="Diese Größe für alle Objekte der aktuellen Szene übernehmen"
+            onClick={() => setAllItemSizes(selected.size)}
+          >
+            Auf alle anwenden
+          </button>
+        </div>
+      )}
+
       {!isLine(selected) && ROTATABLE_TYPES.includes(selected.type) && (
         <>
           <button

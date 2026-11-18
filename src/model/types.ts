@@ -10,6 +10,8 @@ export interface Item {
   y: number
   /** Rotation in degrees, 0 = facing the right goal */
   rotation: number
+  /** Display size factor, 1 = default size */
+  size: number
   color: string
   label: string
 }

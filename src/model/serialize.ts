@@ -1,4 +1,5 @@
 import { FIELD_TYPES, type FieldType } from '../field/dimensions'
+import { clampItemSize } from '../items/palette'
 import type { Category, Drill, Item, ItemType, Line, LineType, Point, Scene } from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
@@ -111,6 +112,8 @@ function parseItem(value: unknown): Item {
     !isNumber(value.x) ||
     !isNumber(value.y) ||
     !isNumber(value.rotation) ||
+    // Size was added later; older files have none.
+    !(value.size === undefined || isNumber(value.size)) ||
     typeof value.color !== 'string' ||
     typeof value.label !== 'string'
   ) {
@@ -122,6 +125,7 @@ function parseItem(value: unknown): Item {
     x: value.x,
     y: value.y,
     rotation: value.rotation,
+    size: value.size === undefined ? 1 : clampItemSize(value.size),
     color: value.color,
     label: value.label,
   }

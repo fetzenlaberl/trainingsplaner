@@ -12,7 +12,7 @@ import {
 } from './interpolate'
 
 function item(id: string, x: number, y: number, rotation = 0, type: Item['type'] = 'player'): Item {
-  return { id, type, x, y, rotation, color: '#fff', label: '' }
+  return { id, type, x, y, rotation, size: 1, color: '#fff', label: '' }
 }
 
 function scene(items: Item[], lines: Line[] = [], durationMs = 1000): Scene {
@@ -70,6 +70,13 @@ describe('interpolateScenes', () => {
   it('moves items in a straight line and rotates them', () => {
     const [p] = interpolateScenes(scene([item('a', 0, 0, 0)]), scene([item('a', 10, 20, 90)]), 0.5)
     expect([p.x, p.y, p.rotation, p.opacity]).toEqual([5, 10, 45, 1])
+  })
+
+  it('grows or shrinks items between scenes', () => {
+    const small = { ...item('a', 0, 0), size: 1 }
+    const big = { ...item('a', 0, 0), size: 2 }
+    const [p] = interpolateScenes(scene([small]), scene([big]), 0.25)
+    expect(p.size).toBeCloseTo(1.25)
   })
 
   it('is exact at the start of a transition', () => {

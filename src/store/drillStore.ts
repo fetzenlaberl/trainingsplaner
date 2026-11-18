@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
-import type { NewItem } from '../items/palette'
+import { clampItemSize, type NewItem } from '../items/palette'
 import { emptyDrill } from '../model/serialize'
 import type { Category, Drill, Item, Line, LineType, Point, Scene } from '../model/types'
 
@@ -44,6 +44,9 @@ export interface DrillState extends DrillContent {
   addItem: (item: NewItem, x: number, y: number) => string
   moveItem: (id: string, x: number, y: number) => void
   rotateItem: (id: string, rotation: number) => void
+  setItemSize: (id: string, size: number) => void
+  /** Gives every item of the current scene the same size. */
+  setAllItemSizes: (size: number) => void
   /** Adds a straight line (meters) and returns its id. */
   addLine: (type: LineType, start: Point, end: Point, color: string) => string
   moveLine: (id: string, dx: number, dy: number) => void
@@ -220,6 +223,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       x,
       y,
       rotation: item.rotation ?? 0,
+      size: clampItemSize(item.size ?? 1),
       color: item.color,
       label,
     }
@@ -236,6 +240,21 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({
         items: updateItem(scene.items, id, { rotation: normalizeAngle(rotation) }),
+      })),
+    })),
+
+  setItemSize: (id, size) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        items: updateItem(scene.items, id, { size: clampItemSize(size) }),
+      })),
+    })),
+  setAllItemSizes: (size) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        items: scene.items.map((item) => ({ ...item, size: clampItemSize(size) })),
       })),
     })),
 

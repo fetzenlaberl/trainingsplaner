@@ -19,8 +19,8 @@ const drill: Drill = {
     {
       durationMs: 2000,
       items: [
-        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, color: '#dc2626', label: '9' },
-        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, color: '#ffffff', label: '' },
+        { id: 'p1', type: 'player', x: 30, y: 20, rotation: 90, size: 1.5, color: '#dc2626', label: '9' },
+        { id: 'b1', type: 'ball', x: 31, y: 20, rotation: 0, size: 1, color: '#ffffff', label: '' },
       ],
       lines: [
         {
@@ -82,6 +82,20 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).category).toBeNull()
   })
 
+  it('reads older files without item size', () => {
+    const text = tamper((d) => {
+      delete d.scenes[0].items[0].size
+    })
+    expect(parseDrill(text).scenes[0].items[0].size).toBe(1)
+  })
+
+  it('clamps item sizes outside the allowed range', () => {
+    const text = tamper((d) => {
+      d.scenes[0].items[0].size = 99
+    })
+    expect(parseDrill(text).scenes[0].items[0].size).toBe(2.5)
+  })
+
   it('drops unknown extra fields', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].extra = 'x'
@@ -112,6 +126,7 @@ describe('parseDrill rejects invalid files', () => {
     ['unknown item type', (d) => (d.scenes[0].items[0].type = 'referee')],
     ['position not a number', (d) => (d.scenes[0].items[0].x = '30')],
     ['missing rotation', (d) => delete d.scenes[0].items[0].rotation],
+    ['size not a number', (d) => (d.scenes[0].items[0].size = 'groß')],
     ['unknown line type', (d) => (d.scenes[0].lines[0].type = 'header')],
     ['line with one point', (d) => (d.scenes[0].lines[0].points = [{ x: 0, y: 0 }])],
     ['broken control point', (d) => (d.scenes[0].lines[0].control = { x: 1 })],
