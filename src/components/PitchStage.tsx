@@ -1,8 +1,11 @@
+import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { Layer, Stage } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
+import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
+import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
 import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
 import { frameAt } from '../animation/interpolate'
@@ -12,10 +15,13 @@ import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
 import { FieldView } from './FieldView'
 import { LineShape } from './LineShape'
+import { ZoomControls } from './ZoomControls'
 
 const PADDING = 12
 /** Shorter strokes (meters) are treated as accidental taps. */
 const MIN_LINE_LENGTH = 0.5
+/** Zoom step of the + and − buttons */
+const BUTTON_ZOOM_FACTOR = 1.25
 
 /** Lets other components (the sidebar) drop items onto the pitch. */
 export interface DropTarget {
@@ -43,6 +49,10 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
+  const stageRef = useRef<Konva.Stage>(null)
+  // Zoom belongs to one field type; switching the field type shows the whole field again.
+  const [zoomState, setZoomState] = useState<{ fieldType: string; view: ViewState } | null>(null)
+  const latestRef = useRef<ViewGestureState | null>(null)
 
   useEffect(() => {
     const el = containerRef.current
@@ -58,7 +68,24 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   useEffect(() => () => cleanupRef.current?.(), [])
 
   const viewport = getViewport(fieldType)
-  const layout = fitViewport(viewport, size.width, size.height, PADDING)
+  const baseLayout = fitViewport(viewport, size.width, size.height, PADDING)
+  const zoomCtx: ZoomContext = { viewport, container: size, baseScale: baseLayout.scale }
+  const view = zoomState?.fieldType === fieldType ? zoomState.view : defaultView(viewport)
+  const layout = baseLayout.scale > 0 ? zoomedLayout(view, zoomCtx) : baseLayout
+  const setView = (next: ViewState) => setZoomState({ fieldType, view: next })
+
+  useEffect(() => {
+    latestRef.current = { view, ctx: zoomCtx }
+  })
+
+  const touchCountRef = useViewGestures(containerRef, latestRef, setView, () => {
+    // A second finger means zoom/pan: cancel drawing, panning and item drags.
+    cleanupRef.current?.()
+    stageRef.current?.find((node: Konva.Node) => node.isDragging()).forEach((node) => node.stopDrag())
+  })
+
+  const zoomByButton = (factor: number) =>
+    setView(zoomAround(view, zoomCtx, factor, size.width / 2, size.height / 2))
   const animating = time !== null
   const drawing = tool !== 'select' && !animating
   const frame = animating ? frameAt(scenes, time) : null
@@ -82,11 +109,39 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     }
   })
 
+  /** Dragging on empty space moves the zoomed-in view. */
+  function startPan(e: KonvaEventObject<PointerEvent>) {
+    cleanupRef.current?.()
+    let last = { x: e.evt.clientX, y: e.evt.clientY }
+    const onMove = (ev: PointerEvent) => {
+      const latest = latestRef.current
+      if (!latest) return
+      setZoomState({
+        fieldType,
+        view: panBy(latest.view, latest.ctx, ev.clientX - last.x, ev.clientY - last.y),
+      })
+      last = { x: ev.clientX, y: ev.clientY }
+    }
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', cleanup)
+      window.removeEventListener('pointercancel', cleanup)
+      cleanupRef.current = null
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', cleanup)
+    window.addEventListener('pointercancel', cleanup)
+    cleanupRef.current = cleanup
+  }
+
   function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
-    if (animating) return
-    if (tool === 'select') {
-      // Tap on empty space clears the selection
-      if (e.target === e.target.getStage()) select(null)
+    if (touchCountRef.current > 1) return
+    const onEmptySpace = e.target === e.target.getStage()
+    if (tool === 'select' || animating) {
+      if (!onEmptySpace) return
+      // Tap on empty space clears the selection; dragging there pans when zoomed in.
+      if (!animating) select(null)
+      if (view.zoom > 1 && (e.evt.pointerType !== 'mouse' || e.evt.button === 0)) startPan(e)
       return
     }
     if (e.evt.pointerType === 'mouse' && e.evt.button !== 0) return
@@ -123,11 +178,11 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   return (
     <div
       ref={containerRef}
-      className="h-full w-full touch-none overflow-hidden"
+      className="relative h-full w-full touch-none overflow-hidden"
       style={{ cursor: drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
-        <Stage width={size.width} height={size.height} onPointerDown={handlePointerDown}>
+        <Stage ref={stageRef} width={size.width} height={size.height} onPointerDown={handlePointerDown}>
           <Layer>
             <FieldView
               fieldType={fieldType}
@@ -153,6 +208,14 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
             </FieldView>
           </Layer>
         </Stage>
+      )}
+      {layout.scale > 0 && (
+        <ZoomControls
+          zoom={view.zoom}
+          onZoomIn={() => zoomByButton(BUTTON_ZOOM_FACTOR)}
+          onZoomOut={() => zoomByButton(1 / BUTTON_ZOOM_FACTOR)}
+          onFit={() => setView(defaultView(viewport))}
+        />
       )}
     </div>
   )
