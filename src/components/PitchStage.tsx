@@ -24,6 +24,7 @@ import { ZoneCornerHandles } from './FieldZones'
 import { FieldView } from './FieldView'
 import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
+import { QuickMenu } from './QuickMenu'
 import { ZoomControls } from './ZoomControls'
 
 const PADDING = 12
@@ -353,6 +354,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       onMouseDown={(e) => {
         if (e.button === 1) e.preventDefault()
       }}
+      // The pitch has its own quick menu instead of the browser menu.
+      onContextMenu={(e) => e.preventDefault()}
       style={{ cursor: zoomAreaMode ? 'zoom-in' : drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
@@ -444,6 +447,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           </span>
         </div>
       )}
+      <QuickMenu />
       {marquee && (
         <div
           className={`pointer-events-none absolute border ${

@@ -8,6 +8,7 @@ import { useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updateGroupDrag } from './groupDrag'
 import { ItemShape } from './ItemShape'
+import { cancelLongPress, startLongPress } from './longPress'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
 
 /** Minimum grab radius in pixels so small items stay easy to touch. */
@@ -55,12 +56,26 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             y={item.y}
             opacity={item.opacity ?? 1}
             draggable={interactive}
-            onPointerDown={(e) => selectOnPointerDown(e, item.id)}
+            onPointerDown={(e) => {
+              selectOnPointerDown(e, item.id)
+              if (e.evt.pointerType === 'touch') {
+                startLongPress(e.evt, (x, y) => {
+                  select(item.id)
+                  useToolStore.getState().setQuickMenu({ itemId: item.id, x, y })
+                })
+              }
+            }}
+            onContextMenu={(e) => {
+              e.evt.preventDefault()
+              select(item.id)
+              useToolStore.getState().setQuickMenu({ itemId: item.id, x: e.evt.clientX, y: e.evt.clientY })
+            }}
             onClick={(e) => selectOnClick(e, item.id)}
             onTap={(e) => selectOnClick(e, item.id)}
             onMouseEnter={(e) => setCursor(e, 'grab')}
             onMouseLeave={(e) => setCursor(e, '')}
             onDragStart={(e) => {
+              cancelLongPress()
               if (!useDrillStore.getState().selectedIds.includes(item.id)) select(item.id)
               setDraggingId(item.id)
               beginGroupDrag(e.target, item.id)

@@ -14,6 +14,8 @@ interface ToolState {
   numberSteps: boolean
   /** Every tap adds an element to the selection or removes it (for touch screens) */
   multiSelect: boolean
+  /** Quick menu next to an item (screen position of the click or long press) */
+  quickMenu: { itemId: string; x: number; y: number } | null
   /** Item or line currently being dragged on the pitch (its handles are hidden meanwhile) */
   draggingId: string | null
   /** Zone whose corners are being edited (instead of resize/rotate handles) */
@@ -24,6 +26,7 @@ interface ToolState {
   setLineWeight: (weight: LineWeight) => void
   setNumberSteps: (numberSteps: boolean) => void
   setMultiSelect: (multiSelect: boolean) => void
+  setQuickMenu: (menu: { itemId: string; x: number; y: number } | null) => void
   setDraggingId: (id: string | null) => void
   setEditingCornersId: (id: string | null) => void
 }
@@ -35,6 +38,7 @@ export const useToolStore = create<ToolState>((set) => ({
   lineWeight: 'medium',
   numberSteps: false,
   multiSelect: false,
+  quickMenu: null,
   draggingId: null,
   editingCornersId: null,
   setTool: (tool) => set({ tool }),
@@ -43,6 +47,7 @@ export const useToolStore = create<ToolState>((set) => ({
   setLineWeight: (lineWeight) => set({ lineWeight }),
   setNumberSteps: (numberSteps) => set({ numberSteps }),
   setMultiSelect: (multiSelect) => set({ multiSelect }),
+  setQuickMenu: (quickMenu) => set({ quickMenu }),
   setDraggingId: (draggingId) => set({ draggingId }),
   setEditingCornersId: (editingCornersId) => set({ editingCornersId }),
 }))

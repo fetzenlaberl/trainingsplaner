@@ -22,8 +22,9 @@ import {
 import { useToolStore } from '../store/toolStore'
 import { nextStep } from '../lines/steps'
 import { LineStylePicker } from './LineStylePicker'
+import { ColorSwatches, LabelInput } from './controls'
 import { TextBoxDialog } from './TextBoxDialog'
-import { buttonClass, dangerButtonClass, inputClass } from './ui'
+import { buttonClass, dangerButtonClass } from './ui'
 
 const ROTATE_STEP = 15
 
@@ -138,46 +139,6 @@ function MultiControls() {
         Aufheben
       </button>
     </div>
-  )
-}
-
-/** Text field that edits live and records one undo step when typing is finished. */
-function LabelInput({
-  value,
-  onChange,
-  placeholder,
-  caption = 'Beschriftung',
-}: {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  caption?: string
-}) {
-  const snapshot = useDrillStore((s) => s.snapshot)
-  const pushHistory = useDrillStore((s) => s.pushHistory)
-  const beforeRef = useRef<DrillContent | null>(null)
-
-  return (
-    <label className="flex items-center gap-1.5 text-sm text-slate-400">
-      {caption}
-      <input
-        className={`${inputClass} w-28`}
-        value={value}
-        placeholder={placeholder}
-        maxLength={24}
-        onFocus={() => {
-          beforeRef.current = snapshot()
-        }}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => {
-          if (beforeRef.current) pushHistory(beforeRef.current)
-          beforeRef.current = null
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === 'Escape') e.currentTarget.blur()
-        }}
-      />
-    </label>
   )
 }
 
@@ -384,38 +345,6 @@ function LineControls({ line }: { line: Line }) {
         </>
       )}
     </>
-  )
-}
-
-function ColorSwatches({
-  label,
-  colors,
-  value,
-  onSelect,
-}: {
-  label: string
-  colors: { value: string; name: string }[]
-  value: string
-  onSelect: (color: string) => void
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex items-center gap-1">
-      <span className="text-sm text-slate-400">{label}</span>
-      {colors.map((c) => (
-        <button
-          key={c.value}
-          type="button"
-          title={c.name}
-          aria-label={`${label}: ${c.name}`}
-          aria-pressed={value === c.value}
-          onClick={() => onSelect(c.value)}
-          className={`h-7 w-7 rounded-full border-2 ${
-            value === c.value ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'
-          }`}
-          style={{ backgroundColor: c.value }}
-        />
-      ))}
-    </div>
   )
 }
 
