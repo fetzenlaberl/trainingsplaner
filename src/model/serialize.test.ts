@@ -36,6 +36,7 @@ const drill: Drill = {
           color: '#ffffff',
           pattern: 'dotted',
           weight: 'thick',
+          step: 1,
         },
         {
           id: 'l2',
@@ -48,6 +49,7 @@ const drill: Drill = {
           color: '#facc15',
           pattern: 'dashed',
           weight: 'medium',
+          step: null,
         },
       ],
       zones: [
@@ -177,6 +179,14 @@ describe('serializeDrill / parseDrill', () => {
     const [pass, run] = parseDrill(text).scenes[0].lines
     expect([pass.pattern, pass.weight]).toEqual(['solid', 'medium'])
     expect(run.pattern).toBe('dashed')
+  })
+
+  it('reads version 7 lines without step numbers', () => {
+    const text = tamper((d) => {
+      d.version = 7
+      for (const line of d.scenes[0].lines) delete line.step
+    })
+    expect(parseDrill(text).scenes[0].lines.map((l) => l.step)).toEqual([null, null])
   })
 
   it('round-trips plain lines without arrowhead', () => {
@@ -311,6 +321,7 @@ describe('parseDrill rejects invalid files', () => {
     ['ellipse with corners', (d) => (d.scenes[0].zones[0].shape = 'ellipse')],
     ['unknown line pattern', (d) => (d.scenes[0].lines[0].pattern = 'zigzag')],
     ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
+    ['step not a number', (d) => (d.scenes[0].lines[0].step = 'eins')],
     ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],

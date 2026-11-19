@@ -3,6 +3,7 @@ import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
+import { clampStep, nextStep, renumberSteps } from '../lines/steps'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import {
@@ -72,8 +73,12 @@ export interface DrillState extends DrillContent {
     start: Point,
     end: Point,
     color: string,
-    style?: { pattern?: LinePattern; weight?: LineWeight },
+    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean },
   ) => string
+  /** Sets the action step number of a line (null = none). */
+  setLineStep: (id: string, step: number | null) => void
+  /** Closes gaps in the step numbers of the current scene. */
+  renumberLineSteps: () => void
   setLineStyle: (id: string, style: { pattern?: LinePattern; weight?: LineWeight }) => void
   moveLine: (id: string, dx: number, dy: number) => void
   /** Removes a bend (not the start or end point). */
@@ -359,6 +364,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       color,
       pattern: style.pattern ?? defaultPattern(type),
       weight: style.weight ?? 'medium',
+      step: style.numbered ? nextStep(currentScene(get()).lines) : null,
     }
     set((s) => ({
       ...recorded(s),
@@ -398,6 +404,20 @@ export const useDrillStore = create<DrillState>((set, get) => ({
           lines: updateLine(scene.lines, id, (l) => ({ ...l, points: [l.points[0], l.points[l.points.length - 1]] })),
         })),
       }
+    }),
+  setLineStep: (id, step) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        lines: updateLine(scene.lines, id, (l) => ({ ...l, step: step === null ? null : clampStep(step) })),
+      })),
+    })),
+  renumberLineSteps: () =>
+    set((s) => {
+      const lines = currentScene(s).lines
+      const renumbered = renumberSteps(lines)
+      if (renumbered.every((l, i) => l.step === lines[i].step)) return {}
+      return { ...recorded(s), scenes: editScene(s, () => ({ lines: renumbered })) }
     }),
   setLineStyle: (id, style) =>
     set((s) => ({

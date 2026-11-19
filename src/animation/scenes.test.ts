@@ -18,6 +18,7 @@ function line(id: string, type: Line['type'], x1: number, y1: number, x2: number
     color: '#fff',
     pattern: 'solid',
     weight: 'medium',
+    step: null,
   }
 }
 

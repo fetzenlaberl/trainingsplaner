@@ -20,6 +20,7 @@ import {
   ZONE_SHAPES,
 } from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
+import { clampStep } from '../lines/steps'
 import { defaultPattern, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import type {
   Category,
@@ -43,7 +44,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 5: equipment items (mini goal, slalom, dummy, wall, ladder) and zones with goals.
 // Version 6: zones with free corners (rhombus, trapezoid, uneven shapes).
 // Version 7: line patterns and weights, plain lines, zones with any number of corners.
-export const FILE_VERSION = 7
+// Version 8: numbered action steps on lines.
+export const FILE_VERSION = 8
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -237,7 +239,9 @@ function parseLine(value: unknown): Line {
     typeof value.color !== 'string' ||
     // Pattern and weight were added in version 7.
     !(value.pattern === undefined || LINE_PATTERNS.includes(value.pattern as LinePattern)) ||
-    !(value.weight === undefined || LINE_WEIGHTS.includes(value.weight as LineWeight))
+    !(value.weight === undefined || LINE_WEIGHTS.includes(value.weight as LineWeight)) ||
+    // Steps were added in version 8.
+    !(value.step === undefined || value.step === null || isNumber(value.step))
   ) {
     throw corrupt()
   }
@@ -249,6 +253,7 @@ function parseLine(value: unknown): Line {
     color: value.color,
     pattern: (value.pattern as LinePattern | undefined) ?? defaultPattern(type),
     weight: (value.weight as LineWeight | undefined) ?? 'medium',
+    step: typeof value.step === 'number' ? clampStep(value.step) : null,
   }
 }
 

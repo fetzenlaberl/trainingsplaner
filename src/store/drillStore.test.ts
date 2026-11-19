@@ -92,6 +92,7 @@ describe('lines', () => {
         color: '#ffffff',
         pattern: 'solid',
         weight: 'medium',
+        step: null,
       },
     ])
   })
@@ -105,6 +106,21 @@ describe('lines', () => {
       ['pass', 'dotted', 'thin'],
       ['line', 'solid', 'medium'],
     ])
+  })
+
+  it('numbers new lines on request and changes or removes step numbers', () => {
+    store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })
+    const second = store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })
+    store().addLine('line', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
+    expect(lines().map((l) => l.step)).toEqual([1, 2, null])
+    store().setLineStep(second, 5)
+    expect(lines()[1].step).toBe(5)
+    store().renumberLineSteps()
+    expect(lines().map((l) => l.step)).toEqual([1, 2, null])
+    store().setLineStep(second, null)
+    expect(lines()[1].step).toBeNull()
+    store().undo()
+    expect(lines()[1].step).toBe(2)
   })
 
   it('changes pattern and weight of a line with undo', () => {

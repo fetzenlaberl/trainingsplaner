@@ -95,6 +95,9 @@ export function LineToolbar() {
   const setLinePattern = useToolStore((s) => s.setLinePattern)
   const lineWeight = useToolStore((s) => s.lineWeight)
   const setLineWeight = useToolStore((s) => s.setLineWeight)
+  const numberSteps = useToolStore((s) => s.numberSteps)
+  const setNumberSteps = useToolStore((s) => s.setNumberSteps)
+  const renumberLineSteps = useDrillStore((s) => s.renumberLineSteps)
   const select = useDrillStore((s) => s.select)
 
   return (
@@ -152,6 +155,29 @@ export function LineToolbar() {
           onPattern={setLinePattern}
           onWeight={setLineWeight}
         />
+      )}
+      {tool !== 'select' && (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            aria-pressed={numberSteps}
+            title="Neue Linien bekommen automatisch die nächste Schritt-Nummer"
+            onClick={() => setNumberSteps(!numberSteps)}
+            className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+              numberSteps ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            ①②③ Schritte nummerieren
+          </button>
+          <button
+            type="button"
+            title="Lücken in den Schritt-Nummern schließen"
+            onClick={renumberLineSteps}
+            className="flex min-h-10 items-center rounded-md bg-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-700"
+          >
+            Neu nummerieren
+          </button>
+        </div>
       )}
 
       {tool === 'select' && (

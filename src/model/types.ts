@@ -58,6 +58,8 @@ export interface Line {
   color: string
   pattern: LinePattern
   weight: LineWeight
+  /** Number of the action step shown on the line (1, 2, 3 …), or null */
+  step: number | null
 }
 
 export type ZoneShape = 'rect' | 'triangle' | 'ellipse'

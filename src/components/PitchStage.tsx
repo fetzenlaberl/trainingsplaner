@@ -71,6 +71,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const lineColor = useToolStore((s) => s.lineColor)
   const linePattern = useToolStore((s) => s.linePattern)
   const lineWeight = useToolStore((s) => s.lineWeight)
+  const numberSteps = useToolStore((s) => s.numberSteps)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null)
@@ -220,6 +221,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
         addLine(lineType, start, end, lineColor, {
           pattern: linePattern === 'auto' ? undefined : linePattern,
           weight: lineWeight,
+          numbered: numberSteps,
         })
       }
     }

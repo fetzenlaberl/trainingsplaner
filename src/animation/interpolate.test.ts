@@ -32,6 +32,7 @@ const curvedPass: Line = {
   color: '#fff',
   pattern: 'solid',
   weight: 'medium',
+  step: null,
 }
 
 const zigzagRun: Line = {
@@ -47,6 +48,7 @@ const zigzagRun: Line = {
   color: '#fff',
   pattern: 'dashed',
   weight: 'medium',
+  step: null,
 }
 
 describe('timing', () => {

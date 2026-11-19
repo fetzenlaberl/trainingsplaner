@@ -18,6 +18,7 @@ import {
   type DrillContent,
 } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
+import { nextStep } from '../lines/steps'
 import { LineStylePicker } from './LineStylePicker'
 import { TextBoxDialog } from './TextBoxDialog'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -249,9 +250,38 @@ function LineControls({ line }: { line: Line }) {
   const setLineSmooth = useDrillStore((s) => s.setLineSmooth)
   const clearLineBends = useDrillStore((s) => s.clearLineBends)
   const setLineStyle = useDrillStore((s) => s.setLineStyle)
+  const setLineStep = useDrillStore((s) => s.setLineStep)
+  const sceneLines = useDrillStore((s) => currentScene(s).lines)
 
   return (
     <>
+      <div role="group" aria-label="Schritt-Nummer" className="flex items-center gap-1">
+        <span className="text-sm text-slate-400">Schritt</span>
+        {line.step === null ? (
+          <button type="button" className={buttonClass} onClick={() => setLineStep(line.id, nextStep(sceneLines))}>
+            + Nummer
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              className={buttonClass}
+              aria-label="Kleinere Nummer"
+              disabled={line.step <= 1}
+              onClick={() => setLineStep(line.id, line.step! - 1)}
+            >
+              −
+            </button>
+            <span className="w-6 text-center text-sm font-semibold text-white tabular-nums">{line.step}</span>
+            <button type="button" className={buttonClass} aria-label="Größere Nummer" onClick={() => setLineStep(line.id, line.step! + 1)}>
+              +
+            </button>
+            <button type="button" className={buttonClass} title="Nummer entfernen" onClick={() => setLineStep(line.id, null)}>
+              ohne
+            </button>
+          </>
+        )}
+      </div>
       <LineStylePicker
         pattern={line.pattern}
         weight={line.weight}
