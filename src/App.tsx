@@ -8,6 +8,8 @@ import { PitchStage, type DropTarget } from './components/PitchStage'
 import { PitchStyleMenu } from './components/PitchStyleMenu'
 import { SessionsView } from './components/SessionsView'
 import { Timeline } from './components/Timeline'
+import { buttonClass } from './components/ui'
+import { useFullscreen } from './hooks/useFullscreen'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { usePlaybackStore } from './store/playbackStore'
 import { useViewStore, type View } from './store/viewStore'
@@ -22,6 +24,7 @@ export default function App() {
   const dropTargetRef = useRef<DropTarget | null>(null)
   const view = useViewStore((s) => s.view)
   const setView = useViewStore((s) => s.setView)
+  const fullscreen = useFullscreen()
   useKeyboardShortcuts(view === 'editor')
 
   return (
@@ -45,6 +48,17 @@ export default function App() {
             </button>
           ))}
         </nav>
+        {fullscreen.supported && (
+          <button
+            type="button"
+            className={`${buttonClass} order-last`}
+            aria-pressed={fullscreen.active}
+            title={fullscreen.active ? 'Vollbild beenden' : 'Vollbild: mehr Platz für das Feld'}
+            onClick={() => void fullscreen.toggle()}
+          >
+            {fullscreen.active ? '⤡ Vollbild beenden' : '⤢ Vollbild'}
+          </button>
+        )}
         {view === 'editor' && (
           <>
             <FileBar />
