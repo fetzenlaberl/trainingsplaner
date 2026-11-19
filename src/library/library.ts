@@ -1,4 +1,5 @@
 import { DrillFileError, drillFromData } from '../model/serialize'
+import { inPlayerRange, type AgeGroup, type PlayerRange } from '../model/drillInfo'
 import type { Category, Drill } from '../model/types'
 import { sessionFromData, type TrainingSession } from '../sessions/session'
 import { dayIntensityFromData, type DayIntensity } from '../sessions/week'
@@ -7,7 +8,7 @@ import { teamFromData, type Team } from '../teams/team'
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 // Backup versions follow the drill file versions (2: waypoints, 3: zones, 4: text boxes etc.).
 // Version 8: also contains teams (squads). Version 10: day intensities of the week planner.
-export const BACKUP_VERSION = 10
+export const BACKUP_VERSION = 11
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',
@@ -63,15 +64,23 @@ export function sortEntries(entries: LibraryEntry[]): LibraryEntry[] {
   return [...entries].sort((a, b) => b.updatedAt - a.updatedAt)
 }
 
-/** Filters by search text (title and description, case-insensitive) and category. */
+export interface LibraryFilter {
+  ageGroup?: AgeGroup | null
+  players?: PlayerRange | null
+}
+
+/** Filters by search text (title and description, case-insensitive), category, age group and players. */
 export function filterEntries(
   entries: LibraryEntry[],
   query: string,
   category: Category | null,
+  filter: LibraryFilter = {},
 ): LibraryEntry[] {
   const needle = query.trim().toLocaleLowerCase('de')
   return entries.filter((entry) => {
     if (category && entry.drill.category !== category) return false
+    if (filter.ageGroup && entry.drill.info.ageGroup !== filter.ageGroup) return false
+    if (filter.players && !inPlayerRange(entry.drill.info.players, filter.players)) return false
     if (!needle) return true
     const haystack = `${entry.drill.title} ${entry.drill.description}`.toLocaleLowerCase('de')
     return haystack.includes(needle)

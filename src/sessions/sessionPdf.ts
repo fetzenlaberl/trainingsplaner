@@ -3,6 +3,7 @@ import { pdfLayout } from '../export/layout'
 import { renderSceneToCanvas } from '../export/renderDrill'
 import type { LibraryEntry } from '../library/library'
 import { listEntries } from '../library/libraryDb'
+import { drillInfoLine } from '../model/drillInfo'
 import { fileNameFromTitle } from '../model/serialize'
 import { scheduleRows, sessionMetaLine, totalMinutes, type TrainingSession } from './session'
 
@@ -113,6 +114,7 @@ export async function exportSessionPdf(session: TrainingSession): Promise<void> 
     if (!entry) continue
     const canvas = await renderSceneToCanvas(entry.drill.fieldType, entry.drill.pitch, entry.drill.scenes[0])
     const description = [
+      drillInfoLine(entry.drill.info),
       entry.drill.description.trim(),
       row.block.notes.trim() ? `Hinweis für diese Einheit: ${row.block.notes.trim()}` : '',
     ]

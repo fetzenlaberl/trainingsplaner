@@ -318,6 +318,7 @@ describe('load / new', () => {
     title: 'Rondo 4 gegen 2',
     description: 'Aufwärmen',
     category: 'warmup',
+    info: { players: 6, durationMin: 10, fieldSize: '', ageGroup: null },
     fieldType: 'penalty',
     pitch: { color: 'darkGreen', grid: 'thirds', orientation: 'portrait' },
     scenes: [
@@ -346,6 +347,13 @@ describe('load / new', () => {
 })
 
 describe('title, description and category', () => {
+  it('saves drill info without recording it in the history', () => {
+    store().setInfo({ players: 12, ageGroup: 'U13' })
+    store().setInfo({ durationMin: 20 })
+    expect(store().past).toEqual([])
+    expect(currentDrill(store()).info).toEqual({ players: 12, durationMin: 20, fieldSize: '', ageGroup: 'U13' })
+  })
+
   it('are saved with the drill but not recorded in the history', () => {
     store().setTitle('Rondo')
     store().setDescription('Zwei Kontakte')

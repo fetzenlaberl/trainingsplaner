@@ -21,6 +21,7 @@ import {
 } from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
 import { clampStep } from '../lines/steps'
+import { drillInfoFromData, EMPTY_DRILL_INFO } from './drillInfo'
 import { defaultPattern, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import type {
   Category,
@@ -45,7 +46,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 6: zones with free corners (rhombus, trapezoid, uneven shapes).
 // Version 7: line patterns and weights, plain lines, zones with any number of corners.
 // Version 8: numbered action steps on lines.
-export const FILE_VERSION = 8
+// Version 9: drill info (players, duration, field size, age group).
+export const FILE_VERSION = 9
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -82,6 +84,7 @@ export function emptyDrill(): Drill {
     title: DEFAULT_TITLE,
     description: '',
     category: null,
+    info: { ...EMPTY_DRILL_INFO },
     fieldType: 'full',
     pitch: { ...DEFAULT_PITCH_STYLE },
     scenes: [{ durationMs: DEFAULT_SCENE_DURATION_MS, items: [], lines: [], zones: [] }],
@@ -124,9 +127,12 @@ export function drillFromData(data: unknown): Drill {
   ) {
     throw corrupt()
   }
+  const info = drillInfoFromData(data.info)
+  if (!info) throw corrupt()
   return {
     title: data.title,
     description: data.description,
+    info,
     category: (data.category as Category | undefined) ?? null,
     fieldType: data.fieldType as FieldType,
     pitch: parsePitchStyle(data.pitch),

@@ -1,4 +1,5 @@
 import type { jsPDF as JsPDF } from 'jspdf'
+import { drillInfoLine } from '../model/drillInfo'
 import { fileNameFromTitle } from '../model/serialize'
 import { useDrillStore } from '../store/drillStore'
 import { downloadBlob } from './download'
@@ -74,8 +75,9 @@ export async function exportPdf(): Promise<void> {
   // Loaded on demand so jsPDF does not slow down the app start.
   // White around the tilted pitch, so the printed page has no black corners.
   const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderForExport('#ffffff')])
-  const { title, description } = useDrillStore.getState()
-  const layout = pdfLayout(canvas.width, canvas.height, description.trim() !== '')
+  const { title, description: text, info } = useDrillStore.getState()
+  const description = [drillInfoLine(info), text.trim()].filter(Boolean).join('\n\n')
+  const layout = pdfLayout(canvas.width, canvas.height, description !== '')
 
   const doc = new jsPDF({ orientation: layout.orientation, unit: 'mm', format: 'a4' })
   doc.setProperties({ title })

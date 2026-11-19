@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { CATEGORY_LABELS } from '../library/library'
 import { CATEGORIES } from '../model/serialize'
+import { AGE_GROUPS, parseCount, type AgeGroup } from '../model/drillInfo'
 import type { Category } from '../model/types'
 import { useDrillStore } from '../store/drillStore'
 import { buttonClass, inputClass } from './ui'
@@ -13,6 +14,8 @@ export function DetailsDialog({ onClose }: { onClose: () => void }) {
   const setTitle = useDrillStore((s) => s.setTitle)
   const setDescription = useDrillStore((s) => s.setDescription)
   const setCategory = useDrillStore((s) => s.setCategory)
+  const info = useDrillStore((s) => s.info)
+  const setInfo = useDrillStore((s) => s.setInfo)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
 
@@ -70,6 +73,52 @@ export function DetailsDialog({ onClose }: { onClose: () => void }) {
             ))}
           </select>
         </label>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <label className="flex flex-col gap-1 text-sm text-slate-400">
+            Spieler
+            <input
+              className={inputClass}
+              inputMode="numeric"
+              placeholder="z. B. 12"
+              value={info.players ?? ''}
+              onChange={(e) => setInfo({ players: parseCount(e.target.value, 99) })}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-slate-400">
+            Dauer (min)
+            <input
+              className={inputClass}
+              inputMode="numeric"
+              placeholder="z. B. 15"
+              value={info.durationMin ?? ''}
+              onChange={(e) => setInfo({ durationMin: parseCount(e.target.value, 240) })}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-slate-400">
+            Feldgröße
+            <input
+              className={inputClass}
+              placeholder="30 × 20 m"
+              value={info.fieldSize}
+              onChange={(e) => setInfo({ fieldSize: e.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-slate-400">
+            Altersklasse
+            <select
+              className={inputClass}
+              value={info.ageGroup ?? ''}
+              onChange={(e) => setInfo({ ageGroup: e.target.value === '' ? null : (e.target.value as AgeGroup) })}
+            >
+              <option value="">–</option>
+              {AGE_GROUPS.map((a) => (
+                <option key={a.key} value={a.key}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <label className="flex flex-col gap-1 text-sm text-slate-400">
           Beschreibung
           <textarea

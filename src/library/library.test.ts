@@ -74,6 +74,15 @@ describe('filterEntries', () => {
     expect(filterEntries(entries, 'überzahl', null).map((e) => e.id)).toEqual(['3'])
   })
 
+  it('filters by age group and number of players', () => {
+    const withInfo = (id: string, players: number | null, ageGroup: 'U11' | 'U13' | null) =>
+      entry(id, { ...drill(id), info: { players, durationMin: null, fieldSize: '', ageGroup } }, 1)
+    const list = [withInfo('a', 8, 'U11'), withInfo('b', 12, 'U13'), withInfo('c', null, null)]
+    expect(filterEntries(list, '', null, { ageGroup: 'U13' }).map((e) => e.id)).toEqual(['b'])
+    expect(filterEntries(list, '', null, { players: '7to10' }).map((e) => e.id)).toEqual(['a'])
+    expect(filterEntries(list, '', null, { ageGroup: 'U11', players: '11to14' })).toEqual([])
+  })
+
   it('filters by category and combines with search', () => {
     expect(filterEntries(entries, '', 'shooting').map((e) => e.id)).toEqual(['2'])
     expect(filterEntries(entries, 'rondo', 'shooting')).toEqual([])

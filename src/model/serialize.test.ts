@@ -14,6 +14,7 @@ const drill: Drill = {
   title: 'Torabschluss',
   description: 'Flanke und Abschluss',
   category: 'shooting',
+  info: { players: 12, durationMin: 15, fieldSize: '30 × 20 m', ageGroup: 'U13' },
   fieldType: 'half',
   pitch: { color: 'white', grid: 'positional', orientation: 'portrait' },
   scenes: [
@@ -181,6 +182,14 @@ describe('serializeDrill / parseDrill', () => {
     expect(run.pattern).toBe('dashed')
   })
 
+  it('reads version 8 files without drill info', () => {
+    const text = tamper((d) => {
+      d.version = 8
+      delete d.info
+    })
+    expect(parseDrill(text).info).toEqual({ players: null, durationMin: null, fieldSize: '', ageGroup: null })
+  })
+
   it('reads version 7 lines without step numbers', () => {
     const text = tamper((d) => {
       d.version = 7
@@ -322,6 +331,8 @@ describe('parseDrill rejects invalid files', () => {
     ['unknown line pattern', (d) => (d.scenes[0].lines[0].pattern = 'zigzag')],
     ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
     ['step not a number', (d) => (d.scenes[0].lines[0].step = 'eins')],
+    ['unknown age group', (d) => (d.info.ageGroup = 'U99')],
+    ['negative player count', (d) => (d.info.players = -3)],
     ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],

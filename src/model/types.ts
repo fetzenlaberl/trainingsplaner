@@ -1,6 +1,7 @@
 import type { FieldType } from '../field/dimensions'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { LinePattern, LineWeight } from '../lines/styles'
+import type { DrillInfo } from './drillInfo'
 
 export type ItemType =
   | 'player'
@@ -114,6 +115,8 @@ export interface Drill {
   title: string
   description: string
   category: Category | null
+  /** Players, duration, field size and age group */
+  info: DrillInfo
   fieldType: FieldType
   /** Pitch color and grid overlay */
   pitch: PitchStyle

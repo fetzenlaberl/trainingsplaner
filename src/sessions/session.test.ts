@@ -43,6 +43,11 @@ describe('blocks', () => {
     expect(block.durationMin).toBe(DEFAULT_BLOCK_MINUTES)
   })
 
+  it('takes the block duration from the drill info when set', () => {
+    const long = { ...entry, drill: { ...entry.drill, info: { ...entry.drill.info, durationMin: 25 } } }
+    expect(drillBlock(long).durationMin).toBe(25)
+  })
+
   it('creates a free block without drill', () => {
     expect(freeBlock().drillId).toBeNull()
   })

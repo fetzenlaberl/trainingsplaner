@@ -70,7 +70,7 @@ export function drillBlock(entry: LibraryEntry): SessionBlock {
     id: createId('block'),
     drillId: entry.id,
     title: entry.drill.title,
-    durationMin: DEFAULT_BLOCK_MINUTES,
+    durationMin: entry.drill.info.durationMin ?? DEFAULT_BLOCK_MINUTES,
     notes: '',
   }
 }

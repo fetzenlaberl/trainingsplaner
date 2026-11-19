@@ -13,6 +13,7 @@ import {
 import { isEditorDirty, openEntryInEditor, unlinkEditor } from '../library/libraryActions'
 import { deleteEntry, listEntries, putEntries, putEntry } from '../library/libraryDb'
 import { useLibraryLink } from '../library/libraryStore'
+import { AGE_GROUPS, drillInfoLine, PLAYER_RANGES, type AgeGroup, type PlayerRange } from '../model/drillInfo'
 import { CATEGORIES, DrillFileError } from '../model/serialize'
 import { listSessions, putSessions } from '../sessions/sessionDb'
 import { listTeams, putTeams } from '../teams/teamDb'
@@ -42,6 +43,8 @@ export function LibraryView() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
+  const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null)
+  const [players, setPlayers] = useState<PlayerRange | null>(null)
   const linkedId = useLibraryLink((s) => s.libraryId)
   const setView = useViewStore((s) => s.setView)
   const importInputRef = useRef<HTMLInputElement>(null)
@@ -148,7 +151,7 @@ export function LibraryView() {
     await reload()
   }
 
-  const visible = entries ? filterEntries(entries, query, category) : []
+  const visible = entries ? filterEntries(entries, query, category, { ageGroup, players }) : []
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -176,6 +179,32 @@ export function LibraryView() {
             </button>
           ))}
         </div>
+        <select
+          className={inputClass}
+          aria-label="Altersklasse"
+          value={ageGroup ?? ''}
+          onChange={(e) => setAgeGroup(e.target.value === '' ? null : (e.target.value as AgeGroup))}
+        >
+          <option value="">Alle Altersklassen</option>
+          {AGE_GROUPS.map((a) => (
+            <option key={a.key} value={a.key}>
+              {a.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className={inputClass}
+          aria-label="Spieleranzahl"
+          value={players ?? ''}
+          onChange={(e) => setPlayers(e.target.value === '' ? null : (e.target.value as PlayerRange))}
+        >
+          <option value="">Alle Spielerzahlen</option>
+          {PLAYER_RANGES.map((r) => (
+            <option key={r.key} value={r.key}>
+              {r.name}
+            </option>
+          ))}
+        </select>
         <div className="ml-auto flex gap-1.5">
           <button type="button" className={buttonClass} onClick={() => void handleExportBackup()}>
             Sicherung exportieren
@@ -237,6 +266,9 @@ export function LibraryView() {
                   {FIELD_TYPE_LABELS[entry.drill.fieldType]} · {entry.drill.scenes.length}{' '}
                   {entry.drill.scenes.length === 1 ? 'Szene' : 'Szenen'} · geändert {formatDate(entry.updatedAt)}
                 </p>
+                {drillInfoLine(entry.drill.info) && (
+                  <p className="text-xs text-slate-300">{drillInfoLine(entry.drill.info)}</p>
+                )}
                 {entry.id === linkedId && <p className="text-xs text-emerald-300">Gerade im Editor geöffnet</p>}
                 {entry.drill.description && (
                   <p className="line-clamp-2 text-sm text-slate-300">{entry.drill.description}</p>
