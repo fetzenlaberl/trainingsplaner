@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEFAULT_PLAYER_SIZE, MAX_ITEM_SIZE, MIN_ITEM_SIZE, TEAM_COLORS } from '../items/palette'
+import {
+  DEFAULT_PLAYER_SIZE,
+  ITEM_TEMPLATES,
+  KEEPER_LABEL,
+  MAX_ITEM_SIZE,
+  MIN_ITEM_SIZE,
+  TEAM_COLORS,
+} from '../items/palette'
 import { MAX_ZONE_SIZE, MIN_ZONE_SIZE, ZONE_TEMPLATES } from '../items/zones'
 import { emptyDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
@@ -9,6 +16,7 @@ import {
   currentScene,
   HISTORY_LIMIT,
   MIN_SCENE_DURATION_MS,
+  FIRST_PLAYER_NUMBER,
   nextPlayerNumber,
   normalizeAngle,
   useDrillStore,
@@ -43,7 +51,7 @@ describe('items', () => {
     store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
     store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
     store().addItem({ type: 'player', color: TEAM_COLORS.blue }, 0, 0)
-    expect(items().map((i) => i.label)).toEqual(['1', '2', '1'])
+    expect(items().map((i) => i.label)).toEqual(['2', '3', '2'])
   })
 
   it('keeps an explicit label', () => {
@@ -153,8 +161,15 @@ describe('copy and delete', () => {
     const copy = items()[1]
     expect(copyId).not.toBe(id)
     expect([copy.x, copy.y]).toEqual([10 + COPY_OFFSET, 10 + COPY_OFFSET])
-    expect(copy.label).toBe('2')
+    expect(copy.label).toBe('3')
     expect(store().selectedId).toBe(copyId)
+  })
+
+  it('labels the goalkeeper from the sidebar as TM and keeps it when copying', () => {
+    const keeper = ITEM_TEMPLATES.find((t) => t.key === 'keeper')!
+    store().addItem(keeper.item, 0, 0)
+    store().insertCopy(items()[0])
+    expect(items().map((i) => i.label)).toEqual([KEEPER_LABEL, KEEPER_LABEL])
   })
 
   it('keeps non-numeric labels when copying', () => {
@@ -483,7 +498,7 @@ describe('player shapes', () => {
     store().addItem({ type: 'player', color: red }, 0, 0)
     store().addItem({ type: 'player', color: red, shape: 'triangle' }, 0, 0)
     store().addItem({ type: 'player', color: red, shape: 'cross' }, 0, 0)
-    expect(items().map((i) => i.label)).toEqual(['1', '2', '1', '1'])
+    expect(items().map((i) => i.label)).toEqual(['2', '3', '2', '2'])
   })
 
   it('changes the shape with undo', () => {
@@ -513,7 +528,7 @@ describe('helpers', () => {
       { ...base, id: 'c', color: 'blue', label: '9' },
     ]
     expect(nextPlayerNumber(items, 'red')).toBe(8)
-    expect(nextPlayerNumber(items, 'green')).toBe(1)
+    expect(nextPlayerNumber(items, 'green')).toBe(FIRST_PLAYER_NUMBER)
   })
 
   it('normalizeAngle keeps angles in [0, 360)', () => {

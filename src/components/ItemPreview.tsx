@@ -1,5 +1,6 @@
 import { Group, Layer, Stage } from 'react-konva'
 import { ITEM_EXTENT, type NewItem } from '../items/palette'
+import { FIRST_PLAYER_NUMBER } from '../store/drillStore'
 import { ItemShape } from './ItemShape'
 
 interface ItemPreviewProps {
@@ -19,7 +20,7 @@ export function ItemPreview({ item, scale }: ItemPreviewProps) {
           <ItemShape
             type={item.type}
             color={item.color}
-            label={item.label ?? (item.type === 'player' ? '1' : '')}
+            label={item.label ?? (item.type === 'player' ? String(FIRST_PLAYER_NUMBER) : '')}
             rotation={item.rotation ?? 0}
             shape={item.shape ?? 'circle'}
           />

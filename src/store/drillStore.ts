@@ -105,9 +105,12 @@ function createId(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${idCounter}`
 }
 
+/** Number 1 belongs to the goalkeeper, so field players start at 2. */
+export const FIRST_PLAYER_NUMBER = 2
+
 /** Next free shirt number for players of the given color and shape (e.g. red triangles count separately). */
 export function nextPlayerNumber(items: Item[], color: string, shape: PlayerShape = 'circle'): number {
-  let max = 0
+  let max = FIRST_PLAYER_NUMBER - 1
   for (const item of items) {
     if (item.type !== 'player' || item.color !== color || item.shape !== shape) continue
     const n = Number.parseInt(item.label, 10)

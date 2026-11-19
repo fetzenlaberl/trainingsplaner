@@ -8,6 +8,9 @@ export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross']
 /** Players start larger so they are easy to see on the full field. */
 export const DEFAULT_PLAYER_SIZE = 1.5
 
+/** The goalkeeper is labeled instead of numbered. */
+export const KEEPER_LABEL = 'TM'
+
 export const MIN_ITEM_SIZE = 0.5
 export const MAX_ITEM_SIZE = 2.5
 export const ITEM_SIZE_STEP = 0.25
@@ -38,7 +41,7 @@ function player(color: string, shape: PlayerShape): NewItem {
 export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'player-red', name: 'Spieler Rot', item: player(TEAM_COLORS.red, 'circle') },
   { key: 'player-blue', name: 'Spieler Blau', item: player(TEAM_COLORS.blue, 'circle') },
-  { key: 'keeper', name: 'Torwart', item: player(TEAM_COLORS.keeper, 'circle') },
+  { key: 'keeper', name: 'Torwart', item: { ...player(TEAM_COLORS.keeper, 'circle'), label: KEEPER_LABEL } },
   { key: 'triangle-red', name: 'Dreieck Rot', item: player(TEAM_COLORS.red, 'triangle') },
   { key: 'triangle-blue', name: 'Dreieck Blau', item: player(TEAM_COLORS.blue, 'triangle') },
   { key: 'cross-red', name: 'Kreuz Rot', item: player(TEAM_COLORS.red, 'cross') },
