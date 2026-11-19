@@ -86,6 +86,32 @@ export function zoneExtent(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corn
   return { width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) }
 }
 
+/** Smallest and largest number of corners a zone outline may have. */
+export const MIN_CORNERS = 3
+export const MAX_CORNERS = 32
+
+/** Inserts a corner after corner `afterIndex` (the last edge closes back to the first corner). */
+export function insertCorner(corners: Point[], afterIndex: number, point: Point): Point[] {
+  if (corners.length >= MAX_CORNERS) return corners
+  const result = [...corners]
+  result.splice(afterIndex + 1, 0, point)
+  return result
+}
+
+/** Removes a corner, but never below a triangle. */
+export function removeCorner(corners: Point[], index: number): Point[] {
+  if (corners.length <= MIN_CORNERS || index < 0 || index >= corners.length) return corners
+  return corners.filter((_, i) => i !== index)
+}
+
+/** Middle of each edge of a closed outline (edge i runs from corner i to corner i + 1). */
+export function edgeMidpoints(corners: Point[]): Point[] {
+  return corners.map((p, i) => {
+    const q = corners[(i + 1) % corners.length]
+    return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }
+  })
+}
+
 const normalizeDegrees = (deg: number) => ((deg % 360) + 360) % 360
 
 /**

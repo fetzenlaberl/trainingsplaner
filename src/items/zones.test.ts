@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { baseCorners, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions } from './zones'
+import {
+  baseCorners,
+  edgeMidpoints,
+  insertCorner,
+  MAX_CORNERS,
+  removeCorner,
+  ZONE_TEMPLATES,
+  zoneCorners,
+  zoneExtent,
+  zoneGoalPositions,
+} from './zones'
 
 const rect = (width: number, height: number) => baseCorners('rect', width, height)
 
@@ -27,6 +37,37 @@ describe('baseCorners / zoneCorners / zoneExtent', () => {
     expect(zoneCorners({ shape: 'rect', width: 1, height: 1, corners })).toBe(corners)
     expect(zoneCorners({ shape: 'ellipse', width: 10, height: 10, corners: null })).toEqual([])
     expect(zoneExtent({ shape: 'rect', width: 1, height: 1, corners })).toEqual({ width: 20, height: 16 })
+  })
+})
+
+describe('insertCorner / removeCorner / edgeMidpoints', () => {
+  const square = rect(10, 10)
+
+  it('inserts a corner after the given one, also on the closing edge', () => {
+    expect(insertCorner(square, 0, { x: 0, y: -8 })[1]).toEqual({ x: 0, y: -8 })
+    expect(insertCorner(square, 3, { x: -8, y: 0 })).toHaveLength(5)
+    expect(insertCorner(square, 3, { x: -8, y: 0 })[4]).toEqual({ x: -8, y: 0 })
+  })
+
+  it('stops at the maximum number of corners', () => {
+    const many = Array.from({ length: MAX_CORNERS }, (_, i) => ({ x: i, y: 0 }))
+    expect(insertCorner(many, 0, { x: 0, y: 1 })).toBe(many)
+  })
+
+  it('removes corners but keeps at least a triangle', () => {
+    const pentagon = insertCorner(square, 0, { x: 0, y: -8 })
+    expect(removeCorner(pentagon, 1)).toEqual(square)
+    const triangle = baseCorners('triangle', 10, 10)
+    expect(removeCorner(triangle, 0)).toBe(triangle)
+  })
+
+  it('finds the middle of every edge including the closing one', () => {
+    expect(edgeMidpoints(square)).toEqual([
+      { x: 0, y: -5 },
+      { x: 5, y: 0 },
+      { x: 0, y: 5 },
+      { x: -5, y: 0 },
+    ])
   })
 })
 

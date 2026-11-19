@@ -418,6 +418,9 @@ function ZoneControls({ zone }: { zone: Zone }) {
               {goals}
             </button>
           ))}
+          {zone.goals > 0 && zone.corners && zone.corners.length !== 4 && (
+            <span className="text-xs text-amber-300">Tore nur bei 4 Ecken</span>
+          )}
         </div>
       )}
       <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLive(zone.id, { label })} />

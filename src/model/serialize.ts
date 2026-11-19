@@ -13,7 +13,9 @@ import {
   clampFillOpacity,
   clampZoneSize,
   DEFAULT_ZONE_FILL_OPACITY,
+  MAX_CORNERS,
   MAX_ZONE_SIZE,
+  MIN_CORNERS,
   ZONE_GOAL_OPTIONS,
   ZONE_SHAPES,
 } from '../items/zones'
@@ -253,8 +255,8 @@ function parseLine(value: unknown): Line {
 function parseCorners(value: unknown, shape: ZoneShape): Point[] | null {
   if (value === undefined || value === null) return null
   const corners = (value as unknown[]).map(parsePoint)
-  const expected = shape === 'triangle' ? 3 : shape === 'rect' ? 4 : 0
-  if (corners.length !== expected) throw corrupt()
+  // Since version 7 the outline may have any number of corners (rectangles and triangles only).
+  if (shape === 'ellipse' || corners.length < MIN_CORNERS || corners.length > MAX_CORNERS) throw corrupt()
   return corners.map((p) => ({
     x: Math.min(Math.max(p.x, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),
     y: Math.min(Math.max(p.y, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),

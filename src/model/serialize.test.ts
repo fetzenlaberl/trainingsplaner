@@ -187,6 +187,13 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'line', pattern: 'dashdot' })
   })
 
+  it('reads outlines with any number of corners', () => {
+    const text = tamper((d) => {
+      d.scenes[0].zones[0].corners.push({ x: 0, y: 12 })
+    })
+    expect(parseDrill(text).scenes[0].zones[0].corners).toHaveLength(5)
+  })
+
   it('reads version 5 zones without free corners', () => {
     const text = tamper((d) => {
       d.version = 5
@@ -300,7 +307,8 @@ describe('parseDrill rejects invalid files', () => {
     ['highlight not yes/no', (d) => (d.scenes[0].items[0].highlight = 'ja')],
     ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
     ['unsupported number of goals', (d) => (d.scenes[0].zones[0].goals = 5)],
-    ['rectangle with three corners', (d) => d.scenes[0].zones[0].corners.pop()],
+    ['outline with only two corners', (d) => d.scenes[0].zones[0].corners.splice(2)],
+    ['ellipse with corners', (d) => (d.scenes[0].zones[0].shape = 'ellipse')],
     ['unknown line pattern', (d) => (d.scenes[0].lines[0].pattern = 'zigzag')],
     ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
     ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
