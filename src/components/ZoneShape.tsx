@@ -1,5 +1,6 @@
 import { useContext } from 'react'
-import { Ellipse, Group, Line, Text } from 'react-konva'
+import { Ellipse, Group, Line } from 'react-konva'
+import { MeterText } from './MeterText'
 import { displayColor } from '../field/pitchStyle'
 import { MINIGOAL } from '../items/equipment'
 import { zoneCorners, zoneExtent, zoneGoalPositions } from '../items/zones'
@@ -78,7 +79,7 @@ export function ZoneShape({
           </Group>
         ))}
       {label && (
-        <Text
+        <MeterText
           text={label}
           rotation={upright}
           width={labelWidth}

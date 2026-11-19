@@ -1,6 +1,7 @@
 import Konva from 'konva'
 import { useContext, useMemo } from 'react'
-import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
+import { Circle, Group, Line, Rect, RegularPolygon } from 'react-konva'
+import { MeterText, TEXT_SCALE } from './MeterText'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
 import { MINIGOAL } from '../items/equipment'
@@ -115,7 +116,7 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return <ReboundShape color={color} rotation={rotation} />
     case 'text':
       return (
-        <Text
+        <MeterText
           text={label}
           rotation={rotation + upright}
           width={TEXT_BOX_WIDTH}
@@ -187,7 +188,7 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
         ))}
         {/* The number sits on the crossing point; a white outline keeps it readable on the arms. */}
         <Group rotation={upright}>
-          <Text
+          <MeterText
             text={label}
             width={CROSS_HALF * 2}
             height={CROSS_HALF * 2}
@@ -219,7 +220,7 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
 
 function PlayerLabel({ label, color, box }: { label: string; color: string; box: number }) {
   return (
-    <Text
+    <MeterText
       text={label}
       width={box}
       height={box}
@@ -266,7 +267,7 @@ function NameTag({ name }: { name: string }) {
         stroke="rgba(15,23,42,0.35)"
         strokeWidth={0.05}
       />
-      <Text
+      <MeterText
         text={name}
         x={-width / 2}
         y={top}
@@ -290,13 +291,14 @@ function TextBox({ text, background, rotation }: { text: string; background: str
   const height = useMemo(() => {
     const measure = new Konva.Text({
       text: text || ' ',
-      width: TEXTBOX_WIDTH,
-      padding: TEXTBOX_PADDING,
-      fontSize: TEXTBOX_FONT_SIZE,
+      // Measured at the same enlarged size as it is drawn (see MeterText).
+      width: TEXTBOX_WIDTH * TEXT_SCALE,
+      padding: TEXTBOX_PADDING * TEXT_SCALE,
+      fontSize: TEXTBOX_FONT_SIZE * TEXT_SCALE,
       lineHeight: 1.25,
       wrap: 'word',
     })
-    const h = measure.height()
+    const h = measure.height() / TEXT_SCALE
     measure.destroy()
     return h
   }, [text])
@@ -313,7 +315,7 @@ function TextBox({ text, background, rotation }: { text: string; background: str
         stroke="rgba(15,23,42,0.3)"
         strokeWidth={0.08}
       />
-      <Text
+      <MeterText
         text={text}
         x={-TEXTBOX_WIDTH / 2}
         y={-height / 2}

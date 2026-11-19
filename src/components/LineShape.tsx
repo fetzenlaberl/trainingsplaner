@@ -10,7 +10,8 @@ import {
   wavePolyline,
 } from '../lines/geometry'
 import { useContext } from 'react'
-import { Circle, Text } from 'react-konva'
+import { Circle } from 'react-konva'
+import { MeterText } from './MeterText'
 import { pointAtDistance } from '../lines/geometry'
 import { ViewRotationContext } from './viewRotationContext'
 import { displayColor } from '../field/pitchStyle'
@@ -120,7 +121,7 @@ function StepBadge({
   return (
     <>
       <Circle x={at.x} y={at.y} radius={radius} fill="#111827" stroke="#ffffff" strokeWidth={radius * 0.15} />
-      <Text
+      <MeterText
         text={String(step)}
         x={at.x}
         y={at.y}

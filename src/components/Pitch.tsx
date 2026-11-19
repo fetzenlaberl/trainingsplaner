@@ -1,5 +1,6 @@
 import { useContext } from 'react'
-import { Circle, Group, Line, Rect, Text } from 'react-konva'
+import { Circle, Group, Line, Rect } from 'react-konva'
+import { MeterText } from './MeterText'
 import { PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
 import { getGoals, getPitchMarkings } from '../field/markings'
 import { gridLabels, gridLines, PITCH_COLORS, type PitchStyle } from '../field/pitchStyle'
@@ -77,7 +78,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         />
       ))}
       {gridLabels(pitch.grid).map((label) => (
-        <Text
+        <MeterText
           key={`zone-${label.number}`}
           text={String(label.number)}
           x={label.x}
