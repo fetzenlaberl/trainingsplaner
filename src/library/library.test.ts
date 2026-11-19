@@ -74,6 +74,12 @@ describe('filterEntries', () => {
     expect(filterEntries(entries, 'überzahl', null).map((e) => e.id)).toEqual(['3'])
   })
 
+  it('filters by library area', () => {
+    const list = [entry('a', { ...drill('A'), area: 'drill' }, 1), entry('b', { ...drill('B'), area: 'tactic' }, 1)]
+    expect(filterEntries(list, '', null, { area: 'tactic' }).map((e) => e.id)).toEqual(['b'])
+    expect(filterEntries(list, '', null, { area: null })).toHaveLength(2)
+  })
+
   it('filters by age group and number of players', () => {
     const withInfo = (id: string, players: number | null, ageGroup: 'U11' | 'U13' | null) =>
       entry(id, { ...drill(id), info: { players, durationMin: null, fieldSize: '', ageGroup } }, 1)

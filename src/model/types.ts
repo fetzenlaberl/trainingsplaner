@@ -116,10 +116,14 @@ export type Category =
   | 'game'
   | 'cooldown'
 
+/** Library area: training drill or tactics / line-up. */
+export type DrillArea = 'drill' | 'tactic'
+
 export interface Drill {
   title: string
   description: string
   category: Category | null
+  area: DrillArea
   /** Players, duration, field size and age group */
   info: DrillInfo
   fieldType: FieldType

@@ -21,6 +21,7 @@ export function startAutosave(): () => void {
       s.description === prev.description &&
       s.category === prev.category &&
       s.info === prev.info &&
+      s.area === prev.area &&
       s.fieldType === prev.fieldType &&
       s.pitch === prev.pitch &&
       s.scenes === prev.scenes

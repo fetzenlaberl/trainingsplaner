@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react'
-import { CATEGORY_LABELS } from '../library/library'
+import { AREA_LABELS, CATEGORY_LABELS } from '../library/library'
 import { CATEGORIES } from '../model/serialize'
 import { AGE_GROUPS, parseCount, type AgeGroup } from '../model/drillInfo'
-import type { Category } from '../model/types'
+import type { Category, DrillArea } from '../model/types'
 import { useDrillStore } from '../store/drillStore'
 import { buttonClass, inputClass } from './ui'
 
@@ -16,6 +16,8 @@ export function DetailsDialog({ onClose }: { onClose: () => void }) {
   const setCategory = useDrillStore((s) => s.setCategory)
   const info = useDrillStore((s) => s.info)
   const setInfo = useDrillStore((s) => s.setInfo)
+  const area = useDrillStore((s) => s.area)
+  const setArea = useDrillStore((s) => s.setArea)
   const firstFieldRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
 
@@ -58,6 +60,24 @@ export function DetailsDialog({ onClose }: { onClose: () => void }) {
             onChange={(e) => setTitle(e.target.value)}
           />
         </label>
+        <div role="group" aria-label="Bereich" className="flex flex-col gap-1 text-sm text-slate-400">
+          Bereich in der Bibliothek
+          <div className="flex gap-1">
+            {(Object.keys(AREA_LABELS) as DrillArea[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={area === key}
+                onClick={() => setArea(key)}
+                className={`min-h-10 flex-1 rounded-md px-2 text-sm ${
+                  area === key ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+              >
+                {AREA_LABELS[key]}
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="flex flex-col gap-1 text-sm text-slate-400">
           Kategorie
           <select

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { downloadBlob } from '../export/download'
 import { FIELD_TYPE_LABELS } from '../field/dimensions'
 import {
+  AREA_LABELS,
   CATEGORY_LABELS,
   duplicateEntry,
   filterEntries,
@@ -18,7 +19,7 @@ import { CATEGORIES, DrillFileError } from '../model/serialize'
 import { listSessions, putSessions } from '../sessions/sessionDb'
 import { listTeams, putTeams } from '../teams/teamDb'
 import { listDayIntensities, putDayIntensities } from '../sessions/dayDb'
-import type { Category } from '../model/types'
+import type { Category, DrillArea } from '../model/types'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -43,6 +44,7 @@ export function LibraryView() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
+  const [area, setArea] = useState<DrillArea | null>(null)
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null)
   const [players, setPlayers] = useState<PlayerRange | null>(null)
   const linkedId = useLibraryLink((s) => s.libraryId)
@@ -151,10 +153,32 @@ export function LibraryView() {
     await reload()
   }
 
-  const visible = entries ? filterEntries(entries, query, category, { ageGroup, players }) : []
+  const visible = entries ? filterEntries(entries, query, category, { area, ageGroup, players }) : []
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      <div role="tablist" aria-label="Bereich" className="flex gap-1 border-b border-slate-700 bg-slate-900 px-4 pt-2">
+        {(
+          [
+            [null, 'Alle'],
+            ['drill', 'Trainingsformen'],
+            ['tactic', 'Taktik & Aufstellungen'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={label}
+            type="button"
+            role="tab"
+            aria-selected={area === key}
+            onClick={() => setArea(key)}
+            className={`rounded-t-md px-4 py-2 text-sm font-semibold ${
+              area === key ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-700 bg-slate-900 px-4 py-2">
         <input
           type="search"
@@ -266,6 +290,11 @@ export function LibraryView() {
                   {FIELD_TYPE_LABELS[entry.drill.fieldType]} · {entry.drill.scenes.length}{' '}
                   {entry.drill.scenes.length === 1 ? 'Szene' : 'Szenen'} · geändert {formatDate(entry.updatedAt)}
                 </p>
+                {entry.drill.area === 'tactic' && (
+                  <span className="w-fit rounded-full bg-violet-700/70 px-2 py-0.5 text-xs text-violet-100">
+                    {AREA_LABELS.tactic}
+                  </span>
+                )}
                 {drillInfoLine(entry.drill.info) && (
                   <p className="text-xs text-slate-300">{drillInfoLine(entry.drill.info)}</p>
                 )}

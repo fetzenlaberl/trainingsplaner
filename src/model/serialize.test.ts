@@ -14,6 +14,7 @@ const drill: Drill = {
   title: 'Torabschluss',
   description: 'Flanke und Abschluss',
   category: 'shooting',
+  area: 'tactic',
   info: { players: 12, durationMin: 15, fieldSize: '30 × 20 m', ageGroup: 'U13' },
   fieldType: 'half',
   pitch: { color: 'white', grid: 'positional', orientation: 'portrait' },
@@ -182,6 +183,14 @@ describe('serializeDrill / parseDrill', () => {
     expect(run.pattern).toBe('dashed')
   })
 
+  it('reads version 10 files without area as training drills', () => {
+    const text = tamper((d) => {
+      d.version = 10
+      delete d.area
+    })
+    expect(parseDrill(text).area).toBe('drill')
+  })
+
   it('reads version 8 files without drill info', () => {
     const text = tamper((d) => {
       d.version = 8
@@ -335,6 +344,7 @@ describe('parseDrill rejects invalid files', () => {
     ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
     ['step not a number', (d) => (d.scenes[0].lines[0].step = 'eins')],
     ['unknown age group', (d) => (d.info.ageGroup = 'U99')],
+    ['unknown area', (d) => (d.area = 'match')],
     ['negative player count', (d) => (d.info.players = -3)],
     ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],

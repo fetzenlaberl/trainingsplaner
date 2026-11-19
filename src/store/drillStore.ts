@@ -15,7 +15,7 @@ import {
 } from '../items/zones'
 import type { DrillInfo } from '../model/drillInfo'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
+import type { Category, Drill, DrillArea, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -35,6 +35,7 @@ export interface DrillState extends DrillContent {
   title: string
   description: string
   category: Category | null
+  area: DrillArea
   info: DrillInfo
   /** The single selected element, or null when nothing or several elements are selected */
   selectedId: string | null
@@ -48,6 +49,7 @@ export interface DrillState extends DrillContent {
   setDescription: (description: string) => void
   setCategory: (category: Category | null) => void
   setInfo: (change: Partial<DrillInfo>) => void
+  setArea: (area: DrillArea) => void
   setFieldType: (fieldType: FieldType) => void
   setPitchColor: (color: PitchColor) => void
   setGrid: (grid: GridType) => void
@@ -189,12 +191,13 @@ export function findElement(
 
 /** Builds the drill (as saved to a file) from the current state. */
 export function currentDrill(
-  state: Pick<DrillState, 'title' | 'description' | 'category' | 'info' | 'fieldType' | 'pitch' | 'scenes'>,
+  state: Pick<DrillState, 'title' | 'description' | 'category' | 'area' | 'info' | 'fieldType' | 'pitch' | 'scenes'>,
 ): Drill {
   return {
     title: state.title,
     description: state.description,
     category: state.category,
+    area: state.area,
     info: state.info,
     fieldType: state.fieldType,
     pitch: state.pitch,
@@ -270,6 +273,7 @@ function stateFromDrill(drill: Drill) {
     title: drill.title,
     description: drill.description,
     category: drill.category,
+    area: drill.area,
     info: drill.info,
     fieldType: drill.fieldType,
     pitch: drill.pitch,
@@ -289,6 +293,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   setDescription: (description) => set({ description }),
   setCategory: (category) => set({ category }),
   setInfo: (change) => set((s) => ({ info: { ...s.info, ...change } })),
+  setArea: (area) => set({ area }),
   setFieldType: (fieldType) =>
     set((s) => (s.fieldType === fieldType ? {} : { ...recorded(s), fieldType })),
   setPitchColor: (color) =>

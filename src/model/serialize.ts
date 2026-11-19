@@ -26,6 +26,7 @@ import { defaultPattern, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type Lin
 import type {
   Category,
   Drill,
+  DrillArea,
   Item,
   ItemType,
   Line,
@@ -48,7 +49,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 8: numbered action steps on lines.
 // Version 9: drill info (players, duration, field size, age group).
 // Version 10: hurdle, ring, flag, marker disc and rebounder.
-export const FILE_VERSION = 10
+// Version 11: library area (training drill or tactics / line-up).
+export const FILE_VERSION = 11
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -90,6 +92,7 @@ export function emptyDrill(): Drill {
     title: DEFAULT_TITLE,
     description: '',
     category: null,
+    area: 'drill',
     info: { ...EMPTY_DRILL_INFO },
     fieldType: 'full',
     pitch: { ...DEFAULT_PITCH_STYLE },
@@ -135,9 +138,12 @@ export function drillFromData(data: unknown): Drill {
   }
   const info = drillInfoFromData(data.info)
   if (!info) throw corrupt()
+  // The area was added in version 11; older drills are training drills.
+  if (!(data.area === undefined || data.area === 'drill' || data.area === 'tactic')) throw corrupt()
   return {
     title: data.title,
     description: data.description,
+    area: (data.area as DrillArea | undefined) ?? 'drill',
     info,
     category: (data.category as Category | undefined) ?? null,
     fieldType: data.fieldType as FieldType,
