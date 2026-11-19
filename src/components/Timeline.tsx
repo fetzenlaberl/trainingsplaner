@@ -2,6 +2,8 @@ import { useEffect } from 'react'
 import { locateTime, sceneStartTime, totalDuration } from '../animation/interpolate'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { togglePlayback } from '../store/playbackActions'
+import { MAX_TILT, MIN_TILT } from '../perspective/perspective'
+import { usePerspectiveStore } from '../store/perspectiveStore'
 import { SPEEDS, usePlaybackStore } from '../store/playbackStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -55,6 +57,10 @@ export function Timeline() {
   const seek = usePlaybackStore((s) => s.seek)
   const stop = usePlaybackStore((s) => s.stop)
   const setSpeed = usePlaybackStore((s) => s.setSpeed)
+  const perspectiveOn = usePerspectiveStore((s) => s.enabled)
+  const tilt = usePerspectiveStore((s) => s.tilt)
+  const setPerspectiveOn = usePerspectiveStore((s) => s.setEnabled)
+  const setTilt = usePerspectiveStore((s) => s.setTilt)
   usePlaybackLoop()
 
   const total = totalDuration(scenes)
@@ -117,6 +123,33 @@ export function Timeline() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          aria-pressed={perspectiveOn}
+          title="Perspektivische TV-Ansicht zum Anschauen und Exportieren (Bearbeiten nur flach)"
+          onClick={() => {
+            useDrillStore.getState().select(null)
+            setPerspectiveOn(!perspectiveOn)
+          }}
+          className={`${buttonClass} ${perspectiveOn ? 'bg-emerald-600 text-white hover:bg-emerald-500' : ''}`}
+        >
+          3D-Ansicht
+        </button>
+        {perspectiveOn && (
+          <label className="flex items-center gap-1.5 text-sm text-slate-400">
+            Neigung
+            <input
+              type="range"
+              className="w-24 accent-emerald-500"
+              min={MIN_TILT}
+              max={MAX_TILT}
+              step={1}
+              value={tilt}
+              onChange={(e) => setTilt(Number(e.target.value))}
+            />
+            <span className="w-9 text-right tabular-nums">{tilt}°</span>
+          </label>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -1,10 +1,12 @@
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
 import { Layer, Stage, Transformer } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
 import { fromView, viewRect, viewRotation } from '../field/orientation'
+import { cameraDistance, fitProjected } from '../perspective/perspective'
+import { usePerspectiveStore } from '../store/perspectiveStore'
 import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
 import { MIN_ZONE_SIZE, zoneExtent } from '../items/zones'
@@ -41,6 +43,16 @@ interface PitchStageProps {
   dropTargetRef: RefObject<DropTarget | null>
 }
 
+/** CSS transform that shows the stage tilted like a TV camera view (same model as the export warp). */
+function perspectiveStyle(width: number, height: number, tilt: number | null): CSSProperties | undefined {
+  if (tilt === null || width <= 0 || height <= 0) return undefined
+  const fit = fitProjected(width, height, tilt, width, height)
+  return {
+    transformOrigin: 'center center',
+    transform: `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale}) perspective(${cameraDistance(width, height)}px) rotateX(${tilt}deg)`,
+  }
+}
+
 /** Konva stage that fills its container and scales the pitch to fit. */
 export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
@@ -53,6 +65,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const scenes = useDrillStore((s) => s.scenes)
   const sceneIndex = useDrillStore((s) => s.sceneIndex)
   const time = usePlaybackStore((s) => s.time)
+  const perspective = usePerspectiveStore((s) => (s.enabled ? s.tilt : null))
   const tool = useToolStore((s) => s.tool)
   const lineColor = useToolStore((s) => s.lineColor)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -104,6 +117,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const zoomByButton = (factor: number) =>
     setView(zoomAround(view, zoomCtx, factor, size.width / 2, size.height / 2))
   const animating = time !== null
+  // The 3D view is for watching and presenting only; editing happens in the flat view.
+  const locked = animating || perspective !== null
   const drawing = tool !== 'select' && !animating
   const frame = animating ? frameAt(scenes, time) : null
   const items = frame ? frame.items : scenes[sceneIndex].items
@@ -143,7 +158,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       rotation: viewRotation(pitch.orientation),
       toMeters: (clientX, clientY) => {
         const pos = clientToMeters(clientX, clientY)
-        return pos && isInsideRect(viewport, pos.x, pos.y) ? pos : null
+        return perspective === null && pos && isInsideRect(viewport, pos.x, pos.y) ? pos : null
       },
     }
   })
@@ -174,7 +189,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   }
 
   function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
-    if (touchCountRef.current > 1) return
+    if (touchCountRef.current > 1 || perspective !== null) return
     const onEmptySpace = e.target === e.target.getStage()
     if (tool === 'select' || animating) {
       if (!onEmptySpace) return
@@ -221,89 +236,98 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       style={{ cursor: drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
-        <Stage ref={stageRef} width={size.width} height={size.height} onPointerDown={handlePointerDown}>
-          <Layer>
-            <FieldView
-              fieldType={fieldType}
-              pitch={pitch}
-              items={items}
-              lines={lines}
-              zones={zones}
-              viewport={viewport}
-              scale={layout.scale}
-              offsetX={layout.offsetX}
-              offsetY={layout.offsetY}
-              interactive={tool === 'select' && !animating}
-            >
-              {draft && tool !== 'select' && (
-                <LineShape
-                  type={tool}
-                  points={[draft.start, draft.end]}
-                  smooth
-                  color={lineColor}
-                  scale={layout.scale}
-                  opacity={0.7}
-                />
-              )}
-              {tool === 'select' && !animating && <LineHandles scale={layout.scale} />}
-              {cornerMode && selectedZone && <ZoneCornerHandles zone={selectedZone} scale={layout.scale} />}
-            </FieldView>
-            <Transformer
-              ref={transformerRef}
-              visible={transformedZone !== undefined}
-              rotateEnabled
-              flipEnabled={false}
-              ignoreStroke
-              keepRatio={false}
-              anchorSize={14}
-              anchorCornerRadius={3}
-              rotateAnchorOffset={28}
-              rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
-              rotationSnapTolerance={6}
-              borderStroke={SELECTION_COLOR}
-              anchorStroke={SELECTION_COLOR}
-              boundBoxFunc={(oldBox, newBox) =>
-                Math.abs(newBox.width) < MIN_ZONE_SIZE * layout.scale ||
-                Math.abs(newBox.height) < MIN_ZONE_SIZE * layout.scale
-                  ? oldBox
-                  : newBox
-              }
-              onTransform={(e) => {
-                if (!selectedZone) return
-                const extent = zoneExtent(selectedZone)
-                setResizeInfo({
-                  width: extent.width * e.target.scaleX(),
-                  height: extent.height * e.target.scaleY(),
-                })
-              }}
-              onTransformEnd={(e) => {
-                setResizeInfo(null)
-                if (!selectedZone) return
-                const node = e.target
-                const change = {
-                  x: node.x(),
-                  y: node.y(),
-                  width: selectedZone.width * node.scaleX(),
-                  height: selectedZone.height * node.scaleY(),
-                  rotation: node.rotation(),
-                  // Free corners stretch along with the zone.
-                  corners:
-                    selectedZone.corners?.map((p) => ({ x: p.x * node.scaleX(), y: p.y * node.scaleY() })) ?? null,
+        <div className="h-full w-full" style={perspectiveStyle(size.width, size.height, perspective)}>
+          <Stage ref={stageRef} width={size.width} height={size.height} onPointerDown={handlePointerDown}>
+            <Layer>
+              <FieldView
+                fieldType={fieldType}
+                pitch={pitch}
+                items={items}
+                lines={lines}
+                zones={zones}
+                viewport={viewport}
+                scale={layout.scale}
+                offsetX={layout.offsetX}
+                offsetY={layout.offsetY}
+                interactive={tool === 'select' && !locked}
+              >
+                {draft && tool !== 'select' && (
+                  <LineShape
+                    type={tool}
+                    points={[draft.start, draft.end]}
+                    smooth
+                    color={lineColor}
+                    scale={layout.scale}
+                    opacity={0.7}
+                  />
+                )}
+                {tool === 'select' && !animating && <LineHandles scale={layout.scale} />}
+                {cornerMode && selectedZone && <ZoneCornerHandles zone={selectedZone} scale={layout.scale} />}
+              </FieldView>
+              <Transformer
+                ref={transformerRef}
+                visible={transformedZone !== undefined}
+                rotateEnabled
+                flipEnabled={false}
+                ignoreStroke
+                keepRatio={false}
+                anchorSize={14}
+                anchorCornerRadius={3}
+                rotateAnchorOffset={28}
+                rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
+                rotationSnapTolerance={6}
+                borderStroke={SELECTION_COLOR}
+                anchorStroke={SELECTION_COLOR}
+                boundBoxFunc={(oldBox, newBox) =>
+                  Math.abs(newBox.width) < MIN_ZONE_SIZE * layout.scale ||
+                  Math.abs(newBox.height) < MIN_ZONE_SIZE * layout.scale
+                    ? oldBox
+                    : newBox
                 }
-                // The size is stored in meters; the node itself is never left scaled.
-                node.scale({ x: 1, y: 1 })
-                updateZone(selectedZone.id, change)
-              }}
-            />
-          </Layer>
-        </Stage>
+                onTransform={(e) => {
+                  if (!selectedZone) return
+                  const extent = zoneExtent(selectedZone)
+                  setResizeInfo({
+                    width: extent.width * e.target.scaleX(),
+                    height: extent.height * e.target.scaleY(),
+                  })
+                }}
+                onTransformEnd={(e) => {
+                  setResizeInfo(null)
+                  if (!selectedZone) return
+                  const node = e.target
+                  const change = {
+                    x: node.x(),
+                    y: node.y(),
+                    width: selectedZone.width * node.scaleX(),
+                    height: selectedZone.height * node.scaleY(),
+                    rotation: node.rotation(),
+                    // Free corners stretch along with the zone.
+                    corners:
+                      selectedZone.corners?.map((p) => ({ x: p.x * node.scaleX(), y: p.y * node.scaleY() })) ?? null,
+                  }
+                  // The size is stored in meters; the node itself is never left scaled.
+                  node.scale({ x: 1, y: 1 })
+                  updateZone(selectedZone.id, change)
+                }}
+              />
+            </Layer>
+          </Stage>
+        </div>
+      )}
+      {perspective !== null && (
+        <div className="absolute inset-x-0 top-0 bottom-0 flex items-start justify-center p-3">
+          <span className="pointer-events-none rounded-md bg-slate-900/85 px-3 py-1 text-sm text-slate-200">
+            3D-Ansicht – zum Bearbeiten in der Zeitleiste ausschalten
+          </span>
+        </div>
       )}
       {resizeInfo && (
         <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 rounded-md bg-slate-900/85 px-3 py-1 text-sm text-white tabular-nums">
           {resizeInfo.width.toFixed(1).replace('.', ',')} × {resizeInfo.height.toFixed(1).replace('.', ',')} m
         </div>
       )}
-      {layout.scale > 0 && (
+      {layout.scale > 0 && perspective === null && (
         <ZoomControls
           zoom={view.zoom}
           onZoomIn={() => zoomByButton(BUTTON_ZOOM_FACTOR)}

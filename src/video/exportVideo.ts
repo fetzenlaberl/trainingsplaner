@@ -1,6 +1,7 @@
 import { downloadBlob } from '../export/download'
 import { fileNameFromTitle } from '../model/serialize'
 import { useDrillStore } from '../store/drillStore'
+import { exportTilt } from '../store/perspectiveStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { extensionFor } from './plan'
 import { recordAnimation } from './recordAnimation'
@@ -27,6 +28,7 @@ export async function exportVideo(
     pitch,
     scenes,
     speed,
+    tilt: exportTilt(),
     signal,
     onProgress: (progress) => onProgress({ phase: 'recording', progress }),
   })

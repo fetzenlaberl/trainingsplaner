@@ -4,7 +4,16 @@ import { useDrillStore } from '../store/drillStore'
 import { downloadBlob } from './download'
 import type { PdfLayout } from './layout'
 import { pdfLayout } from './layout'
+import { warpCanvas } from '../perspective/warpCanvas'
+import { exportTilt } from '../store/perspectiveStore'
 import { renderDrillToCanvas } from './renderDrill'
+
+/** The drill as shown in the editor: flat, or in perspective when the 3D view is on. */
+async function renderForExport(background: string | null): Promise<HTMLCanvasElement> {
+  const canvas = await renderDrillToCanvas()
+  const tilt = exportTilt()
+  return tilt === null ? canvas : warpCanvas(canvas, tilt, background)
+}
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -17,7 +26,8 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number)
 }
 
 export async function exportPng(): Promise<void> {
-  const canvas = await renderDrillToCanvas()
+  // PNG keeps the area around the tilted pitch transparent.
+  const canvas = await renderForExport(null)
   const blob = await canvasToBlob(canvas, 'image/png')
   downloadBlob(blob, `${fileNameFromTitle(useDrillStore.getState().title)}.png`)
 }
@@ -62,7 +72,8 @@ export function drawDrillPage(
 
 export async function exportPdf(): Promise<void> {
   // Loaded on demand so jsPDF does not slow down the app start.
-  const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderDrillToCanvas()])
+  // White around the tilted pitch, so the printed page has no black corners.
+  const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderForExport('#ffffff')])
   const { title, description } = useDrillStore.getState()
   const layout = pdfLayout(canvas.width, canvas.height, description.trim() !== '')
 

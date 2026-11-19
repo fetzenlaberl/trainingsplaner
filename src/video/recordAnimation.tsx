@@ -6,6 +6,8 @@ import { frameAt, totalDuration } from '../animation/interpolate'
 import { FieldView } from '../components/FieldView'
 import { getViewport, type FieldType } from '../field/dimensions'
 import { viewRect } from '../field/orientation'
+import { warpedSize } from '../perspective/perspective'
+import { drawWarped } from '../perspective/warpCanvas'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import {
@@ -25,6 +27,8 @@ interface RecordOptions {
   pitch: PitchStyle
   scenes: Scene[]
   speed: number
+  /** Perspective tilt in degrees, or null for a flat video */
+  tilt: number | null
   /** Called with 0..1 */
   onProgress: (progress: number) => void
   signal: AbortSignal
@@ -39,6 +43,7 @@ export async function recordAnimation({
   pitch,
   scenes,
   speed,
+  tilt,
   onProgress,
   signal,
 }: RecordOptions): Promise<{ blob: Blob; mimeType: string }> {
@@ -54,9 +59,11 @@ export async function recordAnimation({
   const { width, height, pxPerMeter } = videoSize(viewRect(viewport, pitch.orientation))
 
   // Recording canvas: the Konva layer is copied into it, independent of the screen's pixel ratio.
+  // In perspective the video keeps its width; the height follows the tilted pitch.
+  const outputSize = tilt === null ? { width, height } : warpedSize(width, height, tilt)
   const output = document.createElement('canvas')
-  output.width = width
-  output.height = height
+  output.width = outputSize.width
+  output.height = outputSize.height
   const ctx = output.getContext('2d')
   if (!ctx) throw new VideoExportError('Die Zeichenfläche für das Video konnte nicht erstellt werden.')
 
@@ -100,7 +107,13 @@ export async function recordAnimation({
     const layer = stage?.getLayers()[0]
     if (!layer) return
     layer.draw()
-    ctx.drawImage(layer.getNativeCanvasElement(), 0, 0, width, height)
+    if (tilt === null) {
+      ctx.drawImage(layer.getNativeCanvasElement(), 0, 0, width, height)
+    } else {
+      ctx.fillStyle = '#0f172a'
+      ctx.fillRect(0, 0, output.width, output.height)
+      drawWarped(ctx, layer.getNativeCanvasElement(), tilt, output.width, output.height)
+    }
   }
 
   const stream = output.captureStream(VIDEO_FPS)
