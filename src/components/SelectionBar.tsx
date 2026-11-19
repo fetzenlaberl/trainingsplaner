@@ -3,6 +3,8 @@ import {
   ITEM_SIZE_STEP,
   MAX_ITEM_SIZE,
   MIN_ITEM_SIZE,
+  COLORABLE_TYPES,
+  PLAYER_COLORS,
   PLAYER_SHAPES,
   ROTATABLE_TYPES,
   TEXTBOX_COLORS,
@@ -158,6 +160,15 @@ function ItemControls({ item }: { item: Item }) {
           Auf alle anwenden
         </button>
       </div>
+
+      {COLORABLE_TYPES.includes(item.type) && (
+        <ColorSwatches
+          label="Farbe"
+          colors={PLAYER_COLORS}
+          value={item.color}
+          onSelect={(color) => setItemColor(item.id, color)}
+        />
+      )}
 
       {item.type === 'player' && (
         <div role="group" aria-label="Form" className="flex gap-1 rounded-lg bg-slate-800 p-1">

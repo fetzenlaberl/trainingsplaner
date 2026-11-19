@@ -534,6 +534,14 @@ describe('name tags, highlight and text boxes', () => {
     expect(items()[0].name).toBe('')
   })
 
+  it('changes the color of a player with undo and keeps its number', () => {
+    const id = store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)
+    store().setItemColor(id, '#16a34a')
+    expect([items()[0].color, items()[0].label]).toEqual(['#16a34a', '2'])
+    store().undo()
+    expect(items()[0].color).toBe(TEAM_COLORS.red)
+  })
+
   it('creates text boxes with background color that can be changed', () => {
     const id = store().addItem({ type: 'textbox', color: '#fde047', label: 'Anweisung' }, 10, 10)
     store().setItemColor(id, '#2563eb')

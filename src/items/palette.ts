@@ -89,6 +89,9 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   textbox: 12,
 }
 
+/** Item types whose color can be chosen freely in the selection bar. */
+export const COLORABLE_TYPES: ItemType[] = ['player', 'cone', 'pole', 'slalom', 'dummy', 'wall', 'ladder', 'text']
+
 /** Item types where rotation is visible. */
 export const ROTATABLE_TYPES: ItemType[] = [
   'player',
