@@ -8,13 +8,15 @@ import { fromView, viewRect, viewRotation } from '../field/orientation'
 import { cameraDistance, fitProjected } from '../perspective/perspective'
 import { usePerspectiveStore } from '../store/perspectiveStore'
 import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
+import { spaceKey } from '../hooks/spaceKey'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
+import { elementsInRect, rectFromPoints } from '../store/selection'
 import { MIN_ZONE_SIZE, zoneExtent } from '../items/zones'
 import { distance } from '../lines/geometry'
 import { defaultPattern } from '../lines/styles'
 import type { Point } from '../model/types'
 import { frameAt } from '../animation/interpolate'
-import { selectZones, useDrillStore } from '../store/drillStore'
+import { currentScene, selectZones, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
@@ -78,6 +80,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const cleanupRef = useRef<(() => void) | null>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
+  /** Selection rectangle in container pixels while it is being dragged */
+  const [marquee, setMarquee] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   /** Size (meters) shown while a zone is being resized */
   const [resizeInfo, setResizeInfo] = useState<{ width: number; height: number } | null>(null)
   // Zoom belongs to one field type; switching the field type shows the whole field again.
@@ -192,14 +196,63 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     cleanupRef.current = cleanup
   }
 
+  /** Dragging on empty space spans a selection rectangle; a tap clears the selection. */
+  function startMarquee(e: KonvaEventObject<PointerEvent>) {
+    const el = containerRef.current
+    if (!el) return
+    cleanupRef.current?.()
+    const rect = el.getBoundingClientRect()
+    const additive = e.evt.shiftKey || e.evt.ctrlKey || e.evt.metaKey || useToolStore.getState().multiSelect
+    const start = { x: e.evt.clientX - rect.left, y: e.evt.clientY - rect.top }
+    let end = start
+    const onMove = (ev: PointerEvent) => {
+      end = { x: ev.clientX - rect.left, y: ev.clientY - rect.top }
+      setMarquee({ x1: start.x, y1: start.y, x2: end.x, y2: end.y })
+    }
+    const onUp = () => {
+      cleanup()
+      if (Math.hypot(end.x - start.x, end.y - start.y) < 5) {
+        if (!additive) select(null)
+        return
+      }
+      // Convert all four corners, so the rectangle is right in portrait and when zoomed too.
+      const corners = [
+        [start.x, start.y],
+        [end.x, start.y],
+        [end.x, end.y],
+        [start.x, end.y],
+      ].map(([x, y]) => clientToMeters(x + rect.left, y + rect.top))
+      if (corners.some((c) => c === null)) return
+      const state = useDrillStore.getState()
+      const ids = elementsInRect(currentScene(state), rectFromPoints(corners as Point[]))
+      state.selectMany(additive ? [...new Set([...state.selectedIds, ...ids])] : ids)
+    }
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', cleanup)
+      cleanupRef.current = null
+      setMarquee(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', cleanup)
+    cleanupRef.current = cleanup
+  }
+
   function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
     if (touchCountRef.current > 1 || perspective !== null) return
     const onEmptySpace = e.target === e.target.getStage()
+    // Middle mouse button or space + drag move the view (anywhere, in every tool).
+    if ((e.evt.pointerType === 'mouse' && e.evt.button === 1) || spaceKey.down) {
+      spaceKey.usedForPan = spaceKey.down
+      startPan(e)
+      return
+    }
     if (tool === 'select' || animating) {
       if (!onEmptySpace) return
-      // Tap on empty space clears the selection; dragging there pans when zoomed in.
-      if (!animating) select(null)
-      if (view.zoom > 1 && (e.evt.pointerType !== 'mouse' || e.evt.button === 0)) startPan(e)
+      if (animating) return
+      if (e.evt.pointerType !== 'mouse' || e.evt.button === 0) startMarquee(e)
       return
     }
     if (e.evt.pointerType === 'mouse' && e.evt.button !== 0) return
@@ -243,6 +296,10 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     <div
       ref={containerRef}
       className="relative h-full w-full touch-none overflow-hidden"
+      // Prevents the browser's auto-scroll when panning with the middle mouse button.
+      onMouseDown={(e) => {
+        if (e.button === 1) e.preventDefault()
+      }}
       style={{ cursor: drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
@@ -333,6 +390,17 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
             3D-Ansicht – zum Bearbeiten in der Zeitleiste ausschalten
           </span>
         </div>
+      )}
+      {marquee && (
+        <div
+          className="pointer-events-none absolute border border-sky-400 bg-sky-400/15"
+          style={{
+            left: Math.min(marquee.x1, marquee.x2),
+            top: Math.min(marquee.y1, marquee.y2),
+            width: Math.abs(marquee.x2 - marquee.x1),
+            height: Math.abs(marquee.y2 - marquee.y1),
+          }}
+        />
       )}
       {resizeInfo && (
         <div className="pointer-events-none absolute top-3 left-1/2 -translate-x-1/2 rounded-md bg-slate-900/85 px-3 py-1 text-sm text-white tabular-nums">

@@ -498,6 +498,71 @@ describe('zones', () => {
   })
 })
 
+describe('multi-selection', () => {
+  const zones = () => currentScene(store()).zones
+
+  function setup() {
+    const a = store().addItem({ type: 'player', color: TEAM_COLORS.red }, 10, 10)
+    const b = store().addItem({ type: 'cone', color: ORANGE }, 20, 20)
+    const line = store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
+    const zone = store().addZone(RECT, 30, 30)
+    return { a, b, line, zone }
+  }
+
+  it('keeps a single selected id only when exactly one element is selected', () => {
+    const { a, b } = setup()
+    store().selectMany([a, b])
+    expect(store().selectedIds).toEqual([a, b])
+    expect(store().selectedId).toBeNull()
+    store().toggleSelect(b)
+    expect(store().selectedId).toBe(a)
+    store().select(null)
+    expect(store().selectedIds).toEqual([])
+  })
+
+  it('moves items, lines and zones together as one undo step', () => {
+    const { a, line, zone } = setup()
+    store().moveElements([a, line, zone], 5, -2)
+    expect([items()[0].x, items()[0].y]).toEqual([15, 8])
+    expect(lines()[0].points[0]).toEqual({ x: 5, y: -2 })
+    expect([zones()[0].x, zones()[0].y]).toEqual([35, 28])
+    expect(items()[1].x).toBe(20)
+    store().undo()
+    expect(items()[0].x).toBe(10)
+    expect(zones()[0].x).toBe(30)
+  })
+
+  it('deletes several elements and drops them from the selection', () => {
+    const { a, b, line } = setup()
+    store().selectMany([a, line, b])
+    store().deleteElements([a, line])
+    expect(items().map((i) => i.id)).toEqual([b])
+    expect(lines()).toEqual([])
+    expect(store().selectedIds).toEqual([b])
+  })
+
+  it('duplicates several elements, numbers players and selects the copies', () => {
+    const { a, line, zone } = setup()
+    const elements = [items()[0], lines()[0], zones()[0]]
+    const copies = store().insertCopies(elements)
+    expect(copies).toHaveLength(3)
+    expect(store().selectedIds).toEqual(copies)
+    expect(items().find((i) => i.id === copies[0])?.label).toBe('3')
+    expect(lines()).toHaveLength(2)
+    expect(zones()[1].x).toBe(30 + COPY_OFFSET)
+    expect([a, line, zone].every((id) => !copies.includes(id))).toBe(true)
+  })
+
+  it('resizes and colors several items, leaving balls and goals alone', () => {
+    const { a, b } = setup()
+    const ball = store().addItem({ type: 'ball', color: '#ffffff' }, 0, 0)
+    store().resizeItems([a, b], 0.25)
+    expect(items().slice(0, 2).map((i) => i.size)).toEqual([1.75, 1.25])
+    store().setItemsColor([a, b, ball], '#16a34a')
+    expect(items().map((i) => i.color)).toEqual(['#16a34a', '#16a34a', '#ffffff'])
+  })
+})
+
 describe('addItems', () => {
   it('adds several items as one undo step and numbers them one after another', () => {
     const red = TEAM_COLORS.red

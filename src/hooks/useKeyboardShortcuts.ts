@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { saveToLibraryWithFeedback } from '../library/libraryActions'
 import { currentScene, findElement, useDrillStore, type Element } from '../store/drillStore'
+import { allElementIds } from '../store/selection'
+import { spaceKey } from './spaceKey'
 import { togglePlayback } from '../store/playbackActions'
 import { usePlaybackStore } from '../store/playbackStore'
 
@@ -15,13 +17,13 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 /**
- * Editor shortcuts: save (Ctrl+S), undo/redo, copy/paste/duplicate, delete,
- * Escape and Space (play/pause). Inactive while `enabled` is false or a dialog is open.
+ * Editor shortcuts: save (Ctrl+S), undo/redo, select all, copy/paste/duplicate, delete,
+ * Escape and Space (play/pause; held down with a drag it pans the view). Inactive while `enabled` is false or a dialog is open.
  */
 export function useKeyboardShortcuts(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return
-    let clipboard: Element | null = null
+    let clipboard: Element[] = []
 
     function onKeyDown(e: KeyboardEvent) {
       if (document.querySelector('[aria-modal="true"]')) return
@@ -33,7 +35,10 @@ export function useKeyboardShortcuts(enabled: boolean) {
       }
       if (isTyping(e.target)) return
       const store = useDrillStore.getState()
-      const selected = findElement(currentScene(store), store.selectedId)
+      const scene = currentScene(store)
+      const selected = store.selectedIds
+        .map((id) => findElement(scene, id))
+        .filter((el): el is Element => el !== undefined)
       const mod = e.ctrlKey || e.metaKey
       const key = e.key.toLowerCase()
 
@@ -44,31 +49,49 @@ export function useKeyboardShortcuts(enabled: boolean) {
       } else if (mod && key === 'y') {
         e.preventDefault()
         store.redo()
+      } else if (mod && key === 'a') {
+        e.preventDefault()
+        store.selectMany(allElementIds(scene))
       } else if (mod && key === 'd') {
         e.preventDefault()
-        if (selected) store.insertCopy(selected)
+        if (selected.length > 0) store.insertCopies(selected)
       } else if (mod && key === 'c') {
-        if (selected) clipboard = selected
+        if (selected.length > 0) clipboard = selected
       } else if (mod && key === 'v') {
-        if (!clipboard) return
+        if (clipboard.length === 0) return
         e.preventDefault()
-        const id = store.insertCopy(clipboard)
+        const ids = store.insertCopies(clipboard)
         // Repeated pastes cascade instead of stacking on the same spot.
-        clipboard = findElement(currentScene(useDrillStore.getState()), id) ?? clipboard
+        const pasted = currentScene(useDrillStore.getState())
+        clipboard = ids.map((id) => findElement(pasted, id)).filter((el): el is Element => el !== undefined)
       } else if (!mod && (e.key === 'Delete' || e.key === 'Backspace')) {
-        if (!selected) return
+        if (selected.length === 0) return
         e.preventDefault()
-        store.deleteElement(selected.id)
+        store.deleteElements(selected.map((el) => el.id))
       } else if (e.key === 'Escape') {
         store.select(null)
         usePlaybackStore.getState().stop()
       } else if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {
+        // Playback toggles on release, unless the space bar was used to pan the view.
         e.preventDefault()
-        togglePlayback()
+        if (!e.repeat) {
+          spaceKey.down = true
+          spaceKey.usedForPan = false
+        }
       }
     }
 
+    function onKeyUp(e: KeyboardEvent) {
+      if (e.key !== ' ' || !spaceKey.down) return
+      spaceKey.down = false
+      if (!spaceKey.usedForPan && !isTyping(e.target)) togglePlayback()
+    }
+
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+    }
   }, [enabled])
 }

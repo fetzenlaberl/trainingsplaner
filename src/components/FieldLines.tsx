@@ -6,6 +6,7 @@ import type { Line, Point } from '../model/types'
 import { selectLines, useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
+import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updateGroupDrag } from './groupDrag'
 import { LineShape } from './LineShape'
 
 /** Segments shorter than this on screen get no "+" handle (it would cover the waypoints). */
@@ -21,7 +22,7 @@ interface FieldLinesProps {
 
 /** All drawn lines; in select mode they can be selected and dragged as a whole. */
 export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
-  const selectedId = useDrillStore((s) => s.selectedId)
+  const selectedIds = useDrillStore((s) => s.selectedIds)
   const select = useDrillStore((s) => s.select)
   const moveLine = useDrillStore((s) => s.moveLine)
   const setDraggingId = useToolStore((s) => s.setDraggingId)
@@ -30,20 +31,27 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
     <Group listening={interactive}>
       {lines.map((line) => {
         const path = flatten(samplePath(line.points, line.smooth))
-        const selected = interactive && line.id === selectedId
+        const selected = interactive && selectedIds.includes(line.id)
         return (
           <Group
             key={line.id}
+            id={line.id}
+            name="line-group"
             draggable={interactive}
-            onPointerDown={() => select(line.id)}
+            onPointerDown={(e) => selectOnPointerDown(e, line.id)}
+            onClick={(e) => selectOnClick(e, line.id)}
+            onTap={(e) => selectOnClick(e, line.id)}
             onMouseEnter={(e) => setCursor(e, 'grab')}
             onMouseLeave={(e) => setCursor(e, '')}
-            onDragStart={() => {
-              select(line.id)
+            onDragStart={(e) => {
+              if (!useDrillStore.getState().selectedIds.includes(line.id)) select(line.id)
               setDraggingId(line.id)
+              beginGroupDrag(e.target, line.id)
             }}
+            onDragMove={(e) => updateGroupDrag(e.target)}
             onDragEnd={(e) => {
               setDraggingId(null)
+              if (endGroupDrag(e.target)) return
               const { x, y } = e.target.position()
               e.target.position({ x: 0, y: 0 })
               if (x !== 0 || y !== 0) moveLine(line.id, x, y)

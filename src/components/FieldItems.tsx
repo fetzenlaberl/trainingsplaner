@@ -6,6 +6,7 @@ import { ITEM_EXTENT, ROTATABLE_TYPES } from '../items/palette'
 import type { Item } from '../model/types'
 import { useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
+import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updateGroupDrag } from './groupDrag'
 import { ItemShape } from './ItemShape'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
 
@@ -33,6 +34,7 @@ function snapAngle(degrees: number): number {
 /** All placed items; they can be selected, dragged and rotated. */
 export function FieldItems({ items, viewport, scale, interactive }: FieldItemsProps) {
   const selectedId = useDrillStore((s) => s.selectedId)
+  const selectedIds = useDrillStore((s) => s.selectedIds)
   const select = useDrillStore((s) => s.select)
   const moveItem = useDrillStore((s) => s.moveItem)
   const draggingId = useToolStore((s) => s.draggingId)
@@ -43,24 +45,30 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
   return (
     <Group listening={interactive}>
       {items.map((item) => {
-        const selected = item.id === selectedItem?.id
+        const selected = interactive && selectedIds.includes(item.id)
         const extent = ITEM_EXTENT[item.type] * item.size
         return (
           <Group
             key={item.id}
+            id={item.id}
             x={item.x}
             y={item.y}
             opacity={item.opacity ?? 1}
             draggable={interactive}
-            onPointerDown={() => select(item.id)}
+            onPointerDown={(e) => selectOnPointerDown(e, item.id)}
+            onClick={(e) => selectOnClick(e, item.id)}
+            onTap={(e) => selectOnClick(e, item.id)}
             onMouseEnter={(e) => setCursor(e, 'grab')}
             onMouseLeave={(e) => setCursor(e, '')}
-            onDragStart={() => {
-              select(item.id)
+            onDragStart={(e) => {
+              if (!useDrillStore.getState().selectedIds.includes(item.id)) select(item.id)
               setDraggingId(item.id)
+              beginGroupDrag(e.target, item.id)
             }}
+            onDragMove={(e) => updateGroupDrag(e.target)}
             onDragEnd={(e) => {
               setDraggingId(null)
+              if (endGroupDrag(e.target)) return
               const pos = clampToRect(viewport, e.target.x(), e.target.y())
               e.target.position(pos)
               moveItem(item.id, pos.x, pos.y)

@@ -98,6 +98,8 @@ export function LineToolbar() {
   const numberSteps = useToolStore((s) => s.numberSteps)
   const setNumberSteps = useToolStore((s) => s.setNumberSteps)
   const renumberLineSteps = useDrillStore((s) => s.renumberLineSteps)
+  const multiSelect = useToolStore((s) => s.multiSelect)
+  const setMultiSelect = useToolStore((s) => s.setMultiSelect)
   const select = useDrillStore((s) => s.select)
 
   return (
@@ -178,6 +180,20 @@ export function LineToolbar() {
             Neu nummerieren
           </button>
         </div>
+      )}
+
+      {tool === 'select' && (
+        <button
+          type="button"
+          aria-pressed={multiSelect}
+          title="Jedes Antippen fügt hinzu oder entfernt (am PC auch mit Umschalt- oder Strg-Taste + Klick)"
+          onClick={() => setMultiSelect(!multiSelect)}
+          className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+            multiSelect ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          ⧉ Mehrfach
+        </button>
       )}
 
       {tool === 'select' && (

@@ -5,7 +5,7 @@ import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps } from '../lines/steps'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
-import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
+import { clampItemSize, COLORABLE_TYPES, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import {
   clampFillOpacity,
   clampZoneSize,
@@ -34,7 +34,10 @@ export interface DrillState extends DrillContent {
   title: string
   description: string
   category: Category | null
+  /** The single selected element, or null when nothing or several elements are selected */
   selectedId: string | null
+  /** All selected elements (rectangle, Shift/Ctrl + click, "Mehrfach") */
+  selectedIds: string[]
   past: DrillContent[]
   future: DrillContent[]
 
@@ -47,6 +50,18 @@ export interface DrillState extends DrillContent {
   setGrid: (grid: GridType) => void
   setOrientation: (orientation: Orientation) => void
   select: (id: string | null) => void
+  selectMany: (ids: string[]) => void
+  /** Adds the element to the selection or removes it again. */
+  toggleSelect: (id: string) => void
+  /** Moves several elements together (one undo step). */
+  moveElements: (ids: string[], dx: number, dy: number) => void
+  deleteElements: (ids: string[]) => void
+  /** Offset copies of several elements, which become the new selection; returns their ids. */
+  insertCopies: (elements: Element[]) => string[]
+  /** Changes the size of several items by a step (one undo step). */
+  resizeItems: (ids: string[], step: number) => void
+  /** Colors several items whose color can be chosen (one undo step). */
+  setItemsColor: (ids: string[], color: string) => void
 
   selectScene: (index: number) => void
   /** Adds the follow-up scene after the current one (lines applied) and shows it. */
@@ -214,12 +229,35 @@ function shift(p: Point, dx: number, dy: number): Point {
 }
 
 /** State after undo/redo: keep the selection only if it still exists in the shown scene. */
-function restore(content: DrillContent, selectedId: string | null) {
+/** Selection fields for a list of ids. */
+function selection(ids: string[]) {
+  return { selectedIds: ids, selectedId: ids.length === 1 ? ids[0] : null }
+}
+
+function restore(content: DrillContent, selectedIds: string[]) {
   const sceneIndex = Math.min(content.sceneIndex, content.scenes.length - 1)
   return {
     ...content,
     sceneIndex,
-    selectedId: findElement(content.scenes[sceneIndex], selectedId) ? selectedId : null,
+    ...selection(selectedIds.filter((id) => findElement(content.scenes[sceneIndex], id))),
+  }
+}
+
+/** Offset copy of an element; players with a number get the next free one. */
+function copyOf(element: Element, items: Item[]): Element {
+  if (isZone(element)) {
+    return { ...element, id: createId('zone'), x: element.x + COPY_OFFSET, y: element.y + COPY_OFFSET }
+  }
+  if (isLine(element)) {
+    return { ...element, id: createId('line'), points: element.points.map((p) => shift(p, COPY_OFFSET, COPY_OFFSET)) }
+  }
+  const numbered = element.type === 'player' && /^\d+$/.test(element.label)
+  return {
+    ...element,
+    id: createId('item'),
+    x: element.x + COPY_OFFSET,
+    y: element.y + COPY_OFFSET,
+    label: numbered ? String(nextPlayerNumber(items, element.color, element.shape)) : element.label,
   }
 }
 
@@ -233,6 +271,7 @@ function stateFromDrill(drill: Drill) {
     scenes: drill.scenes.length > 0 ? drill.scenes : emptyDrill().scenes,
     sceneIndex: 0,
     selectedId: null,
+    selectedIds: [],
     past: [],
     future: [],
   }
@@ -254,17 +293,80 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) =>
       s.pitch.orientation === orientation ? {} : { ...recorded(s), pitch: { ...s.pitch, orientation } },
     ),
-  select: (selectedId) => set({ selectedId }),
+  select: (id) => set(selection(id ? [id] : [])),
+  selectMany: (ids) => set(selection(ids)),
+  toggleSelect: (id) =>
+    set((s) => selection(s.selectedIds.includes(id) ? s.selectedIds.filter((x) => x !== id) : [...s.selectedIds, id])),
+  moveElements: (ids, dx, dy) =>
+    set((s) => {
+      if (ids.length === 0 || (dx === 0 && dy === 0)) return {}
+      const moved = new Set(ids)
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: scene.items.map((i) => (moved.has(i.id) ? { ...i, x: i.x + dx, y: i.y + dy } : i)),
+          lines: scene.lines.map((l) => (moved.has(l.id) ? { ...l, points: l.points.map((p) => shift(p, dx, dy)) } : l)),
+          zones: scene.zones.map((z) => (moved.has(z.id) ? { ...z, x: z.x + dx, y: z.y + dy } : z)),
+        })),
+      }
+    }),
+  deleteElements: (ids) =>
+    set((s) => {
+      const gone = new Set(ids.filter((id) => findElement(currentScene(s), id)))
+      if (gone.size === 0) return {}
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: scene.items.filter((i) => !gone.has(i.id)),
+          lines: scene.lines.filter((l) => !gone.has(l.id)),
+          zones: scene.zones.filter((z) => !gone.has(z.id)),
+        })),
+        ...selection(s.selectedIds.filter((id) => !gone.has(id))),
+      }
+    }),
+  insertCopies: (elements) => {
+    const s = get()
+    const items = [...currentScene(s).items]
+    const copies = elements.map((element) => {
+      const copy = copyOf(element, items)
+      if (!isLine(copy) && !isZone(copy)) items.push(copy)
+      return copy
+    })
+    set({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        items: [...scene.items, ...copies.filter((c): c is Item => !isLine(c) && !isZone(c))],
+        lines: [...scene.lines, ...copies.filter(isLine)],
+        zones: [...scene.zones, ...copies.filter(isZone)],
+      })),
+      ...selection(copies.map((c) => c.id)),
+    })
+    return copies.map((c) => c.id)
+  },
+  resizeItems: (ids, step) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        items: scene.items.map((i) => (ids.includes(i.id) ? { ...i, size: clampItemSize(i.size + step) } : i)),
+      })),
+    })),
+  setItemsColor: (ids, color) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        items: scene.items.map((i) => (ids.includes(i.id) && COLORABLE_TYPES.includes(i.type) ? { ...i, color } : i)),
+      })),
+    })),
 
   selectScene: (index) =>
     set((s) =>
-      index < 0 || index >= s.scenes.length ? {} : { sceneIndex: index, selectedId: null },
+      index < 0 || index >= s.scenes.length ? {} : { sceneIndex: index, ...selection([]) },
     ),
   addScene: () =>
     set((s) => {
       const scenes = [...s.scenes]
       scenes.splice(s.sceneIndex + 1, 0, nextSceneFrom(currentScene(s)))
-      return { ...recorded(s), scenes, sceneIndex: s.sceneIndex + 1, selectedId: null }
+      return { ...recorded(s), scenes, sceneIndex: s.sceneIndex + 1, ...selection([]) }
     }),
   deleteScene: () =>
     set((s) => {
@@ -274,7 +376,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         ...recorded(s),
         scenes,
         sceneIndex: Math.min(s.sceneIndex, scenes.length - 1),
-        selectedId: null,
+        ...selection([]),
       }
     }),
   setSceneDuration: (durationMs) =>
@@ -469,60 +571,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       }
     }),
 
-  insertCopy: (element) => {
-    const s = get()
-    if (isZone(element)) {
-      const copy: Zone = { ...element, id: createId('zone'), x: element.x + COPY_OFFSET, y: element.y + COPY_OFFSET }
-      set({
-        ...recorded(s),
-        scenes: editScene(s, (scene) => ({ zones: [...scene.zones, copy] })),
-        selectedId: copy.id,
-      })
-      return copy.id
-    }
-    if (isLine(element)) {
-      const copy: Line = {
-        ...element,
-        id: createId('line'),
-        points: element.points.map((p) => shift(p, COPY_OFFSET, COPY_OFFSET)),
-      }
-      set({
-        ...recorded(s),
-        scenes: editScene(s, (scene) => ({ lines: [...scene.lines, copy] })),
-        selectedId: copy.id,
-      })
-      return copy.id
-    }
-    const numbered = element.type === 'player' && /^\d+$/.test(element.label)
-    const copy: Item = {
-      ...element,
-      id: createId('item'),
-      x: element.x + COPY_OFFSET,
-      y: element.y + COPY_OFFSET,
-      label: numbered
-        ? String(nextPlayerNumber(currentScene(s).items, element.color, element.shape))
-        : element.label,
-    }
-    set({
-      ...recorded(s),
-      scenes: editScene(s, (scene) => ({ items: [...scene.items, copy] })),
-      selectedId: copy.id,
-    })
-    return copy.id
-  },
-  deleteElement: (id) =>
-    set((s) => {
-      if (!findElement(currentScene(s), id)) return {}
-      return {
-        ...recorded(s),
-        scenes: editScene(s, (scene) => ({
-          items: scene.items.filter((i) => i.id !== id),
-          lines: scene.lines.filter((l) => l.id !== id),
-          zones: scene.zones.filter((z) => z.id !== id),
-        })),
-        selectedId: s.selectedId === id ? null : s.selectedId,
-      }
-    }),
+  insertCopy: (element) => get().insertCopies([element])[0],
+  deleteElement: (id) => get().deleteElements([id]),
 
   setItemRotation: (id, rotation) =>
     set((s) => ({
@@ -580,7 +630,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       const previous = s.past.at(-1)
       if (!previous) return {}
       return {
-        ...restore(previous, s.selectedId),
+        ...restore(previous, s.selectedIds),
         past: s.past.slice(0, -1),
         future: [contentOf(s), ...s.future],
       }
@@ -590,7 +640,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       const next = s.future[0]
       if (!next) return {}
       return {
-        ...restore(next, s.selectedId),
+        ...restore(next, s.selectedIds),
         past: [...s.past, contentOf(s)].slice(-HISTORY_LIMIT),
         future: s.future.slice(1),
       }

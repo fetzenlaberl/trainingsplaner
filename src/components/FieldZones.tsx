@@ -7,6 +7,7 @@ import type { Point, Zone } from '../model/types'
 import { useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
+import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updateGroupDrag } from './groupDrag'
 import { ZoneShape } from './ZoneShape'
 
 interface FieldZonesProps {
@@ -25,6 +26,7 @@ interface FieldZonesProps {
  */
 export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesProps) {
   const select = useDrillStore((s) => s.select)
+  const selectedIds = useDrillStore((s) => s.selectedIds)
   const updateZone = useDrillStore((s) => s.updateZone)
   const setDraggingId = useToolStore((s) => s.setDraggingId)
 
@@ -39,21 +41,38 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
           rotation={zone.rotation}
           opacity={zone.opacity ?? 1}
           draggable={interactive}
-          onPointerDown={() => select(zone.id)}
+          onPointerDown={(e) => selectOnPointerDown(e, zone.id)}
+          onClick={(e) => selectOnClick(e, zone.id)}
+          onTap={(e) => selectOnClick(e, zone.id)}
           onMouseEnter={(e) => setCursor(e, 'grab')}
           onMouseLeave={(e) => setCursor(e, '')}
-          onDragStart={() => {
-            select(zone.id)
+          onDragStart={(e) => {
+            if (!useDrillStore.getState().selectedIds.includes(zone.id)) select(zone.id)
             setDraggingId(zone.id)
+            beginGroupDrag(e.target, zone.id)
           }}
+          onDragMove={(e) => updateGroupDrag(e.target)}
           onDragEnd={(e) => {
             setDraggingId(null)
+            if (endGroupDrag(e.target)) return
             const pos = clampToRect(viewport, e.target.x(), e.target.y())
             e.target.position(pos)
             updateZone(zone.id, pos)
           }}
         >
           <ZoneShape {...zone} scale={scale} />
+          {/* In a multi-selection zones get a highlight; a single zone has its resize handles instead. */}
+          {interactive && selectedIds.length > 1 && selectedIds.includes(zone.id) && (
+            <ZoneShape
+              {...zone}
+              color={SELECTION_COLOR}
+              fillOpacity={0}
+              dashed
+              label=""
+              goals={0}
+              scale={scale / 2}
+            />
+          )}
         </Group>
       ))}
     </Group>

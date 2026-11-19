@@ -40,9 +40,11 @@ function formatMeters(value: number): string {
 /** Actions for the selected item, line or zone, plus duplicate and delete. */
 export function SelectionBar() {
   const selected = useDrillStore((s) => findElement(currentScene(s), s.selectedId))
+  const selectedCount = useDrillStore((s) => s.selectedIds.length)
   const insertCopy = useDrillStore((s) => s.insertCopy)
   const deleteElement = useDrillStore((s) => s.deleteElement)
 
+  if (selectedCount > 1) return <MultiControls />
   if (!selected) return null
 
   return (
@@ -69,6 +71,71 @@ export function SelectionBar() {
         onClick={() => deleteElement(selected.id)}
       >
         Löschen
+      </button>
+    </div>
+  )
+}
+
+/** Actions for several selected elements at once. */
+function MultiControls() {
+  const selectedIds = useDrillStore((s) => s.selectedIds)
+  const scene = useDrillStore((s) => currentScene(s))
+  const insertCopies = useDrillStore((s) => s.insertCopies)
+  const deleteElements = useDrillStore((s) => s.deleteElements)
+  const resizeItems = useDrillStore((s) => s.resizeItems)
+  const setItemsColor = useDrillStore((s) => s.setItemsColor)
+  const select = useDrillStore((s) => s.select)
+  const elements = selectedIds.map((id) => findElement(scene, id)).filter((el) => el !== undefined)
+  const items = elements.filter((el): el is Item => !isLine(el) && !isZone(el))
+  const colorable = items.filter((i) => COLORABLE_TYPES.includes(i.type))
+
+  return (
+    <div role="group" aria-label="Mehrere bearbeiten" className="flex flex-wrap items-center gap-1.5">
+      <span className="rounded-md bg-sky-500/20 px-2 py-1 text-sm font-semibold text-sky-200">
+        {selectedIds.length} ausgewählt
+      </span>
+      {items.length > 0 && (
+        <div role="group" aria-label="Größe" className="flex items-center gap-1">
+          <span className="text-sm text-slate-400">Größe</span>
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label="Alle kleiner"
+            onClick={() => resizeItems(items.map((i) => i.id), -ITEM_SIZE_STEP)}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label="Alle größer"
+            onClick={() => resizeItems(items.map((i) => i.id), ITEM_SIZE_STEP)}
+          >
+            +
+          </button>
+        </div>
+      )}
+      {colorable.length > 0 && (
+        <ColorSwatches
+          label="Farbe"
+          colors={PLAYER_COLORS}
+          value={colorable.every((i) => i.color === colorable[0].color) ? colorable[0].color : ''}
+          onSelect={(color) => setItemsColor(colorable.map((i) => i.id), color)}
+        />
+      )}
+      <button type="button" className={buttonClass} title="Duplizieren (Strg+D)" onClick={() => insertCopies(elements)}>
+        Duplizieren
+      </button>
+      <button
+        type="button"
+        className={dangerButtonClass}
+        title="Löschen (Entf)"
+        onClick={() => deleteElements(selectedIds)}
+      >
+        Löschen
+      </button>
+      <button type="button" className={buttonClass} title="Auswahl aufheben (Esc)" onClick={() => select(null)}>
+        Aufheben
       </button>
     </div>
   )
