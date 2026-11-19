@@ -163,17 +163,22 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
         {arms.map((points, i) => (
           <Line key={`arm-${i}`} points={points} stroke={color} strokeWidth={0.36} lineCap="round" />
         ))}
-        {/* The number sits next to the cross, it would not fit inside. */}
+        {/* The number sits on the crossing point; a white outline keeps it readable on the arms. */}
         <Group rotation={upright}>
           <Text
             text={label}
-            x={CROSS_HALF * 0.7}
-            y={CROSS_HALF * 0.55}
-            fontSize={0.85}
+            width={CROSS_HALF * 2}
+            height={CROSS_HALF * 2}
+            offsetX={CROSS_HALF}
+            offsetY={CROSS_HALF}
+            align="center"
+            verticalAlign="middle"
+            fontSize={0.95}
             fontStyle="bold"
-            fill={color}
+            fill="#111827"
             stroke="#ffffff"
-            strokeWidth={0.06}
+            strokeWidth={0.18}
+            fillAfterStrokeEnabled
           />
         </Group>
       </Group>
