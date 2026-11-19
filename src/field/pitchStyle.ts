@@ -8,6 +8,7 @@ export type GridType =
   | 'thirds'
   | 'lanes'
   | 'positional'
+  | 'zones20'
   | 'penalty'
   | 'penaltyFine'
   | 'squares5'
@@ -113,6 +114,7 @@ export const GRID_LABELS: Record<GridType, string> = {
   thirds: 'Drittel',
   lanes: 'Korridore (5 Längsstreifen)',
   positional: 'Positionsspiel-Raster (20 Zonen)',
+  zones20: 'Zonenraster 1–20 (nummeriert)',
   penalty: 'Strafraum-Raster (ca. 12 × 10 m)',
   penaltyFine: 'Strafraum-Raster fein (ca. 9 × 6,7 m)',
   squares5: 'Quadrate 5 × 5 m',
@@ -125,6 +127,7 @@ export const GRID_ORDER: GridType[] = [
   'thirds',
   'lanes',
   'positional',
+  'zones20',
   'penalty',
   'penaltyFine',
   'squares5',
@@ -159,6 +162,77 @@ export function displayColor(color: string, pitchColor: PitchColor): string {
 }
 
 /**
+ * Club zone grid (as on common tactic sheets): numbered 1–20 from the own goal.
+ * Wings run along the penalty area sides; between penalty area and halfway line each wing
+ * is split in the middle, and the centre has three lanes along the goal area sides.
+ */
+function zones20Layout() {
+  const { length, width, penaltyAreaDepth, penaltyAreaWidth, goalAreaWidth } = PITCH
+  const mid = width / 2
+  const wingTop = mid - penaltyAreaWidth / 2
+  const wingBottom = mid + penaltyAreaWidth / 2
+  const laneTop = mid - goalAreaWidth / 2
+  const laneBottom = mid + goalAreaWidth / 2
+  const ownBox = penaltyAreaDepth
+  const oppBox = length - penaltyAreaDepth
+  const half = length / 2
+  const ownWingSplit = (ownBox + half) / 2
+  const oppWingSplit = (half + oppBox) / 2
+
+  const lines: number[][] = [
+    // Penalty area lines and halfway line across the whole width
+    [ownBox, 0, ownBox, width],
+    [half, 0, half, width],
+    [oppBox, 0, oppBox, width],
+    // Wing borders along the whole length
+    [0, wingTop, length, wingTop],
+    [0, wingBottom, length, wingBottom],
+    // Centre lanes between the penalty areas
+    [ownBox, laneTop, oppBox, laneTop],
+    [ownBox, laneBottom, oppBox, laneBottom],
+    // Wing splits in each half
+    [ownWingSplit, 0, ownWingSplit, wingTop],
+    [ownWingSplit, wingBottom, ownWingSplit, width],
+    [oppWingSplit, 0, oppWingSplit, wingTop],
+    [oppWingSplit, wingBottom, oppWingSplit, width],
+  ]
+
+  const zone = (n: number, x1: number, x2: number, y1: number, y2: number) => ({
+    number: n,
+    x: (x1 + x2) / 2,
+    y: (y1 + y2) / 2,
+  })
+  const labels = [
+    zone(1, 0, ownBox, 0, wingTop),
+    zone(2, 0, ownBox, wingTop, wingBottom),
+    zone(3, 0, ownBox, wingBottom, width),
+    zone(4, ownBox, ownWingSplit, 0, wingTop),
+    zone(5, ownWingSplit, half, 0, wingTop),
+    zone(6, ownBox, half, wingTop, laneTop),
+    zone(7, ownBox, half, laneTop, laneBottom),
+    zone(8, ownBox, half, laneBottom, wingBottom),
+    zone(9, ownBox, ownWingSplit, wingBottom, width),
+    zone(10, ownWingSplit, half, wingBottom, width),
+    zone(11, half, oppWingSplit, 0, wingTop),
+    zone(12, oppWingSplit, oppBox, 0, wingTop),
+    zone(13, half, oppBox, wingTop, laneTop),
+    zone(14, half, oppBox, laneTop, laneBottom),
+    zone(15, half, oppBox, laneBottom, wingBottom),
+    zone(16, half, oppWingSplit, wingBottom, width),
+    zone(17, oppWingSplit, oppBox, wingBottom, width),
+    zone(18, oppBox, length, 0, wingTop),
+    zone(19, oppBox, length, wingTop, wingBottom),
+    zone(20, oppBox, length, wingBottom, width),
+  ]
+  return { lines, labels }
+}
+
+/** Zone numbers to show for a grid (only the club grid has them). */
+export function gridLabels(grid: GridType): { number: number; x: number; y: number }[] {
+  return grid === 'zones20' ? zones20Layout().labels : []
+}
+
+/**
  * Grid lines in meters ([x1, y1, x2, y2] each), relative to the full pitch.
  * Lanes follow the sides of the penalty and goal areas (wings, half-spaces, centre);
  * the positional grid adds cross lines at the penalty areas and the halfway line.
@@ -184,6 +258,8 @@ export function gridLines(grid: GridType): number[][] {
       return lanes
     case 'positional':
       return [...lanes, ...[penaltyAreaDepth, length / 2, length - penaltyAreaDepth].map(vertical)]
+    case 'zones20':
+      return zones20Layout().lines
     case 'penalty':
     case 'penaltyFine': {
       const parts = PENALTY_GRID_PARTS[grid]

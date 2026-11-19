@@ -1,7 +1,9 @@
-import { Circle, Group, Line, Rect } from 'react-konva'
+import { useContext } from 'react'
+import { Circle, Group, Line, Rect, Text } from 'react-konva'
 import { PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
 import { getGoals, getPitchMarkings } from '../field/markings'
-import { gridLines, PITCH_COLORS, type PitchStyle } from '../field/pitchStyle'
+import { gridLabels, gridLines, PITCH_COLORS, type PitchStyle } from '../field/pitchStyle'
+import { ViewRotationContext } from './viewRotationContext'
 
 const STRIPE_COUNT = 14
 
@@ -24,6 +26,9 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const gridWidth = Math.max(0.08, 1.2 / scale)
   const stripeWidth = PITCH.length / STRIPE_COUNT
   const stroke = { stroke: colors.line, strokeWidth: lineWidth }
+  // Zone numbers stay upright in portrait.
+  const upright = -useContext(ViewRotationContext)
+  const labelSize = 3.2
 
   return (
     <Group listening={false}>
@@ -69,6 +74,24 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           stroke={colors.grid}
           strokeWidth={gridWidth}
           dash={[gridWidth * 6, gridWidth * 4]}
+        />
+      ))}
+      {gridLabels(pitch.grid).map((label) => (
+        <Text
+          key={`zone-${label.number}`}
+          text={String(label.number)}
+          x={label.x}
+          y={label.y}
+          rotation={upright}
+          width={labelSize * 2}
+          height={labelSize}
+          offsetX={labelSize}
+          offsetY={labelSize / 2}
+          align="center"
+          verticalAlign="middle"
+          fontSize={labelSize}
+          fontStyle="bold"
+          fill={colors.grid}
         />
       ))}
     </Group>

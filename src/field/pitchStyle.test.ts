@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { displayColor, GRID_ORDER, gridLines, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { displayColor, GRID_ORDER, gridLabels, gridLines, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -49,6 +49,25 @@ describe('gridLines', () => {
     expect(ys[1] - ys[0]).toBeCloseTo(10.08)
     const fineXs = verticalXs(gridLines('penaltyFine'))
     expect(fineXs[1] - fineXs[0]).toBeCloseTo(9)
+  })
+
+  it('numbers the club grid 1 to 20 from the own goal', () => {
+    const labels = gridLabels('zones20')
+    expect(labels.map((l) => l.number)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1))
+    const at = (n: number) => labels.find((l) => l.number === n)!
+    // 2 and 19 in the penalty areas, 7 and 14 in the centre lane
+    expect(at(2).x).toBeLessThan(PITCH.penaltyAreaDepth)
+    expect(at(19).x).toBeGreaterThan(PITCH.length - PITCH.penaltyAreaDepth)
+    expect(at(7).y).toBeCloseTo(34)
+    expect(at(14).y).toBeCloseTo(34)
+    // Left wing (small y): 1, 4, 5 in the own half, 11, 12 in the opponent half, 18 at the end
+    for (const n of [1, 4, 5, 11, 12, 18]) expect(at(n).y).toBeLessThan(34 - PITCH.penaltyAreaWidth / 2)
+    expect(at(4).x).toBeLessThan(at(5).x)
+    expect(at(11).x).toBeLessThan(at(12).x)
+  })
+
+  it('has no zone numbers on other grids', () => {
+    expect(gridLabels('positional')).toEqual([])
   })
 
   it('draws evenly spaced squares inside the pitch', () => {
