@@ -3,7 +3,16 @@ import type { Orientation } from './orientation'
 
 export type PitchColor = 'grass' | 'grassPlain' | 'darkGreen' | 'lightGreen' | 'blue' | 'grey' | 'white'
 
-export type GridType = 'none' | 'thirds' | 'lanes' | 'positional' | 'squares5' | 'squares10' | 'squares15'
+export type GridType =
+  | 'none'
+  | 'thirds'
+  | 'lanes'
+  | 'positional'
+  | 'penalty'
+  | 'penaltyFine'
+  | 'squares5'
+  | 'squares10'
+  | 'squares15'
 
 /** How the pitch is drawn; saved with the drill. */
 export interface PitchStyle {
@@ -104,12 +113,42 @@ export const GRID_LABELS: Record<GridType, string> = {
   thirds: 'Drittel',
   lanes: 'Korridore (5 Längsstreifen)',
   positional: 'Positionsspiel-Raster (20 Zonen)',
+  penalty: 'Strafraum-Raster (ca. 12 × 10 m)',
+  penaltyFine: 'Strafraum-Raster fein (ca. 9 × 6,7 m)',
   squares5: 'Quadrate 5 × 5 m',
   squares10: 'Quadrate 10 × 10 m',
   squares15: 'Quadrate 15 × 15 m',
 }
 
-export const GRID_ORDER: GridType[] = ['none', 'thirds', 'lanes', 'positional', 'squares5', 'squares10', 'squares15']
+export const GRID_ORDER: GridType[] = [
+  'none',
+  'thirds',
+  'lanes',
+  'positional',
+  'penalty',
+  'penaltyFine',
+  'squares5',
+  'squares10',
+  'squares15',
+]
+
+/**
+ * Cell divisions of the penalty-area grids: the distance from the halfway line to the
+ * penalty area line (36 m) and from the middle to the penalty area side (20.16 m) are split
+ * into equal parts, so grid lines hit every penalty area line exactly.
+ */
+const PENALTY_GRID_PARTS: Record<'penalty' | 'penaltyFine', { length: number; width: number }> = {
+  penalty: { length: 3, width: 2 },
+  penaltyFine: { length: 4, width: 3 },
+}
+
+/** Lines at center ± k·step that lie strictly inside (0, max). */
+function symmetricPositions(center: number, step: number, max: number): number[] {
+  const positions = [center]
+  for (let d = step; center - d > 1e-9; d += step) positions.push(center - d)
+  for (let d = step; center + d < max - 1e-9; d += step) positions.push(center + d)
+  return positions.sort((a, b) => a - b)
+}
 
 /** White elements would disappear on a white pitch; they are drawn in this color there. */
 export const ON_WHITE_PITCH_COLOR = '#1f2937'
@@ -145,6 +184,16 @@ export function gridLines(grid: GridType): number[][] {
       return lanes
     case 'positional':
       return [...lanes, ...[penaltyAreaDepth, length / 2, length - penaltyAreaDepth].map(vertical)]
+    case 'penalty':
+    case 'penaltyFine': {
+      const parts = PENALTY_GRID_PARTS[grid]
+      const stepX = (length / 2 - penaltyAreaDepth) / parts.length
+      const stepY = penaltyAreaWidth / 2 / parts.width
+      return [
+        ...symmetricPositions(length / 2, stepX, length).map(vertical),
+        ...symmetricPositions(mid, stepY, width).map(horizontal),
+      ]
+    }
     case 'squares5':
     case 'squares10':
     case 'squares15': {

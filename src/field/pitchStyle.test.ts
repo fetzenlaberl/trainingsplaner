@@ -29,6 +29,28 @@ describe('gridLines', () => {
     expect((horizontalYs(lines).length + 1) * (verticalXs(lines).length + 1)).toBe(20)
   })
 
+  it.each(['penalty', 'penaltyFine'] as const)('puts %s grid lines on every penalty area line', (grid) => {
+    const lines = gridLines(grid)
+    const xs = verticalXs(lines)
+    const ys = horizontalYs(lines)
+    const hits = (values: number[], target: number) => values.some((v) => Math.abs(v - target) < 1e-9)
+    for (const x of [PITCH.penaltyAreaDepth, PITCH.length - PITCH.penaltyAreaDepth, PITCH.length / 2]) {
+      expect(hits(xs, x)).toBe(true)
+    }
+    for (const y of [34 - PITCH.penaltyAreaWidth / 2, 34, 34 + PITCH.penaltyAreaWidth / 2]) {
+      expect(hits(ys, y)).toBe(true)
+    }
+  })
+
+  it('uses about 12 × 10 m cells for the penalty grid and 9 × 6.7 m for the fine one', () => {
+    const xs = verticalXs(gridLines('penalty'))
+    const ys = horizontalYs(gridLines('penalty'))
+    expect(xs[1] - xs[0]).toBeCloseTo(12)
+    expect(ys[1] - ys[0]).toBeCloseTo(10.08)
+    const fineXs = verticalXs(gridLines('penaltyFine'))
+    expect(fineXs[1] - fineXs[0]).toBeCloseTo(9)
+  })
+
   it('draws evenly spaced squares inside the pitch', () => {
     const lines = gridLines('squares10')
     expect(verticalXs(lines)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
