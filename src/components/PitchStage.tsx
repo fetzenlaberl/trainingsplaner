@@ -7,7 +7,7 @@ import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field
 import { fromView, viewRect, viewRotation } from '../field/orientation'
 import { cameraDistance, fitProjected } from '../perspective/perspective'
 import { usePerspectiveStore } from '../store/perspectiveStore'
-import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
+import { defaultView, panBy, zoomAround, zoomedLayout, zoomToRect, type ViewState, type ZoomContext } from '../field/zoom'
 import { spaceKey } from '../hooks/spaceKey'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
 import { elementsInRect, rectFromPoints } from '../store/selection'
@@ -80,6 +80,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const cleanupRef = useRef<(() => void) | null>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
+  /** "⬚ Bereich": the next rectangle zooms into that area instead of selecting */
+  const [zoomAreaMode, setZoomAreaMode] = useState(false)
   /** Selection rectangle in container pixels while it is being dragged */
   const [marquee, setMarquee] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null)
   /** Size (meters) shown while a zone is being resized */
@@ -196,6 +198,53 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     cleanupRef.current = cleanup
   }
 
+  // Escape leaves the zoom-area mode.
+  useEffect(() => {
+    if (!zoomAreaMode) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setZoomAreaMode(false)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [zoomAreaMode])
+
+  /** Rectangle for "⬚ Bereich": zooms so the area fills the screen; a tap zooms in around that point. */
+  function startZoomArea(e: KonvaEventObject<PointerEvent>) {
+    const el = containerRef.current
+    if (!el) return
+    cleanupRef.current?.()
+    const rect = el.getBoundingClientRect()
+    const start = { x: e.evt.clientX - rect.left, y: e.evt.clientY - rect.top }
+    let end = start
+    const onMove = (ev: PointerEvent) => {
+      end = { x: ev.clientX - rect.left, y: ev.clientY - rect.top }
+      setMarquee({ x1: start.x, y1: start.y, x2: end.x, y2: end.y })
+    }
+    const onUp = () => {
+      cleanup()
+      setZoomAreaMode(false)
+      if (Math.hypot(end.x - start.x, end.y - start.y) < 8) {
+        setView(zoomAround(view, zoomCtx, 2, start.x, start.y))
+        return
+      }
+      // Zooming works in view coordinates (already rotated in portrait).
+      const a = pixelsToMeters(layout, vr, Math.min(start.x, end.x), Math.min(start.y, end.y))
+      const b = pixelsToMeters(layout, vr, Math.max(start.x, end.x), Math.max(start.y, end.y))
+      setView(zoomToRect(zoomCtx, { minX: a.x, minY: a.y, maxX: b.x, maxY: b.y }))
+    }
+    const cleanup = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', cleanup)
+      cleanupRef.current = null
+      setMarquee(null)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', cleanup)
+    cleanupRef.current = cleanup
+  }
+
   /** Dragging on empty space spans a selection rectangle; a tap clears the selection. */
   function startMarquee(e: KonvaEventObject<PointerEvent>) {
     const el = containerRef.current
@@ -242,6 +291,10 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
 
   function handlePointerDown(e: KonvaEventObject<PointerEvent>) {
     if (touchCountRef.current > 1 || perspective !== null) return
+    if (zoomAreaMode) {
+      if (e.evt.pointerType !== 'mouse' || e.evt.button === 0) startZoomArea(e)
+      return
+    }
     const onEmptySpace = e.target === e.target.getStage()
     // Middle mouse button or space + drag move the view (anywhere, in every tool).
     if ((e.evt.pointerType === 'mouse' && e.evt.button === 1) || spaceKey.down) {
@@ -300,7 +353,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       onMouseDown={(e) => {
         if (e.button === 1) e.preventDefault()
       }}
-      style={{ cursor: drawing ? 'crosshair' : undefined }}
+      style={{ cursor: zoomAreaMode ? 'zoom-in' : drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
         <div className="h-full w-full" style={perspectiveStyle(size.width, size.height, perspective)}>
@@ -316,7 +369,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 scale={layout.scale}
                 offsetX={layout.offsetX}
                 offsetY={layout.offsetY}
-                interactive={tool === 'select' && !locked}
+                interactive={tool === 'select' && !locked && !zoomAreaMode}
               >
                 {draft && tool !== 'select' && (
                   <LineShape
@@ -393,7 +446,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       )}
       {marquee && (
         <div
-          className="pointer-events-none absolute border border-sky-400 bg-sky-400/15"
+          className={`pointer-events-none absolute border ${
+            zoomAreaMode ? 'border-emerald-400 bg-emerald-400/15' : 'border-sky-400 bg-sky-400/15'
+          }`}
           style={{
             left: Math.min(marquee.x1, marquee.x2),
             top: Math.min(marquee.y1, marquee.y2),
@@ -413,6 +468,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           onZoomIn={() => zoomByButton(BUTTON_ZOOM_FACTOR)}
           onZoomOut={() => zoomByButton(1 / BUTTON_ZOOM_FACTOR)}
           onFit={() => setView(defaultView(vr))}
+          areaMode={zoomAreaMode}
+          onToggleArea={() => setZoomAreaMode((on) => !on)}
         />
       )}
     </div>

@@ -7,6 +7,7 @@ import {
   panBy,
   zoomAround,
   zoomedLayout,
+  zoomToRect,
   type ZoomContext,
 } from './zoom'
 
@@ -78,5 +79,28 @@ describe('panBy', () => {
 
   it('does nothing at zoom 1', () => {
     expect(panBy(defaultView(viewport), ctx, 200, 200)).toEqual(defaultView(viewport))
+  })
+})
+
+describe('zoomToRect', () => {
+  it('fills the screen with the chosen area', () => {
+    // A 25 × 15 m area is 4× smaller than the 100 × 50 m viewport in width.
+    const v = zoomToRect(ctx, { minX: 10, minY: 10, maxX: 35, maxY: 25 })
+    expect(v.zoom).toBeCloseTo(4)
+    expect(v.centerX).toBeCloseTo(22.5)
+    expect(v.centerY).toBeCloseTo(17.5)
+    const layout = zoomedLayout(v, ctx)
+    const left = metersToPixels(layout, viewport, 10, 17.5)
+    const right = metersToPixels(layout, viewport, 35, 17.5)
+    expect(left.x).toBeGreaterThanOrEqual(-1e-6)
+    expect(right.x).toBeLessThanOrEqual(container.width + 1e-6)
+  })
+
+  it('stays within the zoom limits for tiny areas', () => {
+    expect(zoomToRect(ctx, { minX: 10, minY: 10, maxX: 10.1, maxY: 10.1 }).zoom).toBe(MAX_ZOOM)
+  })
+
+  it('shows the whole field for an area bigger than the field', () => {
+    expect(zoomToRect(ctx, { minX: -50, minY: -50, maxX: 200, maxY: 200 })).toEqual(defaultView(viewport))
   })
 })

@@ -85,3 +85,20 @@ export function panBy(view: ViewState, ctx: ZoomContext, dx: number, dy: number)
   const scale = ctx.baseScale * v.zoom
   return clampView({ zoom: v.zoom, centerX: v.centerX - dx / scale, centerY: v.centerY - dy / scale }, ctx)
 }
+
+/**
+ * View that shows the given rectangle (view coordinates, meters) as large as possible,
+ * centered, within the zoom limits.
+ */
+export function zoomToRect(
+  ctx: ZoomContext,
+  rect: { minX: number; minY: number; maxX: number; maxY: number },
+): ViewState {
+  const width = Math.max(rect.maxX - rect.minX, 1e-6)
+  const height = Math.max(rect.maxY - rect.minY, 1e-6)
+  const zoom = Math.min(ctx.container.width / (width * ctx.baseScale), ctx.container.height / (height * ctx.baseScale))
+  return clampView(
+    { zoom, centerX: (rect.minX + rect.maxX) / 2, centerY: (rect.minY + rect.maxY) / 2 },
+    ctx,
+  )
+}

@@ -5,13 +5,16 @@ interface ZoomControlsProps {
   onZoomIn: () => void
   onZoomOut: () => void
   onFit: () => void
+  /** Waiting for a rectangle to zoom into */
+  areaMode: boolean
+  onToggleArea: () => void
 }
 
 const BUTTON =
   'flex h-10 min-w-10 items-center justify-center rounded-md px-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent'
 
 /** Zoom buttons in the corner of the pitch. */
-export function ZoomControls({ zoom, onZoomIn, onZoomOut, onFit }: ZoomControlsProps) {
+export function ZoomControls({ zoom, onZoomIn, onZoomOut, onFit, areaMode, onToggleArea }: ZoomControlsProps) {
   return (
     <div
       role="group"
@@ -24,6 +27,15 @@ export function ZoomControls({ zoom, onZoomIn, onZoomOut, onFit }: ZoomControlsP
       <span className="w-12 text-center text-xs text-slate-300 tabular-nums">{Math.round(zoom * 100)} %</span>
       <button type="button" className={BUTTON} aria-label="Hineinzoomen" disabled={zoom >= MAX_ZOOM} onClick={onZoomIn}>
         +
+      </button>
+      <button
+        type="button"
+        aria-pressed={areaMode}
+        title="Rechteck über den gewünschten Bereich ziehen, um dorthin zu zoomen"
+        className={`${BUTTON} ${areaMode ? 'bg-emerald-600 hover:bg-emerald-500' : ''}`}
+        onClick={onToggleArea}
+      >
+        ⬚ Bereich
       </button>
       <button type="button" className={BUTTON} disabled={zoom <= MIN_ZOOM} onClick={onFit}>
         Einpassen
