@@ -11,7 +11,9 @@ import { TeamsView } from './components/TeamsView'
 import { Timeline } from './components/Timeline'
 import { buttonClass } from './components/ui'
 import { useFullscreen } from './hooks/useFullscreen'
+import { useIsPhone } from './hooks/useIsPhone'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { PhoneApp } from './phone/PhoneApp'
 import { InstallButton, UpdateBanner } from './pwa/AppBanners'
 import { usePlaybackStore } from './store/playbackStore'
 import { useViewStore, type View } from './store/viewStore'
@@ -24,6 +26,11 @@ const VIEWS: { view: View; label: string }[] = [
 ]
 
 export default function App() {
+  const phone = useIsPhone()
+  return phone ? <PhoneApp /> : <DesktopApp />
+}
+
+function DesktopApp() {
   const dropTargetRef = useRef<DropTarget | null>(null)
   const view = useViewStore((s) => s.view)
   const setView = useViewStore((s) => s.setView)

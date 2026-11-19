@@ -39,12 +39,19 @@ function reportSaveError(err: unknown) {
 }
 
 /** List of training sessions and the editor for the selected one. Changes are saved automatically. */
-export function SessionsView() {
+interface SessionsViewProps {
+  /** List with editor or week overview when the screen opens */
+  initialMode?: 'list' | 'week'
+  /** Hides the Liste/Woche switch (the phone layout has its own tabs) */
+  hideModeTabs?: boolean
+}
+
+export function SessionsView({ initialMode = 'list', hideModeTabs = false }: SessionsViewProps = {}) {
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null)
   const [entries, setEntries] = useState<LibraryEntry[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [mode, setMode] = useState<'list' | 'week'>('list')
+  const [mode, setMode] = useState<'list' | 'week'>(initialMode)
 
   useEffect(() => {
     let cancelled = false
@@ -101,7 +108,11 @@ export function SessionsView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div role="tablist" aria-label="Ansicht" className="flex gap-1 border-b border-slate-700 bg-slate-900 px-3 py-2">
+      <div
+        role="tablist"
+        aria-label="Ansicht"
+        hidden={hideModeTabs && mode === 'week'}
+        className="flex gap-1 border-b border-slate-700 bg-slate-900 px-3 py-2">
         {(
           [
             ['list', 'Liste'],

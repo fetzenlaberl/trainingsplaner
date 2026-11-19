@@ -164,7 +164,11 @@ export function LibraryView() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      <div role="tablist" aria-label="Bereich" className="flex gap-1 border-b border-slate-700 bg-slate-900 px-4 pt-2">
+      <div
+        role="tablist"
+        aria-label="Bereich"
+        className="flex gap-1 overflow-x-auto border-b border-slate-700 bg-slate-900 px-4 pt-2"
+      >
         {(
           [
             [null, 'Alle'],
@@ -178,7 +182,7 @@ export function LibraryView() {
             role="tab"
             aria-selected={area === key}
             onClick={() => setArea(key)}
-            className={`rounded-t-md px-4 py-2 text-sm font-semibold ${
+            className={`shrink-0 rounded-t-md px-4 py-2 text-sm font-semibold whitespace-nowrap ${
               area === key ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -189,7 +193,7 @@ export function LibraryView() {
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-700 bg-slate-900 px-4 py-2">
         <input
           type="search"
-          className={`${inputClass} w-56`}
+          className={`${inputClass} w-56 max-w-full`}
           placeholder="Suchen …"
           aria-label="Übungen durchsuchen"
           value={query}
@@ -236,7 +240,7 @@ export function LibraryView() {
             </option>
           ))}
         </select>
-        <div className="ml-auto flex gap-1.5">
+        <div className="ml-auto flex flex-wrap gap-1.5">
           <button type="button" className={buttonClass} onClick={() => void handleExportBackup()}>
             Sicherung exportieren
           </button>
