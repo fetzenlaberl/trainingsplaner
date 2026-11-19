@@ -74,6 +74,28 @@ export function addPlayer(team: Team): Team {
   return { ...team, players: [...team.players, player] }
 }
 
+/** How imported players are added: replace the squad or append to it. */
+export type ImportMode = 'replace' | 'append'
+
+/**
+ * Adds players from an import. Without starting-eleven information the first players
+ * fill the starting eleven up to 11, as with "+ Spieler".
+ */
+export function importPlayers(
+  team: Team,
+  imported: { number: string; name: string; position: Position | null; starter: boolean | null }[],
+  mode: ImportMode,
+): Team {
+  const players = mode === 'replace' ? [] : [...team.players]
+  let starters = players.filter((p) => p.starter).length
+  for (const p of imported) {
+    const starter = p.starter ?? starters < 11
+    if (starter) starters++
+    players.push({ id: createId('player'), name: p.name, number: p.number, position: p.position, starter })
+  }
+  return { ...team, players }
+}
+
 /** Moves the player at `index` one step up (-1) or down (+1). */
 export function movePlayer(players: TeamPlayer[], index: number, direction: -1 | 1): TeamPlayer[] {
   const target = index + direction

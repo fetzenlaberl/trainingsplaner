@@ -22,7 +22,7 @@ export const PITCH = {
 /** Grass margin around the pitch so goals and corners are not cut off. */
 export const RUNOFF = 4
 
-export type FieldType = 'full' | 'half' | 'penalty' | 'empty'
+export type FieldType = 'full' | 'half' | 'penalty' | 'cornerLeft' | 'cornerRight' | 'empty'
 
 export interface Rect {
   x: number
@@ -35,10 +35,16 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   full: 'Ganzfeld',
   half: 'Halbfeld',
   penalty: 'Strafraum',
+  cornerLeft: 'Ecke links',
+  cornerRight: 'Ecke rechts',
   empty: 'Leere Fläche',
 }
 
-export const FIELD_TYPES: FieldType[] = ['full', 'half', 'penalty', 'empty']
+export const FIELD_TYPES: FieldType[] = ['full', 'half', 'penalty', 'cornerLeft', 'cornerRight', 'empty']
+
+/** Corner sections: depth from the goal line, and how far they reach past the far side of the penalty area. */
+export const CORNER_VIEW_DEPTH = 30
+export const CORNER_VIEW_BEYOND_BOX = 6
 
 /** Visible area (in meters) for each field type. */
 export function getViewport(type: FieldType): Rect {
@@ -68,6 +74,18 @@ export function getViewport(type: FieldType): Rect {
         y: width / 2 - halfHeight,
         width: depth + RUNOFF,
         height: 2 * halfHeight,
+      }
+    }
+    case 'cornerLeft':
+    case 'cornerRight': {
+      // Right goal (attacking direction), from the corner flag past the far side of the penalty area.
+      // Left/right as seen by the attacking team facing the goal: left corner = top touchline (y = 0).
+      const farSide = width / 2 + PITCH.penaltyAreaWidth / 2 + CORNER_VIEW_BEYOND_BOX
+      return {
+        x: length - CORNER_VIEW_DEPTH,
+        y: type === 'cornerLeft' ? -RUNOFF : width - farSide,
+        width: CORNER_VIEW_DEPTH + RUNOFF,
+        height: farSide + RUNOFF,
       }
     }
   }

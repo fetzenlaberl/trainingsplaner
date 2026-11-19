@@ -4,6 +4,24 @@ import { clampToRect, fitViewport, isInsideRect, metersToPixels, pixelsToMeters 
 import { arcPoints, getGoals, getPitchMarkings } from './markings'
 
 describe('getViewport', () => {
+  it('shows the corner sections from the corner flag past the far side of the penalty area', () => {
+    const farSide = PITCH.width / 2 + PITCH.penaltyAreaWidth / 2
+    const left = getViewport('cornerLeft')
+    // Includes the corner flag (top right of the pitch) and the right goal.
+    expect(left.x).toBeLessThan(PITCH.length - PITCH.penaltyAreaDepth - PITCH.penaltyArcRadius)
+    expect(left.x + left.width).toBeGreaterThanOrEqual(PITCH.length + PITCH.goalDepth)
+    expect(left.y).toBeLessThan(0)
+    expect(left.y + left.height).toBeGreaterThan(farSide)
+    expect(left.y + left.height).toBeLessThan(PITCH.width)
+    // The right corner is the mirror image across the pitch width.
+    const right = getViewport('cornerRight')
+    expect(right.x).toBe(left.x)
+    expect(right.width).toBe(left.width)
+    expect(right.height).toBeCloseTo(left.height)
+    expect(right.y + right.height).toBeCloseTo(PITCH.width + RUNOFF)
+    expect(right.y).toBeCloseTo(PITCH.width - (left.y + left.height))
+  })
+
   it('shows the whole pitch plus runoff for the full field', () => {
     expect(getViewport('full')).toEqual({
       x: -RUNOFF,

@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { downloadBlob } from '../export/download'
 import { PLAYER_COLORS } from '../items/palette'
 import {
   addPlayer,
   createTeam,
+  importPlayers,
   movePlayer,
   POSITIONS,
   sortTeams,
+  type ImportMode,
   type Position,
   type Team,
   type TeamPlayer,
 } from '../teams/team'
+import { CSV_TEMPLATE, decodeCsv, parsePlayersCsv, type CsvPlayer } from '../teams/teamCsv'
 import { deleteTeam, listTeams, putTeam } from '../teams/teamDb'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -127,6 +131,39 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
   const updatePlayer = (id: string, change: Partial<TeamPlayer>) =>
     setPlayers(team.players.map((p) => (p.id === id ? { ...p, ...change } : p)))
   const starters = team.players.filter((p) => p.starter).length
+  const csvInputRef = useRef<HTMLInputElement>(null)
+  const [pendingImport, setPendingImport] = useState<CsvPlayer[] | null>(null)
+  const [importMessage, setImportMessage] = useState<string | null>(null)
+
+  function applyImport(players: CsvPlayer[], mode: ImportMode) {
+    onChange({ players: importPlayers(team, players, mode).players })
+    setPendingImport(null)
+    setImportMessage(`${players.length} Spieler importiert.`)
+  }
+
+  async function handleCsvFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImportMessage(null)
+    try {
+      const { players, skipped } = parsePlayersCsv(decodeCsv(await file.arrayBuffer()))
+      if (players.length === 0) {
+        setImportMessage('In der Datei wurden keine Spieler gefunden. Tipp: „Vorlage herunterladen“ zeigt das erwartete Format.')
+        return
+      }
+      if (skipped > 0) setImportMessage(`${skipped} leere Zeile(n) übersprungen.`)
+      if (team.players.length === 0) applyImport(players, 'replace')
+      else setPendingImport(players)
+    } catch (err) {
+      console.error(err)
+      setImportMessage('Die Datei konnte nicht gelesen werden.')
+    }
+  }
+
+  function handleTemplate() {
+    downloadBlob(new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8' }), 'kader-vorlage.csv')
+  }
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -164,10 +201,48 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
         <h2 className="text-base font-semibold text-white">
           Kader <span className="font-normal text-slate-400">· {team.players.length} Spieler, {starters} in der Startelf</span>
         </h2>
-        <button type="button" className={buttonClass} onClick={() => onChange(addPlayer(team))}>
-          + Spieler
-        </button>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            className={buttonClass}
+            title="Kader aus einer Tabelle laden (z. B. aus Excel als CSV gespeichert): Nummer, Name, Position, Startelf"
+            onClick={() => csvInputRef.current?.click()}
+          >
+            CSV importieren
+          </button>
+          <button type="button" className={buttonClass} onClick={handleTemplate}>
+            Vorlage herunterladen
+          </button>
+          <button type="button" className={buttonClass} onClick={() => onChange(addPlayer(team))}>
+            + Spieler
+          </button>
+          <input
+            ref={csvInputRef}
+            type="file"
+            accept=".csv,.txt,text/csv,text/plain"
+            className="hidden"
+            onChange={(e) => void handleCsvFile(e)}
+          />
+        </div>
       </div>
+
+      {pendingImport && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-600/60 bg-emerald-600/10 px-4 py-3 text-sm text-emerald-50">
+          <span className="mr-auto">
+            {pendingImport.length} Spieler in der Datei gefunden. Die Mannschaft hat schon {team.players.length} Spieler.
+          </span>
+          <button type="button" className={buttonClass} onClick={() => applyImport(pendingImport, 'replace')}>
+            Kader ersetzen
+          </button>
+          <button type="button" className={buttonClass} onClick={() => applyImport(pendingImport, 'append')}>
+            Anhängen
+          </button>
+          <button type="button" className={buttonClass} onClick={() => setPendingImport(null)}>
+            Abbrechen
+          </button>
+        </div>
+      )}
+      {importMessage && <p className="text-sm text-slate-300">{importMessage}</p>}
 
       {team.players.length === 0 && (
         <p className="text-sm text-slate-400">Noch keine Spieler. Füge sie mit „+ Spieler“ hinzu.</p>
