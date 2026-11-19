@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Reference material (third-party video/screenshots, club files) - never publish
+vorlagen/

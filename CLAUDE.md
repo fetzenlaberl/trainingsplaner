@@ -53,3 +53,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - `npm run dev` startet die App lokal
 - `npm run build` prüft, ob alles kompiliert
 - `npm test` führt die Tests aus
+
+## Veröffentlichung
+- GitHub Pages über `.github/workflows/deploy.yml`: jeder Push auf `main` testet, baut (mit `BASE_PATH=/<repo>/`) und veröffentlicht.
+- Der Ordner `vorlagen/` (fremdes Referenzmaterial, Vereinsdateien) ist in `.gitignore` und darf nie ins Repository.
