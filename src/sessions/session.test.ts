@@ -94,6 +94,14 @@ describe('scheduleRows', () => {
 })
 
 describe('sessions', () => {
+  it('starts as a training and reads older sessions without kind as training', () => {
+    const session = createSession(0)
+    expect(session.kind).toBe('training')
+    const { kind: _kind, ...old } = { ...session, kind: 'tactics' }
+    expect(sessionFromData(JSON.parse(JSON.stringify(old)))?.kind).toBe('training')
+    expect(sessionFromData({ ...session, kind: 'party' })).toBeNull()
+  })
+
   it('duplicates with new ids for session and blocks', () => {
     const session = withBlocks([10])
     const copy = duplicateSession(session, 5)

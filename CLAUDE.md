@@ -13,7 +13,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Zustand: Zustand (Store), Undo/Redo über Verlaufsstapel
 - Styling: Tailwind CSS
 - Tests: Vitest für die Logik (Interpolation, Speichern/Laden)
-- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek, Einheiten und Mannschaften)
+- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek, Einheiten, Mannschaften und Tages-Intensitäten des Wochenplaners)
 
 ## Datenmodell (Kern)
 - `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Feld-Darstellung (Farbe, Raster, Ausrichtung quer/hoch; hoch = Ansicht um -90° gedreht, Daten bleiben unverändert), Liste von `Scene`
@@ -23,7 +23,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - `Line`: Typ (pass | run | dribble | shot | line = Linie ohne Pfeil), Wegpunkte (Start, beliebig viele Biegungen, Ende), rund oder eckig, Farbe, Muster (durchgezogen | gestrichelt | punktiert | strich-punktiert), Stärke (dünn | mittel | dick), Schritt-Nummer (optional, 1–99). Dateiformat aktuell Version 5 (seit Version 2 Wegpunkte, seit Version 3 Zonen, seit Version 4 Textfelder, Namensschilder, Hervorheben, Zonen-Füllung, seit Version 5 Trainingsmaterial und Kleinspielfelder, seit Version 6 freie Zonen-Ecken, seit Version 7 Linienmuster/-stärken, Linie ohne Pfeil und Zonen mit beliebig vielen Ecken, seit Version 8 Schritt-Nummern); Version-1-Linien (Start, Ende, ein Kontrollpunkt) werden beim Laden umgewandelt.
 - Koordinaten immer in Metern relativ zum Feld, nie in Pixeln. Umrechnung nur beim Zeichnen.
 - Ein Item behält seine id über alle Szenen; die Animation interpoliert Position und Drehung zwischen aufeinanderfolgenden Szenen.
-- `TrainingSession` (Einheit): Titel, Datum, Beginn, Mannschaft, Ziel, Notizen, Liste von Blöcken
+- `TrainingSession` (Einheit): Titel, Datum, Beginn, Art (Training | Taktik | Spielnachbesprechung | Spiel | Sonstiges), Mannschaft, Ziel, Notizen, Liste von Blöcken
 - `Team` (Mannschaft): Name, Teamfarbe, Spieler (Nummer, Name, Position, Startelf); nur das Nötigste, keine weiteren persönlichen Daten. Formationen stellen die Startelf aufs Feld (als normale Spieler-Items, keine Verknüpfung).
 - Block: verweist per id auf eine Übung der Bibliothek (keine Kopie) oder ist ein freier Block (z. B. Trinkpause); Dauer in Minuten, Notiz
 

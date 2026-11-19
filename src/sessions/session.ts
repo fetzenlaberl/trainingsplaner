@@ -1,4 +1,5 @@
 import type { LibraryEntry } from '../library/library'
+import { SESSION_KINDS, type SessionKind } from './week'
 
 export const DEFAULT_BLOCK_MINUTES = 15
 export const MAX_BLOCK_MINUTES = 240
@@ -20,6 +21,8 @@ export interface TrainingSession {
   date: string
   /** HH:MM or empty */
   startTime: string
+  /** Training, tactics, match review … (color in the week planner) */
+  kind: SessionKind
   team: string
   goal: string
   notes: string
@@ -41,6 +44,7 @@ export function createSession(now: number, date = ''): TrainingSession {
     title: 'Neue Trainingseinheit',
     date,
     startTime: '',
+    kind: 'training',
     team: '',
     goal: '',
     notes: '',
@@ -199,7 +203,9 @@ export function sessionFromData(value: unknown): TrainingSession | null {
     typeof value.notes !== 'string' ||
     !Array.isArray(value.blocks) ||
     !isNonNegativeNumber(value.createdAt) ||
-    !isNonNegativeNumber(value.updatedAt)
+    !isNonNegativeNumber(value.updatedAt) ||
+    // The kind was added with the week planner; older sessions are trainings.
+    !(value.kind === undefined || SESSION_KINDS.some((k) => k.key === value.kind))
   ) {
     return null
   }
@@ -210,6 +216,7 @@ export function sessionFromData(value: unknown): TrainingSession | null {
     title: value.title,
     date: value.date,
     startTime: value.startTime,
+    kind: (value.kind as SessionKind | undefined) ?? 'training',
     team: value.team,
     goal: value.goal,
     notes: value.notes,

@@ -18,7 +18,9 @@ import {
 } from '../sessions/session'
 import { deleteSession, listSessions, putSession } from '../sessions/sessionDb'
 import { useViewStore } from '../store/viewStore'
+import { kindInfo, SESSION_KINDS, type SessionKind } from '../sessions/week'
 import { DrillPicker } from './DrillPicker'
+import { WeekView } from './WeekView'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const MINUTE_OPTIONS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 90]
@@ -42,6 +44,7 @@ export function SessionsView() {
   const [entries, setEntries] = useState<LibraryEntry[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [mode, setMode] = useState<'list' | 'week'>('list')
 
   useEffect(() => {
     let cancelled = false
@@ -74,10 +77,11 @@ export function SessionsView() {
     if (selected) save({ ...selected, ...change, updatedAt: Date.now() })
   }
 
-  function handleNew() {
-    const session = createSession(Date.now(), today())
+  function handleNew(date = today()) {
+    const session = createSession(Date.now(), date)
     save(session)
     setSelectedId(session.id)
+    setMode('list')
   }
 
   function handleDuplicate() {
@@ -96,55 +100,94 @@ export function SessionsView() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden md:flex-row">
-      <aside className="flex max-h-56 shrink-0 flex-col border-b border-slate-700 bg-slate-900 md:max-h-none md:w-72 md:border-r md:border-b-0">
-        <div className="p-3">
-          <button type="button" className={`${buttonClass} w-full justify-center`} onClick={handleNew}>
-            + Neue Einheit
+    <div className="flex h-full flex-col overflow-hidden">
+      <div role="tablist" aria-label="Ansicht" className="flex gap-1 border-b border-slate-700 bg-slate-900 px-3 py-2">
+        {(
+          [
+            ['list', 'Liste'],
+            ['week', 'Woche'],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={mode === key}
+            onClick={() => setMode(key)}
+            className={`min-h-9 rounded-md px-4 text-sm font-semibold ${
+              mode === key ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {label}
           </button>
-        </div>
-        <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
-          {error && <li className="p-2 text-sm text-red-300">{error}</li>}
-          {!error && sessions === null && <li className="p-2 text-sm text-slate-400">Wird geladen …</li>}
-          {sessions?.length === 0 && (
-            <li className="p-2 text-sm text-slate-400">Noch keine Einheiten. Leg mit „+ Neue Einheit“ los.</li>
-          )}
-          {sessions?.map((s) => (
-            <li key={s.id}>
-              <button
-                type="button"
-                aria-current={s.id === selectedId ? 'true' : undefined}
-                onClick={() => setSelectedId(s.id)}
-                className={`flex w-full flex-col rounded-lg px-3 py-2 text-left ${
-                  s.id === selectedId ? 'bg-emerald-700 text-white' : 'text-slate-200 hover:bg-slate-800'
-                }`}
-              >
-                <span className="font-medium break-words">{s.title || 'Ohne Titel'}</span>
-                <span className="text-xs opacity-75">
-                  {[formatDate(s.date), `${totalMinutes(s)} min`, `${s.blocks.length} Blöcke`]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </aside>
-
-      <section className="min-h-0 flex-1 overflow-y-auto p-4">
-        {selected ? (
-          <SessionEditor
-            key={selected.id}
-            session={selected}
-            entries={entries}
-            onChange={update}
-            onDuplicate={handleDuplicate}
-            onDelete={handleDelete}
+        ))}
+      </div>
+      {mode === 'week' ? (
+        <div className="min-h-0 flex-1">
+          <WeekView
+            sessions={sessions ?? []}
+            onOpen={(id) => {
+              setSelectedId(id)
+              setMode('list')
+            }}
+            onCreate={(date) => handleNew(date)}
           />
-        ) : (
-          sessions && <p className="text-sm text-slate-400">Wähle links eine Einheit oder leg eine neue an.</p>
-        )}
-      </section>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+          <aside className="flex max-h-56 shrink-0 flex-col border-b border-slate-700 bg-slate-900 md:max-h-none md:w-72 md:border-r md:border-b-0">
+            <div className="p-3">
+              <button type="button" className={`${buttonClass} w-full justify-center`} onClick={() => handleNew()}>
+                + Neue Einheit
+              </button>
+            </div>
+            <ul className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+              {error && <li className="p-2 text-sm text-red-300">{error}</li>}
+              {!error && sessions === null && <li className="p-2 text-sm text-slate-400">Wird geladen …</li>}
+              {sessions?.length === 0 && (
+                <li className="p-2 text-sm text-slate-400">Noch keine Einheiten. Leg mit „+ Neue Einheit“ los.</li>
+              )}
+              {sessions?.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    aria-current={s.id === selectedId ? 'true' : undefined}
+                    onClick={() => setSelectedId(s.id)}
+                    className={`flex w-full flex-col rounded-lg px-3 py-2 text-left ${
+                      s.id === selectedId ? 'bg-emerald-700 text-white' : 'text-slate-200 hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 font-medium break-words">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: kindInfo(s.kind).color }} />
+                      {s.title || 'Ohne Titel'}
+                    </span>
+                    <span className="text-xs opacity-75">
+                      {[formatDate(s.date), `${totalMinutes(s)} min`, `${s.blocks.length} Blöcke`]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </aside>
+
+          <section className="min-h-0 flex-1 overflow-y-auto p-4">
+            {selected ? (
+              <SessionEditor
+                key={selected.id}
+                session={selected}
+                entries={entries}
+                onChange={update}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+              />
+            ) : (
+              sessions && <p className="text-sm text-slate-400">Wähle links eine Einheit oder leg eine neue an.</p>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   )
 }
@@ -212,7 +255,21 @@ function SessionEditor({ session, entries, onChange, onDuplicate, onDelete }: Se
         </button>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <label className="flex flex-col gap-1 text-sm text-slate-400">
+          Art
+          <select
+            className={inputClass}
+            value={session.kind}
+            onChange={(e) => onChange({ kind: e.target.value as SessionKind })}
+          >
+            {SESSION_KINDS.map((k) => (
+              <option key={k.key} value={k.key}>
+                {k.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="flex flex-col gap-1 text-sm text-slate-400">
           Datum
           <input

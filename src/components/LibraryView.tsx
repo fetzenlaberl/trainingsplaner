@@ -16,6 +16,7 @@ import { useLibraryLink } from '../library/libraryStore'
 import { CATEGORIES, DrillFileError } from '../model/serialize'
 import { listSessions, putSessions } from '../sessions/sessionDb'
 import { listTeams, putTeams } from '../teams/teamDb'
+import { listDayIntensities, putDayIntensities } from '../sessions/dayDb'
 import type { Category } from '../model/types'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -105,7 +106,12 @@ export function LibraryView() {
   /** Backup of all drills and training sessions. */
   async function handleExportBackup() {
     try {
-      const backup = { entries: await listEntries(), sessions: await listSessions(), teams: await listTeams() }
+      const backup = {
+        entries: await listEntries(),
+        sessions: await listSessions(),
+        teams: await listTeams(),
+        days: await listDayIntensities(),
+      }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
     } catch (err) {
@@ -126,6 +132,8 @@ export function LibraryView() {
       await putEntries(drills.toStore)
       await putSessions(sessions.toStore)
       await putTeams(teams.toStore)
+      // Day intensities simply take the value from the backup.
+      await putDayIntensities(backup.days)
       const skipped = drills.skipped + sessions.skipped + teams.skipped
       window.alert(
         `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en) und ${teams.toStore.length} Mannschaft(en) importiert.` +
