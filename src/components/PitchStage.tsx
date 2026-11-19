@@ -7,7 +7,7 @@ import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field
 import { fromView, viewRect, viewRotation } from '../field/orientation'
 import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type ZoomContext } from '../field/zoom'
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
-import { MIN_ZONE_SIZE } from '../items/zones'
+import { MIN_ZONE_SIZE, zoneExtent } from '../items/zones'
 import { distance } from '../lines/geometry'
 import type { Point } from '../model/types'
 import { frameAt } from '../animation/interpolate'
@@ -15,6 +15,7 @@ import { selectZones, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
+import { ZoneCornerHandles } from './FieldZones'
 import { FieldView } from './FieldView'
 import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
@@ -110,15 +111,24 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const zones = frame ? frame.zones : scenes[sceneIndex].zones
   const selectedZone =
     tool === 'select' && !animating ? sceneZones.find((z) => z.id === selectedId) : undefined
+  const editingCornersId = useToolStore((s) => s.editingCornersId)
+  const cornerMode = selectedZone !== undefined && editingCornersId === selectedZone.id
+  const transformedZone = cornerMode ? undefined : selectedZone
+
+  // Selecting something else ends corner editing.
+  useEffect(() => {
+    const { editingCornersId: editing, setEditingCornersId } = useToolStore.getState()
+    if (editing && editing !== selectedId) setEditingCornersId(null)
+  }, [selectedId])
 
   // Attach the resize/rotate handles to the selected zone's Konva node.
   useEffect(() => {
     const transformer = transformerRef.current
     if (!transformer) return
-    const node = selectedZone ? stageRef.current?.findOne(`#${selectedZone.id}`) : undefined
+    const node = transformedZone ? stageRef.current?.findOne(`#${transformedZone.id}`) : undefined
     transformer.nodes(node ? [node] : [])
     transformer.getLayer()?.batchDraw()
-  }, [selectedZone])
+  }, [transformedZone])
 
   function clientToMeters(clientX: number, clientY: number): Point | null {
     const el = containerRef.current
@@ -236,10 +246,11 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 />
               )}
               {tool === 'select' && !animating && <LineHandles scale={layout.scale} />}
+              {cornerMode && selectedZone && <ZoneCornerHandles zone={selectedZone} scale={layout.scale} />}
             </FieldView>
             <Transformer
               ref={transformerRef}
-              visible={selectedZone !== undefined}
+              visible={transformedZone !== undefined}
               rotateEnabled
               flipEnabled={false}
               ignoreStroke
@@ -259,9 +270,10 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
               }
               onTransform={(e) => {
                 if (!selectedZone) return
+                const extent = zoneExtent(selectedZone)
                 setResizeInfo({
-                  width: selectedZone.width * e.target.scaleX(),
-                  height: selectedZone.height * e.target.scaleY(),
+                  width: extent.width * e.target.scaleX(),
+                  height: extent.height * e.target.scaleY(),
                 })
               }}
               onTransformEnd={(e) => {
@@ -274,6 +286,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                   width: selectedZone.width * node.scaleX(),
                   height: selectedZone.height * node.scaleY(),
                   rotation: node.rotation(),
+                  // Free corners stretch along with the zone.
+                  corners:
+                    selectedZone.corners?.map((p) => ({ x: p.x * node.scaleX(), y: p.y * node.scaleY() })) ?? null,
                 }
                 // The size is stored in meters; the node itself is never left scaled.
                 node.scale({ x: 1, y: 1 })

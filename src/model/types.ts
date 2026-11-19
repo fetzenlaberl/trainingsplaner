@@ -81,6 +81,11 @@ export interface Zone {
   dashed: boolean
   label: string
   goals: ZoneGoals
+  /**
+   * Free corner positions (meters, relative to the center, before rotation) for rhombus,
+   * trapezoid and other uneven shapes; null = the regular rectangle or triangle.
+   */
+  corners: Point[] | null
 }
 
 export interface Scene {

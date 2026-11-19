@@ -13,6 +13,7 @@ import {
   clampFillOpacity,
   clampZoneSize,
   DEFAULT_ZONE_FILL_OPACITY,
+  MAX_ZONE_SIZE,
   ZONE_GOAL_OPTIONS,
   ZONE_SHAPES,
 } from '../items/zones'
@@ -37,7 +38,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 3: zones in scenes.
 // Version 4: text boxes, player name tags and highlight, zone fill color and opacity.
 // Version 5: equipment items (mini goal, slalom, dummy, wall, ladder) and zones with goals.
-export const FILE_VERSION = 5
+// Version 6: zones with free corners (rhombus, trapezoid, uneven shapes).
+export const FILE_VERSION = 6
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -240,6 +242,17 @@ function parseLine(value: unknown): Line {
   }
 }
 
+function parseCorners(value: unknown, shape: ZoneShape): Point[] | null {
+  if (value === undefined || value === null) return null
+  const corners = (value as unknown[]).map(parsePoint)
+  const expected = shape === 'triangle' ? 3 : shape === 'rect' ? 4 : 0
+  if (corners.length !== expected) throw corrupt()
+  return corners.map((p) => ({
+    x: Math.min(Math.max(p.x, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),
+    y: Math.min(Math.max(p.y, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),
+  }))
+}
+
 function parseZone(value: unknown): Zone {
   if (
     !isRecord(value) ||
@@ -257,6 +270,8 @@ function parseZone(value: unknown): Zone {
     typeof value.dashed !== 'boolean' ||
     // Built-in goals were added in version 5.
     !(value.goals === undefined || ZONE_GOAL_OPTIONS.includes(value.goals as ZoneGoals)) ||
+    // Free corners were added in version 6.
+    !(value.corners === undefined || value.corners === null || Array.isArray(value.corners)) ||
     typeof value.label !== 'string'
   ) {
     throw corrupt()
@@ -276,6 +291,7 @@ function parseZone(value: unknown): Zone {
     dashed: value.dashed,
     label: value.label,
     goals: (value.goals as ZoneGoals | undefined) ?? 0,
+    corners: parseCorners(value.corners, value.shape as ZoneShape),
   }
 }
 

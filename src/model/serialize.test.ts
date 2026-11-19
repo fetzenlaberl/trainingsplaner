@@ -61,6 +61,12 @@ const drill: Drill = {
           dashed: true,
           label: 'Zone A',
           goals: 4,
+          corners: [
+            { x: -10, y: -9 },
+            { x: 10, y: -9 },
+            { x: 14, y: 9 },
+            { x: -14, y: 9 },
+          ],
         },
       ],
     },
@@ -154,6 +160,14 @@ describe('serializeDrill / parseDrill', () => {
     }
     const withBox = { ...drill, scenes: [{ ...drill.scenes[0], items: [...drill.scenes[0].items, textbox] }] }
     expect(parseDrill(serializeDrill(withBox)).scenes[0].items[2]).toEqual(textbox)
+  })
+
+  it('reads version 5 zones without free corners', () => {
+    const text = tamper((d) => {
+      d.version = 5
+      delete d.scenes[0].zones[0].corners
+    })
+    expect(parseDrill(text).scenes[0].zones[0].corners).toBeNull()
   })
 
   it('reads version 4 zones without goals', () => {
@@ -261,6 +275,8 @@ describe('parseDrill rejects invalid files', () => {
     ['highlight not yes/no', (d) => (d.scenes[0].items[0].highlight = 'ja')],
     ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
     ['unsupported number of goals', (d) => (d.scenes[0].zones[0].goals = 5)],
+    ['rectangle with three corners', (d) => d.scenes[0].zones[0].corners.pop()],
+    ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],
     ['unknown grid', (d) => (d.pitch.grid = 'hexagons')],

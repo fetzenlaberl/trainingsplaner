@@ -1,5 +1,6 @@
 import { distance, pointAtDistance, polylineLength, samplePath } from '../lines/geometry'
 import type { Item, Line, Scene, Zone } from '../model/types'
+import { zoneCorners } from '../items/zones'
 import { ATTACH_DISTANCE } from './scenes'
 
 /** An item as shown in an animation frame; opacity < 1 while fading in or out. */
@@ -109,6 +110,15 @@ export function interpolateScenes(from: Scene, to: Scene, t: number): FrameItem[
   return result
 }
 
+/** Corners move evenly when at least one scene has free corners of the same shape. */
+function lerpCorners(from: Zone, to: Zone, t: number): Zone['corners'] {
+  if (!from.corners && !to.corners) return null
+  const a = zoneCorners(from)
+  const b = zoneCorners(to)
+  if (a.length === 0 || a.length !== b.length) return from.corners
+  return a.map((p, i) => ({ x: p.x + (b[i].x - p.x) * t, y: p.y + (b[i].y - p.y) * t }))
+}
+
 /** Zone states between two scenes: position, size and rotation change evenly; others fade. */
 export function interpolateZones(from: Zone[], to: Zone[], t: number): FrameZone[] {
   const targets = new Map(to.map((zone) => [zone.id, zone]))
@@ -123,6 +133,7 @@ export function interpolateZones(from: Zone[], to: Zone[], t: number): FrameZone
       width: lerp(zone.width, target.width),
       height: lerp(zone.height, target.height),
       rotation: lerpAngle(zone.rotation, target.rotation, t),
+      corners: lerpCorners(zone, target, t),
       opacity: 1,
     }
   })

@@ -368,6 +368,7 @@ describe('zones', () => {
         dashed: false,
         label: '',
         goals: 0,
+        corners: null,
       },
     ])
   })
@@ -391,6 +392,32 @@ describe('zones', () => {
     expect(zones()[0].fillOpacity).toBe(0.8)
     store().setZoneLive(id, { fillOpacity: -1 })
     expect(zones()[0].fillOpacity).toBe(0)
+  })
+
+  it('creates rhombus and trapezoid from templates and resets the corners', () => {
+    const id = store().addZone(zoneTemplate('zone-rhombus'), 50, 34)
+    expect(zones()[0].corners).toHaveLength(4)
+    store().addZone(zoneTemplate('zone-trapezoid'), 50, 34)
+    expect(zones()[1].corners![0]).toEqual({ x: -7, y: -7 })
+    store().updateZone(id, { corners: null })
+    expect(zones()[0].corners).toBeNull()
+  })
+
+  it('moves a corner live, recorded as one step via pushHistory', () => {
+    const id = store().addZone(RECT, 30, 20)
+    const before = store().snapshot()
+    store().setZoneLive(id, {
+      corners: [
+        { x: -5, y: -7.5 },
+        { x: 10, y: -7.5 },
+        { x: 10, y: 7.5 },
+        { x: -10, y: 7.5 },
+      ],
+    })
+    store().pushHistory(before)
+    expect(zones()[0].corners![0]).toEqual({ x: -5, y: -7.5 })
+    store().undo()
+    expect(zones()[0].corners).toBeNull()
   })
 
   it('creates small-sided fields with built-in goals that can be changed', () => {

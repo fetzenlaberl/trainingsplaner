@@ -7,7 +7,7 @@ import {
   ROTATABLE_TYPES,
   TEXTBOX_COLORS,
 } from '../items/palette'
-import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS, ZONE_GOAL_OPTIONS } from '../items/zones'
+import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS, ZONE_GOAL_OPTIONS, zoneExtent } from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
   currentScene,
@@ -17,6 +17,7 @@ import {
   useDrillStore,
   type DrillContent,
 } from '../store/drillStore'
+import { useToolStore } from '../store/toolStore'
 import { TextBoxDialog } from './TextBoxDialog'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -339,12 +340,34 @@ function OpacitySlider({ zone }: { zone: Zone }) {
 function ZoneControls({ zone }: { zone: Zone }) {
   const updateZone = useDrillStore((s) => s.updateZone)
   const setZoneLive = useDrillStore((s) => s.setZoneLive)
+  const editingCornersId = useToolStore((s) => s.editingCornersId)
+  const setEditingCornersId = useToolStore((s) => s.setEditingCornersId)
+  const editingCorners = editingCornersId === zone.id
+  const extent = zoneExtent(zone)
 
   return (
     <>
       <span className="text-sm text-slate-300 tabular-nums" title="Größe der Zone">
-        {formatMeters(zone.width)} × {formatMeters(zone.height)} m
+        {formatMeters(extent.width)} × {formatMeters(extent.height)} m
       </span>
+      {zone.shape !== 'ellipse' && (
+        <>
+          <button
+            type="button"
+            aria-pressed={editingCorners}
+            title="Ecken einzeln verschieben, z. B. für Raute oder Trapez"
+            onClick={() => setEditingCornersId(editingCorners ? null : zone.id)}
+            className={`${buttonClass} ${editingCorners ? 'bg-emerald-600 text-white hover:bg-emerald-500' : ''}`}
+          >
+            {editingCorners ? 'Ecken fertig' : 'Ecken bearbeiten'}
+          </button>
+          {zone.corners && (
+            <button type="button" className={buttonClass} onClick={() => updateZone(zone.id, { corners: null })}>
+              Ecken zurücksetzen
+            </button>
+          )}
+        </>
+      )}
       <ColorSwatches
         label="Füllung"
         colors={ZONE_COLORS}

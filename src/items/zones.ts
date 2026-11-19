@@ -1,4 +1,4 @@
-import type { ZoneGoals, ZoneShape } from '../model/types'
+import type { Point, Zone, ZoneGoals, ZoneShape } from '../model/types'
 
 export interface ZoneTemplate {
   key: string
@@ -8,48 +8,123 @@ export interface ZoneTemplate {
   /** Start size in meters */
   width: number
   height: number
+  /** Uneven start shape (see Zone.corners) */
+  corners?: Point[]
 }
 
 export const ZONE_TEMPLATES: ZoneTemplate[] = [
   { key: 'zone-rect', name: 'Rechteck', shape: 'rect', goals: 0, width: 20, height: 15 },
   { key: 'zone-triangle', name: 'Dreieck', shape: 'triangle', goals: 0, width: 20, height: 17 },
   { key: 'zone-ellipse', name: 'Kreis', shape: 'ellipse', goals: 0, width: 18, height: 18 },
+  {
+    key: 'zone-rhombus',
+    name: 'Raute',
+    shape: 'rect',
+    goals: 0,
+    width: 20,
+    height: 16,
+    corners: [
+      { x: 0, y: -8 },
+      { x: 10, y: 0 },
+      { x: 0, y: 8 },
+      { x: -10, y: 0 },
+    ],
+  },
+  {
+    key: 'zone-trapezoid',
+    name: 'Trapez',
+    shape: 'rect',
+    goals: 0,
+    width: 24,
+    height: 14,
+    corners: [
+      { x: -7, y: -7 },
+      { x: 7, y: -7 },
+      { x: 12, y: 7 },
+      { x: -12, y: 7 },
+    ],
+  },
   { key: 'field-4', name: 'Kleinfeld 4 Tore', shape: 'rect', goals: 4, width: 30, height: 20 },
   { key: 'field-6', name: 'Kleinfeld 6 Tore', shape: 'rect', goals: 6, width: 40, height: 25 },
 ]
 
 export const ZONE_GOAL_OPTIONS: ZoneGoals[] = [0, 4, 6]
 
-/**
- * Positions of the built-in mini goals of a zone, relative to its center (meters).
- * The goals sit on the two short sides, opening inwards; rotation 0 = opening towards +x.
- */
-export function zoneGoalPositions(
-  width: number,
-  height: number,
-  goals: ZoneGoals,
-): { x: number; y: number; rotation: number }[] {
-  if (goals === 0) return []
-  const perSide = goals / 2
-  const fractions = perSide === 2 ? [0.25, 0.75] : [1 / 6, 0.5, 5 / 6]
-  if (width >= height) {
-    // Short sides are left and right.
-    return fractions.flatMap((f) => {
-      const y = -height / 2 + f * height
-      return [
-        { x: -width / 2, y, rotation: 0 },
-        { x: width / 2, y, rotation: 180 },
-      ]
-    })
-  }
-  // Short sides are top and bottom.
-  return fractions.flatMap((f) => {
-    const x = -width / 2 + f * width
+/** Corners of the regular shape: rectangle clockwise from top left, triangle from the tip. */
+export function baseCorners(shape: ZoneShape, width: number, height: number): Point[] {
+  const w = width / 2
+  const h = height / 2
+  if (shape === 'triangle') {
     return [
-      { x, y: -height / 2, rotation: 90 },
-      { x, y: height / 2, rotation: 270 },
+      { x: 0, y: -h },
+      { x: w, y: h },
+      { x: -w, y: h },
     ]
-  })
+  }
+  return [
+    { x: -w, y: -h },
+    { x: w, y: -h },
+    { x: w, y: h },
+    { x: -w, y: h },
+  ]
+}
+
+/** Corners as drawn (free corners or the regular shape); empty for ellipses. */
+export function zoneCorners(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corners'>): Point[] {
+  if (zone.shape === 'ellipse') return []
+  return zone.corners ?? baseCorners(zone.shape, zone.width, zone.height)
+}
+
+/** Width and height of the area actually covered (meters, before rotation). */
+export function zoneExtent(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corners'>): {
+  width: number
+  height: number
+} {
+  if (!zone.corners) return { width: zone.width, height: zone.height }
+  const xs = zone.corners.map((p) => p.x)
+  const ys = zone.corners.map((p) => p.y)
+  return { width: Math.max(...xs) - Math.min(...xs), height: Math.max(...ys) - Math.min(...ys) }
+}
+
+const normalizeDegrees = (deg: number) => ((deg % 360) + 360) % 360
+
+/**
+ * Positions of the built-in mini goals of a four-cornered zone, relative to its center.
+ * The goals sit on the two shorter opposite sides (also slanted ones), opening inwards;
+ * rotation 0 = opening towards +x.
+ */
+export function zoneGoalPositions(corners: Point[], goals: ZoneGoals): { x: number; y: number; rotation: number }[] {
+  if (goals === 0 || corners.length !== 4) return []
+  const [a, b, c, d] = corners
+  const length = (p: Point, q: Point) => Math.hypot(q.x - p.x, q.y - p.y)
+  // Opposite side pairs: left/right (a-d, b-c) and top/bottom (a-b, d-c), each running the same way.
+  const leftRight: [Point, Point][] = [
+    [a, d],
+    [b, c],
+  ]
+  const topBottom: [Point, Point][] = [
+    [a, b],
+    [d, c],
+  ]
+  const sides =
+    length(a, d) + length(b, c) <= length(a, b) + length(d, c) ? leftRight : topBottom
+  const center = { x: (a.x + b.x + c.x + d.x) / 4, y: (a.y + b.y + c.y + d.y) / 4 }
+  const fractions = goals === 4 ? [0.25, 0.75] : [1 / 6, 0.5, 5 / 6]
+
+  return fractions.flatMap((f) =>
+    sides.map(([from, to]) => {
+      const x = from.x + (to.x - from.x) * f
+      const y = from.y + (to.y - from.y) * f
+      // Normal of the side, turned towards the middle of the zone.
+      let nx = -(to.y - from.y)
+      let ny = to.x - from.x
+      if (nx * (center.x - x) + ny * (center.y - y) < 0) {
+        nx = -nx
+        ny = -ny
+      }
+      return { x, y, rotation: normalizeDegrees((Math.atan2(ny, nx) * 180) / Math.PI) }
+    }),
+  )
 }
 
 export const ZONE_SHAPES: ZoneShape[] = ['rect', 'triangle', 'ellipse']

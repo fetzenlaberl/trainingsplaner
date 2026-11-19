@@ -1,8 +1,9 @@
 import { useContext } from 'react'
-import { Ellipse, Group, Line, Rect, Text } from 'react-konva'
+import { Ellipse, Group, Line, Text } from 'react-konva'
 import { displayColor } from '../field/pitchStyle'
 import { MINIGOAL } from '../items/equipment'
-import { zoneGoalPositions } from '../items/zones'
+import { zoneCorners, zoneExtent, zoneGoalPositions } from '../items/zones'
+import { flatten } from '../lines/geometry'
 import type { Zone } from '../model/types'
 import { GoalShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
@@ -10,7 +11,7 @@ import { ViewRotationContext } from './viewRotationContext'
 
 type ZoneShapeProps = Pick<
   Zone,
-  'shape' | 'width' | 'height' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label' | 'goals'
+  'shape' | 'width' | 'height' | 'corners' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label' | 'goals'
 > & {
   /** Pixels per meter, keeps the outline visible at small sizes */
   scale: number
@@ -21,6 +22,7 @@ export function ZoneShape({
   shape,
   width,
   height,
+  corners,
   color: chosenColor,
   fillColor: chosenFill,
   fillOpacity,
@@ -32,9 +34,10 @@ export function ZoneShape({
   const pitchColor = useContext(PitchColorContext)
   const color = displayColor(chosenColor, pitchColor)
   const fill = displayColor(chosenFill, pitchColor)
+  const extent = zoneExtent({ shape, width, height, corners })
   // In portrait the label turns back upright; its box then spans the zone's height.
   const upright = -useContext(ViewRotationContext)
-  const labelWidth = upright === 0 ? width : height
+  const labelWidth = upright === 0 ? extent.width : extent.height
   const strokeWidth = Math.max(0.15, 1.5 / scale)
   // Fill and outline are separate shapes: only the fill is see-through.
   const outline = {
@@ -42,32 +45,28 @@ export function ZoneShape({
     strokeWidth,
     dash: dashed ? [strokeWidth * 5, strokeWidth * 3] : undefined,
   }
-  const halfW = width / 2
-  const halfH = height / 2
-  const fontSize = Math.min(2, (upright === 0 ? height : width) / 3, labelWidth / Math.max(label.length * 0.6, 1))
+  const outlinePoints = flatten(zoneCorners({ shape, width, height, corners }))
+  const fontSize = Math.min(
+    2,
+    (upright === 0 ? extent.height : extent.width) / 3,
+    labelWidth / Math.max(label.length * 0.6, 1),
+  )
 
   return (
     <>
-      {shape === 'rect' && (
+      {shape === 'ellipse' ? (
         <>
-          <Rect x={-halfW} y={-halfH} width={width} height={height} fill={fill} opacity={fillOpacity} />
-          <Rect x={-halfW} y={-halfH} width={width} height={height} {...outline} />
+          <Ellipse radiusX={width / 2} radiusY={height / 2} fill={fill} opacity={fillOpacity} />
+          <Ellipse radiusX={width / 2} radiusY={height / 2} {...outline} />
         </>
-      )}
-      {shape === 'ellipse' && (
+      ) : (
         <>
-          <Ellipse radiusX={halfW} radiusY={halfH} fill={fill} opacity={fillOpacity} />
-          <Ellipse radiusX={halfW} radiusY={halfH} {...outline} />
-        </>
-      )}
-      {shape === 'triangle' && (
-        <>
-          <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed fill={fill} opacity={fillOpacity} />
-          <Line points={[0, -halfH, halfW, halfH, -halfW, halfH]} closed {...outline} lineJoin="round" />
+          <Line points={outlinePoints} closed fill={fill} opacity={fillOpacity} />
+          <Line points={outlinePoints} closed {...outline} lineJoin="round" />
         </>
       )}
       {shape === 'rect' &&
-        zoneGoalPositions(width, height, goals).map((goal, i) => (
+        zoneGoalPositions(zoneCorners({ shape, width, height, corners }), goals).map((goal, i) => (
           <Group key={i} x={goal.x} y={goal.y}>
             <GoalShape
               width={MINIGOAL.width}
@@ -84,8 +83,8 @@ export function ZoneShape({
           rotation={upright}
           width={labelWidth}
           offsetX={labelWidth / 2}
-          // Inside a triangle the label sits lower, where there is more room.
-          y={shape === 'triangle' ? halfH / 3 - fontSize / 2 : -fontSize / 2}
+          // Inside a regular triangle the label sits lower, where there is more room.
+          y={shape === 'triangle' && !corners ? height / 6 - fontSize / 2 : -fontSize / 2}
           align="center"
           fontSize={fontSize}
           fontStyle="bold"

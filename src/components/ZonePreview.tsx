@@ -10,7 +10,7 @@ interface ZonePreviewProps {
 
 /** Stand-alone canvas showing a new zone, used in the sidebar and while dragging. */
 export function ZonePreview({ template, scale }: ZonePreviewProps) {
-  const { shape, width, height, goals } = template
+  const { shape, width, height, goals, corners } = template
   const pxWidth = Math.ceil(width * scale) + 4
   const pxHeight = Math.ceil(height * scale) + 4
   return (
@@ -27,6 +27,7 @@ export function ZonePreview({ template, scale }: ZonePreviewProps) {
             dashed={false}
             label=""
             goals={goals}
+            corners={corners ?? null}
             scale={scale}
           />
         </Group>

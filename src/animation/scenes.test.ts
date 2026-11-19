@@ -40,6 +40,7 @@ describe('nextSceneFrom', () => {
       dashed: false,
       label: '',
       goals: 0 as const,
+      corners: null,
     }
     const scene: Scene = { durationMs: 2000, items: [], lines: [], zones: [zone] }
     expect(nextSceneFrom(scene).zones).toEqual([zone])

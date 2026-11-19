@@ -72,7 +72,11 @@ export interface DrillState extends DrillContent {
   clearLineBends: (id: string) => void
   setLineSmooth: (id: string, smooth: boolean) => void
   /** Adds a zone from a template, centered at the given position (meters), and returns its id. */
-  addZone: (template: Pick<ZoneTemplate, 'shape' | 'goals' | 'width' | 'height'>, x: number, y: number) => string
+  addZone: (
+    template: Pick<ZoneTemplate, 'shape' | 'goals' | 'width' | 'height' | 'corners'>,
+    x: number,
+    y: number,
+  ) => string
   /** Changes a zone (position, size, rotation, color, outline) as one undo step. */
   updateZone: (id: string, change: Partial<Omit<Zone, 'id'>>) => void
   /** Inserts an offset copy of an item, line or zone, selects it and returns its id. */
@@ -379,7 +383,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       })),
     })),
 
-  addZone: ({ shape, goals, width, height }, x, y) => {
+  addZone: ({ shape, goals, width, height, corners }, x, y) => {
     const zone: Zone = {
       id: createId('zone'),
       shape,
@@ -388,6 +392,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       width: clampZoneSize(width),
       height: clampZoneSize(height),
       goals,
+      corners: corners ? corners.map((p) => ({ ...p })) : null,
       rotation: 0,
       color: DEFAULT_ZONE_COLOR,
       fillColor: DEFAULT_ZONE_COLOR,

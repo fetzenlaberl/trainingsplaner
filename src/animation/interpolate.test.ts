@@ -171,12 +171,30 @@ describe('interpolateZones', () => {
     dashed: false,
     label: '',
     goals: 0,
+    corners: null,
   })
 
   it('moves, resizes and rotates zones evenly', () => {
     const [z] = interpolateZones([zone('a', 0, 10, 350)], [zone('a', 20, 30, 10)], 0.5)
     expect([z.x, z.width, z.opacity]).toEqual([10, 20, 1])
     expect(z.rotation).toBeCloseTo(0)
+  })
+
+  it('moves free corners evenly, also from a regular rectangle', () => {
+    const plain = zone('a', 0, 10)
+    const rhombus = {
+      ...zone('a', 0, 10),
+      corners: [
+        { x: 0, y: -5 },
+        { x: 5, y: 0 },
+        { x: 0, y: 5 },
+        { x: -5, y: 0 },
+      ],
+    }
+    const [z] = interpolateZones([plain], [rhombus], 0.5)
+    // Top-left corner of the 10 × 10 square (-5, -5) halfway to the rhombus tip (0, -5)
+    expect(z.corners![0]).toEqual({ x: -2.5, y: -5 })
+    expect(interpolateZones([plain], [plain], 0.5)[0].corners).toBeNull()
   })
 
   it('fades zones in and out', () => {
