@@ -13,6 +13,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Zustand: Zustand (Store), Undo/Redo über Verlaufsstapel
 - Styling: Tailwind CSS
 - Tests: Vitest für die Logik (Interpolation, Speichern/Laden)
+- Installierbar und offline (PWA über vite-plugin-pwa): Service Worker merkt sich die App; der MP4-Umwandler wird erst bei Bedarf geladen und dann gecacht. Neue Versionen werden in der App angekündigt (kein automatisches Neuladen). Prüfen mit `npm run build` + `npm run preview` (im Dev-Modus ist der Service Worker aus).
 - Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek, Einheiten, Mannschaften und Tages-Intensitäten des Wochenplaners)
 
 ## Datenmodell (Kern)

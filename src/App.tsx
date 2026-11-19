@@ -12,6 +12,7 @@ import { Timeline } from './components/Timeline'
 import { buttonClass } from './components/ui'
 import { useFullscreen } from './hooks/useFullscreen'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { InstallButton, UpdateBanner } from './pwa/AppBanners'
 import { usePlaybackStore } from './store/playbackStore'
 import { useViewStore, type View } from './store/viewStore'
 
@@ -50,6 +51,7 @@ export default function App() {
             </button>
           ))}
         </nav>
+        <InstallButton />
         {fullscreen.supported && (
           <button
             type="button"
@@ -87,6 +89,7 @@ export default function App() {
           {view === 'library' ? <LibraryView /> : view === 'sessions' ? <SessionsView /> : <TeamsView />}
         </main>
       )}
+      <UpdateBanner />
     </div>
   )
 }

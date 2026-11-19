@@ -19,6 +19,7 @@ import { CATEGORIES, DrillFileError } from '../model/serialize'
 import { listSessions, putSessions } from '../sessions/sessionDb'
 import { listTeams, putTeams } from '../teams/teamDb'
 import { listDayIntensities, putDayIntensities } from '../sessions/dayDb'
+import { backupReminderText, loadLastBackup, saveLastBackup } from '../settings/backupReminder'
 import type { Category, DrillArea } from '../model/types'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -50,6 +51,9 @@ export function LibraryView() {
   const linkedId = useLibraryLink((s) => s.libraryId)
   const setView = useViewStore((s) => s.setView)
   const importInputRef = useRef<HTMLInputElement>(null)
+  const [lastBackup, setLastBackup] = useState(loadLastBackup)
+  const [now] = useState(() => Date.now())
+  const reminder = backupReminderText(lastBackup, now)
 
   const reload = useCallback(async () => {
     try {
@@ -119,6 +123,9 @@ export function LibraryView() {
       }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
+      const stamp = Date.now()
+      saveLastBackup(stamp)
+      setLastBackup(stamp)
     } catch (err) {
       console.error(err)
       window.alert('Die Sicherung konnte nicht erstellt werden.')
@@ -247,6 +254,16 @@ export function LibraryView() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
+        {reminder && entries && entries.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-500/60 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+            <span>
+              {reminder} Die Daten liegen nur in diesem Browser – sichere sie regelmäßig als Datei.
+            </span>
+            <button type="button" className={buttonClass} onClick={() => void handleExportBackup()}>
+              Jetzt sichern
+            </button>
+          </div>
+        )}
         {error && <p className="text-sm text-red-300">{error}</p>}
         {!error && entries === null && <p className="text-sm text-slate-400">Wird geladen …</p>}
         {!error && entries?.length === 0 && (
