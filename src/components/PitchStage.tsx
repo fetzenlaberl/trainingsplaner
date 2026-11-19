@@ -11,6 +11,7 @@ import { defaultView, panBy, zoomAround, zoomedLayout, type ViewState, type Zoom
 import { useViewGestures, type ViewGestureState } from '../hooks/useViewGestures'
 import { MIN_ZONE_SIZE, zoneExtent } from '../items/zones'
 import { distance } from '../lines/geometry'
+import { defaultPattern } from '../lines/styles'
 import type { Point } from '../model/types'
 import { frameAt } from '../animation/interpolate'
 import { selectZones, useDrillStore } from '../store/drillStore'
@@ -68,6 +69,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const perspective = usePerspectiveStore((s) => (s.enabled ? s.tilt : null))
   const tool = useToolStore((s) => s.tool)
   const lineColor = useToolStore((s) => s.lineColor)
+  const linePattern = useToolStore((s) => s.linePattern)
+  const lineWeight = useToolStore((s) => s.lineWeight)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null)
@@ -213,7 +216,12 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
     const onUp = (ev: PointerEvent) => {
       cleanup()
       const end = endAt(ev)
-      if (distance(start, end) >= MIN_LINE_LENGTH) addLine(lineType, start, end, lineColor)
+      if (distance(start, end) >= MIN_LINE_LENGTH) {
+        addLine(lineType, start, end, lineColor, {
+          pattern: linePattern === 'auto' ? undefined : linePattern,
+          weight: lineWeight,
+        })
+      }
     }
     const cleanup = () => {
       window.removeEventListener('pointermove', onMove)
@@ -256,6 +264,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                     type={tool}
                     points={[draft.start, draft.end]}
                     smooth
+                    pattern={linePattern === 'auto' ? defaultPattern(tool) : linePattern}
+                    weight={lineWeight}
                     color={lineColor}
                     scale={layout.scale}
                     opacity={0.7}

@@ -16,6 +16,8 @@ function line(id: string, type: Line['type'], x1: number, y1: number, x2: number
     ],
     smooth: true,
     color: '#fff',
+    pattern: 'solid',
+    weight: 'medium',
   }
 }
 
@@ -103,6 +105,18 @@ describe('nextSceneFrom', () => {
     const next = nextSceneFrom(scene)
     expect(pos(next, 'p')).toEqual([30, 10])
     expect(pos(next, 'b')).toEqual([30, 10])
+  })
+
+  it('moves nothing along plain marking lines', () => {
+    const scene: Scene = {
+      durationMs: 2000,
+      items: [item('p', 'player', 10, 10), item('b', 'ball', 10, 10)],
+      lines: [line('l', 'line', 10, 10, 30, 10)],
+      zones: [],
+    }
+    const next = nextSceneFrom(scene)
+    expect(pos(next, 'p')).toEqual([10, 10])
+    expect(pos(next, 'b')).toEqual([10, 10])
   })
 
   it('ignores items further away than the attach distance', () => {

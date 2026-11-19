@@ -10,6 +10,8 @@ const MOVERS: Record<LineType, ItemType[]> = {
   shot: ['ball'],
   run: ['player'],
   dribble: ['player', 'ball'],
+  // Plain lines are markings and move nothing.
+  line: [],
 }
 
 function nearestItem(items: Item[], type: ItemType, point: Point, exclude: Set<string>) {

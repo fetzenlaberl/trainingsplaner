@@ -18,6 +18,7 @@ import {
   ZONE_SHAPES,
 } from '../items/zones'
 import { legacyBendToPoints } from '../lines/geometry'
+import { defaultPattern, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import type {
   Category,
   Drill,
@@ -39,7 +40,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 4: text boxes, player name tags and highlight, zone fill color and opacity.
 // Version 5: equipment items (mini goal, slalom, dummy, wall, ladder) and zones with goals.
 // Version 6: zones with free corners (rhombus, trapezoid, uneven shapes).
-export const FILE_VERSION = 6
+// Version 7: line patterns and weights, plain lines, zones with any number of corners.
+export const FILE_VERSION = 7
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -57,7 +59,7 @@ const ITEM_TYPES: ItemType[] = [
   'text',
   'textbox',
 ]
-const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot']
+const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot', 'line']
 export const CATEGORIES: Category[] = [
   'warmup',
   'technique',
@@ -230,15 +232,21 @@ function parseLine(value: unknown): Line {
     !LINE_TYPES.includes(value.type as LineType) ||
     !Array.isArray(value.points) ||
     value.points.length < 2 ||
-    typeof value.color !== 'string'
+    typeof value.color !== 'string' ||
+    // Pattern and weight were added in version 7.
+    !(value.pattern === undefined || LINE_PATTERNS.includes(value.pattern as LinePattern)) ||
+    !(value.weight === undefined || LINE_WEIGHTS.includes(value.weight as LineWeight))
   ) {
     throw corrupt()
   }
+  const type = value.type as LineType
   return {
     id: value.id,
-    type: value.type as LineType,
+    type,
     ...parseLinePath(value),
     color: value.color,
+    pattern: (value.pattern as LinePattern | undefined) ?? defaultPattern(type),
+    weight: (value.weight as LineWeight | undefined) ?? 'medium',
   }
 }
 

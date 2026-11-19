@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore, type Tool } from '../store/toolStore'
+import { LineStylePicker } from './LineStylePicker'
 import { SelectionBar } from './SelectionBar'
 
 const LINE_COLORS: { value: string; name: string }[] = [
@@ -74,6 +75,15 @@ const TOOLS: { tool: Tool; name: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    tool: 'line',
+    name: 'Linie',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M3 7 H25" />
+      </svg>
+    ),
+  },
 ]
 
 export function LineToolbar() {
@@ -81,6 +91,10 @@ export function LineToolbar() {
   const setTool = useToolStore((s) => s.setTool)
   const lineColor = useToolStore((s) => s.lineColor)
   const setLineColor = useToolStore((s) => s.setLineColor)
+  const linePattern = useToolStore((s) => s.linePattern)
+  const setLinePattern = useToolStore((s) => s.setLinePattern)
+  const lineWeight = useToolStore((s) => s.lineWeight)
+  const setLineWeight = useToolStore((s) => s.setLineWeight)
   const select = useDrillStore((s) => s.select)
 
   return (
@@ -129,6 +143,16 @@ export function LineToolbar() {
           )
         })}
       </div>
+
+      {tool !== 'select' && (
+        <LineStylePicker
+          allowAuto
+          pattern={linePattern}
+          weight={lineWeight}
+          onPattern={setLinePattern}
+          onWeight={setLineWeight}
+        />
+      )}
 
       {tool === 'select' && (
         <div className="ml-auto">

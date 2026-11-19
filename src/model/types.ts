@@ -1,5 +1,6 @@
 import type { FieldType } from '../field/dimensions'
 import type { PitchStyle } from '../field/pitchStyle'
+import type { LinePattern, LineWeight } from '../lines/styles'
 
 export type ItemType =
   | 'player'
@@ -44,7 +45,8 @@ export interface Point {
   y: number
 }
 
-export type LineType = 'pass' | 'run' | 'dribble' | 'shot'
+/** 'line' is a plain line without arrowhead, e.g. for markings. */
+export type LineType = 'pass' | 'run' | 'dribble' | 'shot' | 'line'
 
 export interface Line {
   id: string
@@ -54,6 +56,8 @@ export interface Line {
   /** true: smooth curve through the waypoints; false: straight segments with corners */
   smooth: boolean
   color: string
+  pattern: LinePattern
+  weight: LineWeight
 }
 
 export type ZoneShape = 'rect' | 'triangle' | 'ellipse'

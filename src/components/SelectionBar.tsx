@@ -18,6 +18,7 @@ import {
   type DrillContent,
 } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
+import { LineStylePicker } from './LineStylePicker'
 import { TextBoxDialog } from './TextBoxDialog'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -247,21 +248,33 @@ function ItemControls({ item }: { item: Item }) {
 function LineControls({ line }: { line: Line }) {
   const setLineSmooth = useDrillStore((s) => s.setLineSmooth)
   const clearLineBends = useDrillStore((s) => s.clearLineBends)
-  if (line.points.length <= 2) return null
+  const setLineStyle = useDrillStore((s) => s.setLineStyle)
 
   return (
     <>
-      <button
-        type="button"
-        className={buttonClass}
-        title={line.smooth ? 'Biegungen als Ecken zeigen' : 'Biegungen als weiche Kurve zeigen'}
-        onClick={() => setLineSmooth(line.id, !line.smooth)}
-      >
-        {line.smooth ? 'Eckig' : 'Rund'}
-      </button>
-      <button type="button" className={buttonClass} onClick={() => clearLineBends(line.id)}>
-        Alle Biegungen entfernen
-      </button>
+      <LineStylePicker
+        pattern={line.pattern}
+        weight={line.weight}
+        onPattern={(pattern) => {
+          if (pattern !== 'auto') setLineStyle(line.id, { pattern })
+        }}
+        onWeight={(weight) => setLineStyle(line.id, { weight })}
+      />
+      {line.points.length > 2 && (
+        <>
+          <button
+            type="button"
+            className={buttonClass}
+            title={line.smooth ? 'Biegungen als Ecken zeigen' : 'Biegungen als weiche Kurve zeigen'}
+            onClick={() => setLineSmooth(line.id, !line.smooth)}
+          >
+            {line.smooth ? 'Eckig' : 'Rund'}
+          </button>
+          <button type="button" className={buttonClass} onClick={() => clearLineBends(line.id)}>
+            Alle Biegungen entfernen
+          </button>
+        </>
+      )}
     </>
   )
 }

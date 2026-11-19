@@ -34,6 +34,8 @@ const drill: Drill = {
           ],
           smooth: true,
           color: '#ffffff',
+          pattern: 'dotted',
+          weight: 'thick',
         },
         {
           id: 'l2',
@@ -44,6 +46,8 @@ const drill: Drill = {
           ],
           smooth: false,
           color: '#facc15',
+          pattern: 'dashed',
+          weight: 'medium',
         },
       ],
       zones: [
@@ -162,6 +166,27 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(serializeDrill(withBox)).scenes[0].items[2]).toEqual(textbox)
   })
 
+  it('reads version 6 lines without pattern and weight using the usual style', () => {
+    const text = tamper((d) => {
+      d.version = 6
+      for (const line of d.scenes[0].lines) {
+        delete line.pattern
+        delete line.weight
+      }
+    })
+    const [pass, run] = parseDrill(text).scenes[0].lines
+    expect([pass.pattern, pass.weight]).toEqual(['solid', 'medium'])
+    expect(run.pattern).toBe('dashed')
+  })
+
+  it('round-trips plain lines without arrowhead', () => {
+    const text = tamper((d) => {
+      d.scenes[0].lines[0].type = 'line'
+      d.scenes[0].lines[0].pattern = 'dashdot'
+    })
+    expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'line', pattern: 'dashdot' })
+  })
+
   it('reads version 5 zones without free corners', () => {
     const text = tamper((d) => {
       d.version = 5
@@ -276,6 +301,8 @@ describe('parseDrill rejects invalid files', () => {
     ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
     ['unsupported number of goals', (d) => (d.scenes[0].zones[0].goals = 5)],
     ['rectangle with three corners', (d) => d.scenes[0].zones[0].corners.pop()],
+    ['unknown line pattern', (d) => (d.scenes[0].lines[0].pattern = 'zigzag')],
+    ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
     ['broken corner', (d) => (d.scenes[0].zones[0].corners[0] = { x: 'links' })],
     ['zone without size', (d) => delete d.scenes[0].zones[0].width],
     ['zone id used twice', (d) => (d.scenes[0].zones[0].id = 'p1')],

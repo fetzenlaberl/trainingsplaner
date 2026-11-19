@@ -4,7 +4,7 @@ import { sessionFromData, type TrainingSession } from '../sessions/session'
 
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 // Backup versions follow the drill file versions (2: waypoints, 3: zones, 4: text boxes etc.).
-export const BACKUP_VERSION = 6
+export const BACKUP_VERSION = 7
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',

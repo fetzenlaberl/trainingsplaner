@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import type { FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
+import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import {
@@ -64,7 +65,14 @@ export interface DrillState extends DrillContent {
   /** Gives every item of the current scene the same size. */
   setAllItemSizes: (size: number) => void
   /** Adds a straight line (meters) and returns its id. */
-  addLine: (type: LineType, start: Point, end: Point, color: string) => string
+  addLine: (
+    type: LineType,
+    start: Point,
+    end: Point,
+    color: string,
+    style?: { pattern?: LinePattern; weight?: LineWeight },
+  ) => string
+  setLineStyle: (id: string, style: { pattern?: LinePattern; weight?: LineWeight }) => void
   moveLine: (id: string, dx: number, dy: number) => void
   /** Removes a bend (not the start or end point). */
   removeLinePoint: (id: string, index: number) => void
@@ -334,8 +342,16 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       })),
     })),
 
-  addLine: (type, start, end, color) => {
-    const line: Line = { id: createId('line'), type, points: [start, end], smooth: true, color }
+  addLine: (type, start, end, color, style = {}) => {
+    const line: Line = {
+      id: createId('line'),
+      type,
+      points: [start, end],
+      smooth: true,
+      color,
+      pattern: style.pattern ?? defaultPattern(type),
+      weight: style.weight ?? 'medium',
+    }
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ lines: [...scene.lines, line] })),
@@ -375,6 +391,13 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         })),
       }
     }),
+  setLineStyle: (id, style) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({
+        lines: updateLine(scene.lines, id, (l) => ({ ...l, ...style })),
+      })),
+    })),
   setLineSmooth: (id, smooth) =>
     set((s) => ({
       ...recorded(s),

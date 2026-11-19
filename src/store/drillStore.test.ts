@@ -90,8 +90,30 @@ describe('lines', () => {
         ],
         smooth: true,
         color: '#ffffff',
+        pattern: 'solid',
+        weight: 'medium',
       },
     ])
+  })
+
+  it('uses the usual pattern per line type unless a style is given', () => {
+    store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
+    store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { pattern: 'dotted', weight: 'thin' })
+    store().addLine('line', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
+    expect(lines().map((l) => [l.type, l.pattern, l.weight])).toEqual([
+      ['run', 'dashed', 'medium'],
+      ['pass', 'dotted', 'thin'],
+      ['line', 'solid', 'medium'],
+    ])
+  })
+
+  it('changes pattern and weight of a line with undo', () => {
+    const id = store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff')
+    store().setLineStyle(id, { pattern: 'dashdot' })
+    store().setLineStyle(id, { weight: 'thick' })
+    expect([lines()[0].pattern, lines()[0].weight]).toEqual(['dashdot', 'thick'])
+    store().undo()
+    expect(lines()[0].weight).toBe('medium')
   })
 
   it('inserts bends between the waypoints, never before the start or after the end', () => {
