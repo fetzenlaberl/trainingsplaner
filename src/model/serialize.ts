@@ -47,7 +47,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 7: line patterns and weights, plain lines, zones with any number of corners.
 // Version 8: numbered action steps on lines.
 // Version 9: drill info (players, duration, field size, age group).
-export const FILE_VERSION = 9
+// Version 10: hurdle, ring, flag, marker disc and rebounder.
+export const FILE_VERSION = 10
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -62,6 +63,11 @@ const ITEM_TYPES: ItemType[] = [
   'dummy',
   'wall',
   'ladder',
+  'hurdle',
+  'ring',
+  'flag',
+  'disc',
+  'rebounder',
   'text',
   'textbox',
 ]

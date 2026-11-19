@@ -4,7 +4,19 @@ import { Circle, Group, Line, Rect, RegularPolygon, Text } from 'react-konva'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
 import { MINIGOAL } from '../items/equipment'
-import { DummyShape, GoalShape, LadderShape, PoleShape, SlalomShape, WallShape } from './EquipmentShapes'
+import {
+  DiscShape,
+  DummyShape,
+  FlagShape,
+  GoalShape,
+  HurdleShape,
+  LadderShape,
+  PoleShape,
+  ReboundShape,
+  RingShape,
+  SlalomShape,
+  WallShape,
+} from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
 import { ViewRotationContext } from './viewRotationContext'
 import type { Item } from '../model/types'
@@ -91,6 +103,16 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return <WallShape color={color} rotation={rotation} />
     case 'ladder':
       return <LadderShape color={color} rotation={rotation} />
+    case 'hurdle':
+      return <HurdleShape color={color} rotation={rotation} />
+    case 'ring':
+      return <RingShape color={color} />
+    case 'flag':
+      return <FlagShape color={color} rotation={rotation} />
+    case 'disc':
+      return <DiscShape color={color} />
+    case 'rebounder':
+      return <ReboundShape color={color} rotation={rotation} />
     case 'text':
       return (
         <Text

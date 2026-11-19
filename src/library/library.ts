@@ -8,7 +8,7 @@ import { teamFromData, type Team } from '../teams/team'
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 // Backup versions follow the drill file versions (2: waypoints, 3: zones, 4: text boxes etc.).
 // Version 8: also contains teams (squads). Version 10: day intensities of the week planner.
-export const BACKUP_VERSION = 11
+export const BACKUP_VERSION = 12
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',

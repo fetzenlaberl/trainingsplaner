@@ -125,3 +125,57 @@ export function LadderShape({ color, rotation }: { color: string; rotation: numb
     </Group>
   )
 }
+
+/** Small hurdle from above: crossbar with two feet, the crossing direction is +x. */
+export function HurdleShape({ color, rotation }: { color: string; rotation: number }) {
+  const half = 0.5
+  return (
+    <Group rotation={rotation}>
+      <Line points={[0, -half, 0, half]} stroke={color} strokeWidth={0.1} lineCap="round" />
+      <Line points={[-0.15, -half, 0.15, -half]} stroke={color} strokeWidth={0.08} lineCap="round" />
+      <Line points={[-0.15, half, 0.15, half]} stroke={color} strokeWidth={0.08} lineCap="round" />
+    </Group>
+  )
+}
+
+/** Agility ring lying on the ground. */
+export function RingShape({ color }: { color: string }) {
+  return <Circle radius={0.35} stroke={color} strokeWidth={0.08} />
+}
+
+/** Flag on a pole, the pennant points in the facing direction. */
+export function FlagShape({ color, rotation }: { color: string; rotation: number }) {
+  return (
+    <Group rotation={rotation}>
+      <Line points={[0, 0, 0.55, -0.18, 0, -0.36]} closed fill={color} stroke="#111827" strokeWidth={0.03} />
+      <Circle radius={0.08} fill="#f5f5f4" stroke="#111827" strokeWidth={0.03} />
+    </Group>
+  )
+}
+
+/** Flat marker disc. */
+export function DiscShape({ color }: { color: string }) {
+  return (
+    <Group>
+      <Circle radius={0.22} fill={color} stroke="rgba(0,0,0,0.35)" strokeWidth={0.03} />
+      <Circle radius={0.07} fill="rgba(0,0,0,0.25)" />
+    </Group>
+  )
+}
+
+/** Rebounder frame with net; the ball bounces back towards +x. */
+export function ReboundShape({ color, rotation }: { color: string; rotation: number }) {
+  const half = 0.6
+  const netLines = [-0.4, -0.2, 0, 0.2, 0.4]
+  return (
+    <Group rotation={rotation}>
+      {/* Support legs behind the frame */}
+      <Line points={[0, -half, -0.45, -half]} stroke={color} strokeWidth={0.05} />
+      <Line points={[0, half, -0.45, half]} stroke={color} strokeWidth={0.05} />
+      <Rect x={-0.06} y={-half} width={0.12} height={half * 2} fill="rgba(255,255,255,0.35)" stroke={color} strokeWidth={0.06} />
+      {netLines.map((y) => (
+        <Line key={y} points={[-0.06, y, 0.06, y]} stroke="rgba(255,255,255,0.8)" strokeWidth={0.02} />
+      ))}
+    </Group>
+  )
+}

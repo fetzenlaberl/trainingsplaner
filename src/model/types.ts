@@ -14,6 +14,11 @@ export type ItemType =
   | 'dummy'
   | 'wall'
   | 'ladder'
+  | 'hurdle'
+  | 'ring'
+  | 'flag'
+  | 'disc'
+  | 'rebounder'
   | 'text'
   | 'textbox'
 

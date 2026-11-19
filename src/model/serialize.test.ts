@@ -229,11 +229,14 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].zones[0].goals).toBe(0)
   })
 
-  it.each(['minigoal', 'slalom', 'dummy', 'wall', 'ladder'] as const)('round-trips the %s item', (type) => {
-    const equipment = { ...drill.scenes[0].items[1], id: 'eq', type, rotation: 45 }
-    const withItem = { ...drill, scenes: [{ ...drill.scenes[0], items: [equipment] }] }
-    expect(parseDrill(serializeDrill(withItem)).scenes[0].items[0]).toEqual(equipment)
-  })
+  it.each(['minigoal', 'slalom', 'dummy', 'wall', 'ladder', 'hurdle', 'ring', 'flag', 'disc', 'rebounder'] as const)(
+    'round-trips the %s item',
+    (type) => {
+      const equipment = { ...drill.scenes[0].items[1], id: 'eq', type, rotation: 45 }
+      const withItem = { ...drill, scenes: [{ ...drill.scenes[0], items: [equipment] }] }
+      expect(parseDrill(serializeDrill(withItem)).scenes[0].items[0]).toEqual(equipment)
+    },
+  )
 
   it('reads older files without zones', () => {
     const text = tamper((d) => {

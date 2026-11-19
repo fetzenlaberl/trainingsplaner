@@ -69,6 +69,11 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'dummy', name: 'Dummy', item: { type: 'dummy', color: '#2563eb' } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
   { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
+  { key: 'hurdle', name: 'Hürde', item: { type: 'hurdle', color: '#f97316' } },
+  { key: 'ring', name: 'Ring', item: { type: 'ring', color: '#facc15' } },
+  { key: 'flag', name: 'Fahne', item: { type: 'flag', color: '#dc2626' } },
+  { key: 'disc', name: 'Markierungsteller', item: { type: 'disc', color: '#facc15' } },
+  { key: 'rebounder', name: 'Rebounder', item: { type: 'rebounder', color: '#111827' } },
   { key: 'text', name: 'Text', item: { type: 'text', color: '#ffffff', label: 'Text' } },
   { key: 'textbox', name: 'Textfeld', item: { type: 'textbox', color: '#fde047', label: 'Anweisung' } },
 ]
@@ -85,12 +90,30 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   dummy: 1,
   wall: 2.6,
   ladder: 4.2,
+  hurdle: 1.2,
+  ring: 0.9,
+  flag: 1.1,
+  disc: 0.6,
+  rebounder: 1.4,
   text: 6,
   textbox: 12,
 }
 
 /** Item types whose color can be chosen freely in the selection bar. */
-export const COLORABLE_TYPES: ItemType[] = ['player', 'cone', 'pole', 'slalom', 'dummy', 'wall', 'ladder', 'text']
+export const COLORABLE_TYPES: ItemType[] = [
+  'player',
+  'cone',
+  'pole',
+  'slalom',
+  'dummy',
+  'wall',
+  'ladder',
+  'hurdle',
+  'ring',
+  'flag',
+  'disc',
+  'text',
+]
 
 /** Item types where rotation is visible. */
 export const ROTATABLE_TYPES: ItemType[] = [
@@ -101,6 +124,9 @@ export const ROTATABLE_TYPES: ItemType[] = [
   'dummy',
   'wall',
   'ladder',
+  'hurdle',
+  'flag',
+  'rebounder',
   'text',
   'textbox',
 ]
