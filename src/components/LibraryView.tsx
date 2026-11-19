@@ -15,6 +15,7 @@ import { deleteEntry, listEntries, putEntries, putEntry } from '../library/libra
 import { useLibraryLink } from '../library/libraryStore'
 import { CATEGORIES, DrillFileError } from '../model/serialize'
 import { listSessions, putSessions } from '../sessions/sessionDb'
+import { listTeams, putTeams } from '../teams/teamDb'
 import type { Category } from '../model/types'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -104,7 +105,7 @@ export function LibraryView() {
   /** Backup of all drills and training sessions. */
   async function handleExportBackup() {
     try {
-      const backup = { entries: await listEntries(), sessions: await listSessions() }
+      const backup = { entries: await listEntries(), sessions: await listSessions(), teams: await listTeams() }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
     } catch (err) {
@@ -121,11 +122,13 @@ export function LibraryView() {
       const backup = parseBackup(await file.text())
       const drills = planImport(await listEntries(), backup.entries)
       const sessions = planImport(await listSessions(), backup.sessions)
+      const teams = planImport(await listTeams(), backup.teams)
       await putEntries(drills.toStore)
       await putSessions(sessions.toStore)
-      const skipped = drills.skipped + sessions.skipped
+      await putTeams(teams.toStore)
+      const skipped = drills.skipped + sessions.skipped + teams.skipped
       window.alert(
-        `${drills.toStore.length} Übung(en) und ${sessions.toStore.length} Einheit(en) importiert.` +
+        `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en) und ${teams.toStore.length} Mannschaft(en) importiert.` +
           (skipped > 0 ? ` ${skipped} übersprungen, weil schon eine neuere Fassung vorhanden ist.` : ''),
       )
     } catch (err) {

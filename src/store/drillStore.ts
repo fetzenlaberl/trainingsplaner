@@ -56,6 +56,8 @@ export interface DrillState extends DrillContent {
   // The following act on the current scene.
   /** Adds an item at the given position (meters) and returns its id. */
   addItem: (item: NewItem, x: number, y: number) => string
+  /** Adds several items at once (e.g. a line-up) as one undo step; returns their ids. */
+  addItems: (entries: { item: NewItem; x: number; y: number }[]) => string[]
   moveItem: (id: string, x: number, y: number) => void
   rotateItem: (id: string, rotation: number) => void
   setItemSize: (id: string, size: number) => void
@@ -277,27 +279,33 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       return { ...recorded(s), scenes: editScene(s, () => ({ durationMs: clamped })) }
     }),
 
-  addItem: (item, x, y) => {
+  addItem: (item, x, y) => get().addItems([{ item, x, y }])[0],
+  addItems: (entries) => {
     const s = get()
-    const items = currentScene(s).items
-    const label =
-      item.label ??
-      (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : '')
-    const newItem: Item = {
-      id: createId('item'),
-      type: item.type,
-      x,
-      y,
-      rotation: item.rotation ?? 0,
-      size: clampItemSize(item.size ?? (item.type === 'player' ? DEFAULT_PLAYER_SIZE : 1)),
-      shape: item.shape ?? 'circle',
-      name: item.name ?? '',
-      highlight: item.highlight ?? false,
-      color: item.color,
-      label,
-    }
-    set({ ...recorded(s), scenes: editScene(s, (scene) => ({ items: [...scene.items, newItem] })) })
-    return newItem.id
+    const items = [...currentScene(s).items]
+    const created = entries.map(({ item, x, y }) => {
+      const label =
+        item.label ??
+        (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : '')
+      const newItem: Item = {
+        id: createId('item'),
+        type: item.type,
+        x,
+        y,
+        rotation: item.rotation ?? 0,
+        size: clampItemSize(item.size ?? (item.type === 'player' ? DEFAULT_PLAYER_SIZE : 1)),
+        shape: item.shape ?? 'circle',
+        name: item.name ?? '',
+        highlight: item.highlight ?? false,
+        color: item.color,
+        label,
+      }
+      // Later items of the same call see the earlier ones when numbering.
+      items.push(newItem)
+      return newItem
+    })
+    set({ ...recorded(s), scenes: editScene(s, (scene) => ({ items: [...scene.items, ...created] })) })
+    return created.map((i) => i.id)
   },
   moveItem: (id, x, y) =>
     set((s) => ({

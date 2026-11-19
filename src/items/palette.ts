@@ -28,6 +28,20 @@ export interface ItemTemplate {
   item: NewItem
 }
 
+/** Colors for teams and players (bibs come in many colors). */
+export const PLAYER_COLORS: { value: string; name: string }[] = [
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#facc15', name: 'Gelb' },
+  { value: '#16a34a', name: 'Grün' },
+  { value: '#f97316', name: 'Orange' },
+  { value: '#7c3aed', name: 'Lila' },
+  { value: '#ec4899', name: 'Pink' },
+  { value: '#06b6d4', name: 'Türkis' },
+  { value: '#ffffff', name: 'Weiß' },
+  { value: '#111827', name: 'Schwarz' },
+]
+
 export const TEAM_COLORS = {
   red: '#dc2626',
   blue: '#2563eb',

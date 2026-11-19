@@ -482,6 +482,22 @@ describe('zones', () => {
   })
 })
 
+describe('addItems', () => {
+  it('adds several items as one undo step and numbers them one after another', () => {
+    const red = TEAM_COLORS.red
+    const ids = store().addItems([
+      { item: { type: 'player', color: red }, x: 1, y: 1 },
+      { item: { type: 'player', color: red }, x: 2, y: 2 },
+      { item: { type: 'player', color: red, label: '10', name: 'Müller' }, x: 3, y: 3 },
+    ])
+    expect(ids).toHaveLength(3)
+    expect(items().map((i) => i.label)).toEqual(['2', '3', '10'])
+    expect(items()[2].name).toBe('Müller')
+    store().undo()
+    expect(items()).toEqual([])
+  })
+})
+
 describe('name tags, highlight and text boxes', () => {
   it('starts players without name and highlight', () => {
     store().addItem({ type: 'player', color: TEAM_COLORS.red }, 0, 0)

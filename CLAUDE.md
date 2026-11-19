@@ -13,7 +13,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Zustand: Zustand (Store), Undo/Redo über Verlaufsstapel
 - Styling: Tailwind CSS
 - Tests: Vitest für die Logik (Interpolation, Speichern/Laden)
-- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek und Einheiten)
+- Kein Backend in Version 1: Speichern lokal (JSON-Datei + localStorage für die aktuelle Übung, IndexedDB für Bibliothek, Einheiten und Mannschaften)
 
 ## Datenmodell (Kern)
 - `Drill`: Titel, Beschreibung, Kategorie (optional: Aufwärmen, Technik, Passspiel, Torschuss, Taktik, Spielform, Abschluss), Feldtyp, Feld-Darstellung (Farbe, Raster, Ausrichtung quer/hoch; hoch = Ansicht um -90° gedreht, Daten bleiben unverändert), Liste von `Scene`
@@ -24,6 +24,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Koordinaten immer in Metern relativ zum Feld, nie in Pixeln. Umrechnung nur beim Zeichnen.
 - Ein Item behält seine id über alle Szenen; die Animation interpoliert Position und Drehung zwischen aufeinanderfolgenden Szenen.
 - `TrainingSession` (Einheit): Titel, Datum, Beginn, Mannschaft, Ziel, Notizen, Liste von Blöcken
+- `Team` (Mannschaft): Name, Teamfarbe, Spieler (Nummer, Name, Position, Startelf); nur das Nötigste, keine weiteren persönlichen Daten. Formationen stellen die Startelf aufs Feld (als normale Spieler-Items, keine Verknüpfung).
 - Block: verweist per id auf eine Übung der Bibliothek (keine Kopie) oder ist ein freier Block (z. B. Trinkpause); Dauer in Minuten, Notiz
 
 ## Funktionsumfang nach Phasen

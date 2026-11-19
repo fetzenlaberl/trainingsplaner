@@ -87,29 +87,37 @@ describe('backup', () => {
   ]
 
   it('round-trips the library', () => {
-    expect(parseBackup(serializeBackup({ entries, sessions: [] }))).toEqual({ entries, sessions: [] })
+    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [] }))).toEqual({ entries, sessions: [], teams: [] })
   })
 
   it('round-trips training sessions', () => {
     const session = { ...createSession(7, '2026-11-20'), blocks: [freeBlock('Trinkpause', 5)] }
-    expect(parseBackup(serializeBackup({ entries, sessions: [session] })).sessions).toEqual([session])
+    expect(parseBackup(serializeBackup({ entries, sessions: [session], teams: [] })).sessions).toEqual([session])
+  })
+
+  it('round-trips teams and reads older backups without teams', () => {
+    const team = { id: 't', name: 'U13', color: '#dc2626', players: [], createdAt: 1, updatedAt: 2 }
+    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [team] })).teams).toEqual([team])
+    const data = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
+    delete data.teams
+    expect(parseBackup(JSON.stringify(data)).teams).toEqual([])
   })
 
   it('reads older backups without sessions', () => {
-    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
     delete data.sessions
     expect(parseBackup(JSON.stringify(data)).sessions).toEqual([])
   })
 
   it('rejects broken sessions', () => {
     const session = createSession(7)
-    const data = JSON.parse(serializeBackup({ entries, sessions: [session] }))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [session], teams: [] }))
     data.sessions[0].blocks = [{ id: 'x', title: 'ohne Dauer' }]
     expect(() => parseBackup(JSON.stringify(data))).toThrow(/beschädigt/)
   })
 
   it('writes format and version', () => {
-    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
     expect([data.format, data.version]).toEqual([BACKUP_FORMAT, BACKUP_VERSION])
   })
 
@@ -119,16 +127,16 @@ describe('backup', () => {
   })
 
   it('rejects broken entries and broken drills inside', () => {
-    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
     data.entries[0].drill.fieldType = 'beach'
     expect(() => parseBackup(JSON.stringify(data))).toThrow(/beschädigt/)
-    const data2 = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    const data2 = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
     data2.entries[1].thumbnail = 'javascript:alert(1)'
     expect(() => parseBackup(JSON.stringify(data2))).toThrow(/beschädigt/)
   })
 
   it('rejects backups from newer versions', () => {
-    const data = JSON.parse(serializeBackup({ entries, sessions: [] }))
+    const data = JSON.parse(serializeBackup({ entries, sessions: [], teams: [] }))
     data.version = BACKUP_VERSION + 1
     expect(() => parseBackup(JSON.stringify(data))).toThrow(/neueren Version/)
   })

@@ -5,6 +5,7 @@ import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { ItemPreview } from './ItemPreview'
+import { SquadPanel } from './SquadPanel'
 import { ZonePreview } from './ZonePreview'
 import type { DropTarget } from './PitchStage'
 
@@ -36,6 +37,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
   const select = useDrillStore((s) => s.select)
   const setTool = useToolStore((s) => s.setTool)
   const [drag, setDrag] = useState<DragState | null>(null)
+  const [mode, setMode] = useState<'items' | 'squad'>('items')
   const cleanupRef = useRef<(() => void) | null>(null)
 
   useEffect(() => () => cleanupRef.current?.(), [])
@@ -83,45 +85,72 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
   }
 
   return (
-    <aside className="border-b border-slate-700 bg-slate-900 md:w-28 md:border-r md:border-b-0">
-      <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
-        {ITEM_TEMPLATES.map((template) => (
-          <li key={template.key} className="shrink-0">
-            <button
-              type="button"
-              title={`${template.name} aufs Feld ziehen`}
-              onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
-              className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
-            >
-              <span className="pointer-events-none flex h-10 items-center justify-center">
-                <ItemPreview
-                  item={template.item}
-                  scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
-                />
-              </span>
-              {template.name}
-            </button>
-          </li>
+    <aside
+      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-28'}`}
+    >
+      <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
+        {([
+          ['items', 'Objekte'],
+          ['squad', 'Kader'],
+        ] as const).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={mode === key}
+            onClick={() => setMode(key)}
+            className={`flex-1 rounded-md px-2 py-1 text-xs font-semibold ${
+              mode === key ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            }`}
+          >
+            {label}
+          </button>
         ))}
-        <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:pt-2">
-          Zonen
-        </li>
-        {ZONE_TEMPLATES.map((template) => (
-          <li key={template.key} className="shrink-0">
-            <button
-              type="button"
-              title={`Zone ${template.name} aufs Feld ziehen`}
-              onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
-              className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
-            >
-              <span className="pointer-events-none flex h-10 items-center justify-center">
-                <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />
-              </span>
-              {template.name}
-            </button>
+      </div>
+      {mode === 'squad' ? (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template })} />
+        </div>
+      ) : (
+        <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
+          {ITEM_TEMPLATES.map((template) => (
+            <li key={template.key} className="shrink-0">
+              <button
+                type="button"
+                title={`${template.name} aufs Feld ziehen`}
+                onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
+                className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+              >
+                <span className="pointer-events-none flex h-10 items-center justify-center">
+                  <ItemPreview
+                    item={template.item}
+                    scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
+                  />
+                </span>
+                {template.name}
+              </button>
+            </li>
+          ))}
+          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:pt-2">
+            Zonen
           </li>
-        ))}
-      </ul>
+          {ZONE_TEMPLATES.map((template) => (
+            <li key={template.key} className="shrink-0">
+              <button
+                type="button"
+                title={`Zone ${template.name} aufs Feld ziehen`}
+                onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
+                className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+              >
+                <span className="pointer-events-none flex h-10 items-center justify-center">
+                  <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />
+                </span>
+                {template.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {drag && (
         <div

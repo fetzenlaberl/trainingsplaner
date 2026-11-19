@@ -7,6 +7,7 @@ import { LineToolbar } from './components/LineToolbar'
 import { PitchStage, type DropTarget } from './components/PitchStage'
 import { PitchStyleMenu } from './components/PitchStyleMenu'
 import { SessionsView } from './components/SessionsView'
+import { TeamsView } from './components/TeamsView'
 import { Timeline } from './components/Timeline'
 import { buttonClass } from './components/ui'
 import { useFullscreen } from './hooks/useFullscreen'
@@ -18,6 +19,7 @@ const VIEWS: { view: View; label: string }[] = [
   { view: 'editor', label: 'Editor' },
   { view: 'library', label: 'Bibliothek' },
   { view: 'sessions', label: 'Einheiten' },
+  { view: 'teams', label: 'Mannschaft' },
 ]
 
 export default function App() {
@@ -81,7 +83,9 @@ export default function App() {
           </main>
         </div>
       ) : (
-        <main className="min-h-0 flex-1">{view === 'library' ? <LibraryView /> : <SessionsView />}</main>
+        <main className="min-h-0 flex-1">
+          {view === 'library' ? <LibraryView /> : view === 'sessions' ? <SessionsView /> : <TeamsView />}
+        </main>
       )}
     </div>
   )
