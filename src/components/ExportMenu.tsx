@@ -3,6 +3,7 @@ import { totalDuration } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
 import type { VideoFormat, VideoProgress } from '../video/exportVideo'
 import { Dropdown } from './Dropdown'
+import { TacticSheetDialog } from './TacticSheetDialog'
 import { buttonClass } from './ui'
 
 type ExportKind = 'png' | 'pdf' | VideoFormat
@@ -24,6 +25,7 @@ export function ExportMenu() {
   const [busy, setBusy] = useState(false)
   const [videoProgress, setVideoProgress] = useState<VideoProgress | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const [sheetOpen, setSheetOpen] = useState(false)
 
   async function runExport(kind: ExportKind) {
     setBusy(true)
@@ -60,16 +62,24 @@ export function ExportMenu() {
       <Dropdown
         label="Exportieren"
         disabled={busy}
-        items={MENU_ITEMS.map((item) => {
-          const disabled = item.video && !canAnimate
-          return {
-            label: item.label,
-            disabled,
-            hint: disabled ? 'Braucht mindestens zwei Szenen' : undefined,
-            onSelect: () => runExport(item.kind),
-          }
-        })}
+        items={[
+          ...MENU_ITEMS.map((item) => {
+            const disabled = item.video && !canAnimate
+            return {
+              label: item.label,
+              disabled,
+              hint: disabled ? 'Braucht mindestens zwei Szenen' : undefined,
+              onSelect: () => runExport(item.kind),
+            }
+          }),
+          {
+            label: 'Taktikblatt (PDF) …',
+            hint: 'Felder mit Notizen, Datum, Thema, Wappen',
+            onSelect: () => setSheetOpen(true),
+          },
+        ]}
       />
+      {sheetOpen && <TacticSheetDialog onClose={() => setSheetOpen(false)} />}
       {videoProgress && (
         <VideoProgressDialog progress={videoProgress} onCancel={() => abortRef.current?.abort()} />
       )}
