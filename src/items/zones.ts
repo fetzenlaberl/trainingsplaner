@@ -110,6 +110,11 @@ export function zoneCorners(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'cor
   return zone.corners ?? baseCorners(zone.shape, zone.width, zone.height)
 }
 
+/** Zones whose corners can be dragged right away (all but a plain circle). */
+export function hasDirectCorners(zone: Pick<Zone, 'shape' | 'corners'>): boolean {
+  return zone.shape !== 'ellipse' || zone.corners !== null
+}
+
 /** Width and height of the area actually covered (meters, before rotation). */
 export function zoneExtent(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corners'>): {
   width: number

@@ -21,6 +21,7 @@ import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { LineHandles } from './FieldLines'
 import { ZoneCornerHandles } from './FieldZones'
+import { hasDirectCorners } from '../items/zones'
 import { FieldView } from './FieldView'
 import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
@@ -422,6 +423,16 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 flipEnabled={false}
                 ignoreStroke
                 keepRatio={false}
+                // Corners of a zone are dragged one by one (see FieldZones); the frame keeps only
+                // the side handles for the size, and the rotation handle.
+                enabledAnchors={
+                  transformedZone && hasDirectCorners(transformedZone)
+                    ? ['top-center', 'middle-left', 'middle-right', 'bottom-center']
+                    : undefined
+                }
+                onTransformStart={() => {
+                  if (selectedZone) useToolStore.getState().setDraggingId(selectedZone.id)
+                }}
                 anchorSize={14}
                 anchorCornerRadius={3}
                 rotateAnchorOffset={28}
@@ -445,6 +456,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 }}
                 onTransformEnd={(e) => {
                   setResizeInfo(null)
+                  useToolStore.getState().setDraggingId(null)
                   if (!selectedZone) return
                   const node = e.target
                   const change = {

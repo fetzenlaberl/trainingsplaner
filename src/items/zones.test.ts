@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ELLIPSE_POINTS, baseCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
+import { ELLIPSE_POINTS, baseCorners, hasDirectCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
 
 const rect = (width: number, height: number) => baseCorners('rect', width, height)
 
@@ -141,5 +141,14 @@ describe('regularPolygon', () => {
 
   it('offers a polygon zone template', () => {
     expect(ZONE_TEMPLATES.find((t) => t.key === 'zone-polygon')?.corners).toHaveLength(6)
+  })
+})
+
+describe('hasDirectCorners', () => {
+  it('offers corner dragging for all zones but a plain circle', () => {
+    expect(hasDirectCorners({ shape: 'rect', corners: null })).toBe(true)
+    expect(hasDirectCorners({ shape: 'triangle', corners: null })).toBe(true)
+    expect(hasDirectCorners({ shape: 'ellipse', corners: null })).toBe(false)
+    expect(hasDirectCorners({ shape: 'ellipse', corners: [{ x: 0, y: 0 }] })).toBe(true)
   })
 })

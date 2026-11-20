@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Circle, Group, Line } from 'react-konva'
 import type { Rect as ViewRect } from '../field/dimensions'
 import { clampToRect } from '../field/layout'
-import { edgeMidpoints, insertCorner, MAX_CORNERS, MIN_CORNERS, removeCorner, zoneCorners } from '../items/zones'
+import { edgeMidpoints, hasDirectCorners, insertCorner, MAX_CORNERS, MIN_CORNERS, removeCorner, zoneCorners } from '../items/zones'
 import type { Point, Zone } from '../model/types'
 import { useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
@@ -29,6 +29,8 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
   const selectedIds = useDrillStore((s) => s.selectedIds)
   const updateZone = useDrillStore((s) => s.updateZone)
   const setDraggingId = useToolStore((s) => s.setDraggingId)
+  const draggingId = useToolStore((s) => s.draggingId)
+  const editingCornersId = useToolStore((s) => s.editingCornersId)
 
   return (
     <Group listening={interactive}>
@@ -61,6 +63,12 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
           }}
         >
           <ZoneShape {...zone} scale={scale} />
+          {interactive &&
+            selectedIds.length === 1 &&
+            selectedIds[0] === zone.id &&
+            editingCornersId !== zone.id &&
+            draggingId !== zone.id &&
+            hasDirectCorners(zone) && <DirectCornerHandles zone={zone} scale={scale} />}
           {/* In a multi-selection zones get a highlight; a single zone has its resize handles instead. */}
           {interactive && selectedIds.length > 1 && selectedIds.includes(zone.id) && (
             <ZoneShape
@@ -76,6 +84,56 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
         </Group>
       ))}
     </Group>
+  )
+}
+
+/**
+ * Corner points shown as soon as a single zone is selected: dragging one moves only that
+ * corner, all other corners stay where they are. Drawn inside the zone's group, so they
+ * follow its position and rotation.
+ */
+function DirectCornerHandles({ zone, scale }: { zone: Zone; scale: number }) {
+  const setZoneLive = useDrillStore((s) => s.setZoneLive)
+  const snapshot = useDrillStore((s) => s.snapshot)
+  const pushHistory = useDrillStore((s) => s.pushHistory)
+  const beforeRef = useRef<DrillContent | null>(null)
+  const radius = Math.max(0.45, 8 / scale)
+  const corners = zoneCorners(zone)
+  return (
+    <>
+      {corners.map((corner, index) => (
+        <Circle
+          key={index}
+          x={corner.x}
+          y={corner.y}
+          radius={radius}
+          fill="#ffffff"
+          stroke={SELECTION_COLOR}
+          strokeWidth={radius * 0.3}
+          hitStrokeWidth={radius}
+          draggable
+          onPointerDown={(e) => {
+            e.cancelBubble = true
+          }}
+          onMouseEnter={(e) => setCursor(e, 'move')}
+          onMouseLeave={(e) => setCursor(e, 'grab')}
+          onDragStart={(e) => {
+            e.cancelBubble = true
+            beforeRef.current = snapshot()
+          }}
+          onDragMove={(e) => {
+            e.cancelBubble = true
+            const next = corners.map((p, i) => (i === index ? { x: e.target.x(), y: e.target.y() } : p))
+            setZoneLive(zone.id, { corners: next })
+          }}
+          onDragEnd={(e) => {
+            e.cancelBubble = true
+            if (beforeRef.current) pushHistory(beforeRef.current)
+            beforeRef.current = null
+          }}
+        />
+      ))}
+    </>
   )
 }
 
