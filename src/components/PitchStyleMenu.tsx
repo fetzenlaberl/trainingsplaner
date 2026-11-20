@@ -11,7 +11,6 @@ import {
   PITCH_COLOR_ORDER,
   PITCH_COLORS,
   LIGHTING_OPTIONS,
-  LIGHT_KINDS,
   LIGHT_SOURCES,
   resolveLighting,
   MOWING_OPTIONS,
@@ -21,6 +20,7 @@ import {
 import { useDrillStore } from '../store/drillStore'
 import { CustomGridDialog } from './CustomGridDialog'
 import { GradientDialog } from './GradientDialog'
+import { LightingDialog } from './LightingDialog'
 import { Dropdown } from './Dropdown'
 
 const ORIENTATIONS: Orientation[] = ['landscape', 'portrait']
@@ -41,8 +41,14 @@ export function PitchStyleMenu() {
   const setPitchBackground = useDrillStore((s) => s.setPitchBackground)
   const [customOpen, setCustomOpen] = useState(false)
   const [gradientOpen, setGradientOpen] = useState(false)
-  // Choosing where the light comes from turns the light on if it is off.
-  const lightingOff = resolveLighting(pitch) === 'none'
+  const [lightingOpen, setLightingOpen] = useState(false)
+  const lighting = resolveLighting(pitch)
+  const lightingSummary =
+    lighting === 'none'
+      ? 'aus'
+      : `${LIGHTING_OPTIONS.find((o) => o.value === lighting)?.label ?? ''}, ${
+          LIGHT_SOURCES.find((o) => o.value === (pitch.lightSource ?? 'center'))?.label ?? ''
+        }`.toLowerCase()
   // Own zone labels; position and size start from the grid's usual kind of label.
   const usualKind = pitch.grid.startsWith('letters') ? 'letters' : 'numbers'
   const labelStyle: GridLabelStyle = pitch.gridLabelStyle ?? {
@@ -98,25 +104,11 @@ export function PitchStyleMenu() {
                 },
               ]
             : []),
-          ...LIGHTING_OPTIONS.map((o) => ({
-            section: 'Lichtverlauf',
-            label: o.label,
-            checked: (pitch.lighting ?? null) === o.value,
-            onSelect: () => setPitchLines({ lighting: o.value ?? undefined }),
-          })),
-          ...LIGHT_SOURCES.map((o) => ({
-            section: 'Licht von',
-            label: o.label,
-            checked: (pitch.lightSource ?? 'center') === o.value,
-            onSelect: () =>
-              setPitchLines({ lightSource: o.value, ...(lightingOff ? { lighting: 'medium' as const } : {}) }),
-          })),
-          ...LIGHT_KINDS.map((o) => ({
-            section: 'Lichtart',
-            label: o.label,
-            checked: (pitch.lightKind ?? 'spot') === o.value,
-            onSelect: () => setPitchLines({ lightKind: o.value, ...(lightingOff ? { lighting: 'medium' as const } : {}) }),
-          })),
+          {
+            section: 'Licht',
+            label: `Lichtverlauf: ${lightingSummary} …`,
+            onSelect: () => setLightingOpen(true),
+          },
         ]}
       />
       <Dropdown
@@ -177,6 +169,7 @@ export function PitchStyleMenu() {
       />
       {customOpen && <CustomGridDialog onClose={() => setCustomOpen(false)} />}
       {gradientOpen && <GradientDialog onClose={() => setGradientOpen(false)} />}
+      {lightingOpen && <LightingDialog onClose={() => setLightingOpen(false)} />}
     </>
   )
 }
