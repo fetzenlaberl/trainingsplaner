@@ -4,7 +4,7 @@ import type { FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps } from '../lines/steps'
-import type { GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
+import type { CustomGrid, GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import { clampItemSize, COLORABLE_TYPES, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
 import {
   clampFillOpacity,
@@ -53,6 +53,8 @@ export interface DrillState extends DrillContent {
   setFieldType: (fieldType: FieldType) => void
   setPitchColor: (color: PitchColor) => void
   setGrid: (grid: GridType) => void
+  /** Shows the own grid with these column and row sizes (meters), as one undo step. */
+  setCustomGrid: (grid: CustomGrid) => void
   setOrientation: (orientation: Orientation) => void
   select: (id: string | null) => void
   selectMany: (ids: string[]) => void
@@ -307,6 +309,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => (s.pitch.color === color ? {} : { ...recorded(s), pitch: { ...s.pitch, color } })),
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
+  setCustomGrid: (customGrid) => set((s) => ({ ...recorded(s), pitch: { ...s.pitch, grid: 'custom', customGrid } })),
   setOrientation: (orientation) =>
     set((s) =>
       s.pitch.orientation === orientation ? {} : { ...recorded(s), pitch: { ...s.pitch, orientation } },

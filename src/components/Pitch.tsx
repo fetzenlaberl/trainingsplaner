@@ -68,19 +68,20 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         </>
       )}
 
-      {gridLines(pitch.grid).map((points, i) => (
+      {gridLines(pitch.grid, pitch.customGrid).map((points, i) => (
         <Line
           key={`grid-${i}`}
           points={points}
           stroke={colors.grid}
           strokeWidth={gridWidth}
-          dash={[gridWidth * 6, gridWidth * 4]}
+          // The own grid is an exercise field: solid lines; other grids are dashed guides.
+          dash={pitch.grid === 'custom' ? undefined : [gridWidth * 6, gridWidth * 4]}
         />
       ))}
       {gridLabels(pitch.grid).map((label) => (
         <MeterText
-          key={`zone-${label.number}`}
-          text={String(label.number)}
+          key={`zone-${label.text}`}
+          text={label.text}
           x={label.x}
           y={label.y}
           rotation={upright}

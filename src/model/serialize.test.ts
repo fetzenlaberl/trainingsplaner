@@ -281,6 +281,18 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).pitch.orientation).toBe('landscape')
   })
 
+  it('round-trips an own grid and rejects broken sizes', () => {
+    const text = tamper((d) => {
+      d.pitch.grid = 'custom'
+      d.pitch.customGrid = { columns: [20, 12.5, 20], rows: [30] }
+    })
+    expect(parseDrill(text).pitch).toMatchObject({ grid: 'custom', customGrid: { columns: [20, 12.5, 20], rows: [30] } })
+    const broken = tamper((d) => {
+      d.pitch.customGrid = { columns: [-5], rows: [10] }
+    })
+    expect(() => parseDrill(broken)).toThrow()
+  })
+
   it('reads older files without pitch style as green pitch without grid', () => {
     const text = tamper((d) => {
       delete d.pitch

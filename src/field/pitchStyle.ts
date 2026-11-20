@@ -9,11 +9,16 @@ export type GridType =
   | 'lanes'
   | 'positional'
   | 'zones20'
+  | 'zones20Plain'
+  | 'lettersLong'
+  | 'lettersAcross'
+  | 'letters3x2'
   | 'penalty'
   | 'penaltyFine'
   | 'squares5'
   | 'squares10'
   | 'squares15'
+  | 'custom'
 
 /** How the pitch is drawn; saved with the drill. */
 export interface PitchStyle {
@@ -21,7 +26,18 @@ export interface PitchStyle {
   grid: GridType
   /** Shown lying (landscape) or upright (portrait); also used for exports */
   orientation: Orientation
+  /** Own grid (grid "custom"): column widths along the length and row heights across, in meters */
+  customGrid?: CustomGrid
 }
+
+export interface CustomGrid {
+  columns: number[]
+  rows: number[]
+}
+
+export const DEFAULT_CUSTOM_GRID: CustomGrid = { columns: [20, 30, 20], rows: [15, 20, 15] }
+export const MAX_CUSTOM_PARTS = 20
+export const MAX_CUSTOM_SIZE = 150
 
 export const DEFAULT_PITCH_STYLE: PitchStyle = { color: 'grass', grid: 'none', orientation: 'landscape' }
 
@@ -115,11 +131,16 @@ export const GRID_LABELS: Record<GridType, string> = {
   lanes: 'Korridore (5 Längsstreifen)',
   positional: 'Positionsspiel-Raster (20 Zonen)',
   zones20: 'Zonenraster 1–20 (nummeriert)',
+  zones20Plain: 'Zonenraster 20 Zonen (ohne Nummern)',
+  lettersLong: 'Zonen A–F: 6 Längsstreifen',
+  lettersAcross: 'Zonen A–F: 6 Querstreifen',
+  letters3x2: 'Zonen A–F: 3 × 2 Felder',
   penalty: 'Strafraum-Raster (ca. 12 × 10 m)',
   penaltyFine: 'Strafraum-Raster fein (ca. 9 × 6,7 m)',
   squares5: 'Quadrate 5 × 5 m',
   squares10: 'Quadrate 10 × 10 m',
   squares15: 'Quadrate 15 × 15 m',
+  custom: 'Eigenes Raster …',
 }
 
 export const GRID_ORDER: GridType[] = [
@@ -128,11 +149,16 @@ export const GRID_ORDER: GridType[] = [
   'lanes',
   'positional',
   'zones20',
+  'zones20Plain',
+  'lettersLong',
+  'lettersAcross',
+  'letters3x2',
   'penalty',
   'penaltyFine',
   'squares5',
   'squares10',
   'squares15',
+  'custom',
 ]
 
 /**
@@ -227,9 +253,74 @@ function zones20Layout() {
   return { lines, labels }
 }
 
-/** Zone numbers to show for a grid (only the club grid has them). */
-export function gridLabels(grid: GridType): { number: number; x: number; y: number }[] {
-  return grid === 'zones20' ? zones20Layout().labels : []
+export interface GridLabel {
+  text: string
+  x: number
+  y: number
+}
+
+const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
+
+/** Letter zones: 6 strips along the length (lanes from touchline to touchline), 6 across (from goal to goal) or 3 × 2 fields. */
+function letterLayout(grid: 'lettersLong' | 'lettersAcross' | 'letters3x2') {
+  const { length, width } = PITCH
+  const lines: number[][] = []
+  const labels: GridLabel[] = []
+  if (grid === 'lettersLong') {
+    const step = width / 6
+    for (let i = 1; i < 6; i++) lines.push([0, i * step, length, i * step])
+    LETTERS.forEach((text, i) => labels.push({ text, x: length / 2, y: (i + 0.5) * step }))
+  } else if (grid === 'lettersAcross') {
+    const step = length / 6
+    for (let i = 1; i < 6; i++) lines.push([i * step, 0, i * step, width])
+    LETTERS.forEach((text, i) => labels.push({ text, x: (i + 0.5) * step, y: width / 2 }))
+  } else {
+    const stepX = length / 3
+    for (let i = 1; i < 3; i++) lines.push([i * stepX, 0, i * stepX, width])
+    lines.push([0, width / 2, length, width / 2])
+    // A B C in the upper row, D E F in the lower one
+    LETTERS.forEach((text, i) => labels.push({ text, x: ((i % 3) + 0.5) * stepX, y: ((Math.floor(i / 3) + 0.5) * width) / 2 }))
+  }
+  return { lines, labels }
+}
+
+/** Own grid: the given columns and rows, centred on the pitch, with its outer border. */
+export function customGridLayout(grid: CustomGrid): { lines: number[][]; bounds: { x: number; y: number; width: number; height: number } } {
+  const totalX = grid.columns.reduce((a, b) => a + b, 0)
+  const totalY = grid.rows.reduce((a, b) => a + b, 0)
+  const x0 = (PITCH.length - totalX) / 2
+  const y0 = (PITCH.width - totalY) / 2
+  const lines: number[][] = []
+  let x = x0
+  for (let i = 0; i <= grid.columns.length; i++) {
+    lines.push([x, y0, x, y0 + totalY])
+    x += grid.columns[i] ?? 0
+  }
+  let y = y0
+  for (let i = 0; i <= grid.rows.length; i++) {
+    lines.push([x0, y, x0 + totalX, y])
+    y += grid.rows[i] ?? 0
+  }
+  return { lines, bounds: { x: x0, y: y0, width: totalX, height: totalY } }
+}
+
+/** Parses "20 30 20", "20, 30, 20" or "12,5; 10" into sizes in meters; null if invalid. */
+export function parseGridSizes(text: string): number[] | null {
+  const parts = text
+    .trim()
+    .split(/\s*;\s*|\s+|,\s+/)
+    .flatMap((part) => ((part.match(/,/g) ?? []).length > 1 ? part.split(',') : [part]))
+    .filter((part) => part !== '')
+  if (parts.length === 0 || parts.length > MAX_CUSTOM_PARTS) return null
+  const sizes = parts.map((part) => Number(part.replace(',', '.')))
+  return sizes.every((n) => Number.isFinite(n) && n > 0 && n <= MAX_CUSTOM_SIZE) ? sizes : null
+}
+
+/** Zone labels to show for a grid (numbers of the club grid, letters of the letter grids). */
+export function gridLabels(grid: GridType): GridLabel[] {
+  if (grid === 'zones20') return zones20Layout().labels.map((l) => ({ text: String(l.number), x: l.x, y: l.y }))
+  if (grid === 'lettersLong' || grid === 'lettersAcross' || grid === 'letters3x2') return letterLayout(grid).labels
+  return []
 }
 
 /**
@@ -237,7 +328,7 @@ export function gridLabels(grid: GridType): { number: number; x: number; y: numb
  * Lanes follow the sides of the penalty and goal areas (wings, half-spaces, centre);
  * the positional grid adds cross lines at the penalty areas and the halfway line.
  */
-export function gridLines(grid: GridType): number[][] {
+export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID): number[][] {
   const { length, width, penaltyAreaDepth, penaltyAreaWidth, goalAreaWidth } = PITCH
   const mid = width / 2
   const horizontal = (y: number) => [0, y, length, y]
@@ -259,7 +350,14 @@ export function gridLines(grid: GridType): number[][] {
     case 'positional':
       return [...lanes, ...[penaltyAreaDepth, length / 2, length - penaltyAreaDepth].map(vertical)]
     case 'zones20':
+    case 'zones20Plain':
       return zones20Layout().lines
+    case 'lettersLong':
+    case 'lettersAcross':
+    case 'letters3x2':
+      return letterLayout(grid).lines
+    case 'custom':
+      return customGridLayout(custom).lines
     case 'penalty':
     case 'penaltyFine': {
       const parts = PENALTY_GRID_PARTS[grid]

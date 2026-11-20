@@ -3,6 +3,9 @@ import type { Orientation } from '../field/orientation'
 import {
   DEFAULT_PITCH_STYLE,
   GRID_ORDER,
+  MAX_CUSTOM_PARTS,
+  MAX_CUSTOM_SIZE,
+  type CustomGrid,
   PITCH_COLOR_ORDER,
   type GridType,
   type PitchColor,
@@ -52,7 +55,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 11: library area (training drill or tactics / line-up).
 // Version 12: corner section fields (cornerLeft, cornerRight).
 // Version 13: freehand lines (free, freeArrow).
-export const FILE_VERSION = 13
+// Version 14: more grids (zones without numbers, letter zones, own grid with sizes).
+export const FILE_VERSION = 14
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -190,11 +194,29 @@ function parsePitchStyle(value: unknown): PitchStyle {
   if (!(value.orientation === undefined || value.orientation === 'landscape' || value.orientation === 'portrait')) {
     throw corrupt()
   }
+  const customGrid = value.customGrid === undefined ? undefined : parseCustomGrid(value.customGrid)
   return {
     color: value.color as PitchColor,
     grid: value.grid as GridType,
     orientation: (value.orientation as Orientation | undefined) ?? 'landscape',
+    ...(customGrid ? { customGrid } : {}),
   }
+}
+
+function parseCustomGrid(value: unknown): CustomGrid {
+  const sizes = (list: unknown): number[] => {
+    if (
+      !Array.isArray(list) ||
+      list.length === 0 ||
+      list.length > MAX_CUSTOM_PARTS ||
+      !list.every((n) => isNumber(n) && n > 0 && n <= MAX_CUSTOM_SIZE)
+    ) {
+      throw corrupt()
+    }
+    return list as number[]
+  }
+  if (!isRecord(value)) throw corrupt()
+  return { columns: sizes(value.columns), rows: sizes(value.rows) }
 }
 
 function parsePoint(value: unknown): Point {
