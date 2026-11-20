@@ -139,7 +139,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-52'}`}
+      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36'}`}
     >
       <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
         {([
@@ -166,7 +166,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template }, true)} />
         </div>
       ) : (
-        <ul className="flex gap-1 overflow-x-auto p-2 md:grid md:grid-cols-2 md:content-start md:overflow-y-auto">
+        <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
           {ITEM_TEMPLATES.map((template) => (
             <li key={template.key} className="shrink-0">
               <button
@@ -185,7 +185,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
               </button>
             </li>
           ))}
-          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:col-span-2 md:pt-2">
+          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:pt-2">
             Zonen
           </li>
           {ZONE_TEMPLATES.map((template) => (

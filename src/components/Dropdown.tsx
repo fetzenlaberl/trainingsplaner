@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { buttonClass } from './ui'
 
 export interface DropdownItem {
@@ -25,6 +25,25 @@ interface DropdownProps {
 export function Dropdown({ label, items, disabled, align = 'left' }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  /** Sideways shift that keeps the menu on screen (e.g. a right-aligned menu near the left edge) */
+  const [shift, setShift] = useState(0)
+
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current) {
+      setShift(0)
+      return
+    }
+    const margin = 8
+    const rect = menuRef.current.getBoundingClientRect()
+    const left = rect.left - shift
+    const right = rect.right - shift
+    if (left < margin) setShift(margin - left)
+    else if (right > window.innerWidth - margin) setShift(Math.max(margin - left, window.innerWidth - margin - right))
+    else setShift(0)
+    // Measured once per opening; shift itself is only read to undo the previous one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -56,7 +75,9 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
       </button>
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          style={shift ? { transform: `translateX(${shift}px)` } : undefined}
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] w-64 flex-col overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-xl`}
         >
           {items.map((item, index) => (
