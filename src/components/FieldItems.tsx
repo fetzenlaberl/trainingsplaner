@@ -72,6 +72,8 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             }}
             onClick={(e) => selectOnClick(e, item.id)}
             onTap={(e) => selectOnClick(e, item.id)}
+            onDblClick={() => openTextEditor(item)}
+            onDblTap={() => openTextEditor(item)}
             onMouseEnter={(e) => setCursor(e, 'grab')}
             onMouseLeave={(e) => setCursor(e, '')}
             onDragStart={(e) => {
@@ -177,4 +179,10 @@ function RotationHandle({ item, scale }: { item: Item; scale: number }) {
       />
     </Group>
   )
+}
+
+/** Double click or double tap on a text opens its input window. */
+function openTextEditor(item: { id: string; type: string }) {
+  if (item.type !== 'text' && item.type !== 'textbox') return
+  useToolStore.getState().setEditingTextId(item.id)
 }

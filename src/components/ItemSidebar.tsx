@@ -109,11 +109,15 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       usePlaybackStore.getState().stop()
       // Switch to the select tool so the new item can be adjusted right away.
       setTool('select')
-      select(
+      const id =
         dragged.kind === 'item'
           ? addItem(dragged.template.item, pos.x, pos.y)
-          : addZone(dragged.template, pos.x, pos.y),
-      )
+          : addZone(dragged.template, pos.x, pos.y)
+      select(id)
+      // A new text asks for its words right away.
+      if (dragged.kind === 'item' && (dragged.template.item.type === 'text' || dragged.template.item.type === 'textbox')) {
+        useToolStore.getState().setEditingTextId(id)
+      }
     }
     // While an object is carried, a finger must not scroll the page or the list.
     const blockScroll = (ev: TouchEvent) => ev.preventDefault()
@@ -135,7 +139,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36'}`}
+      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-52'}`}
     >
       <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
         {([
@@ -162,14 +166,14 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template }, true)} />
         </div>
       ) : (
-        <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
+        <ul className="flex gap-1 overflow-x-auto p-2 md:grid md:grid-cols-2 md:content-start md:overflow-y-auto">
           {ITEM_TEMPLATES.map((template) => (
             <li key={template.key} className="shrink-0">
               <button
                 type="button"
                 title={`${template.name} aufs Feld ziehen`}
                 onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
-                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-xs leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
               >
                 <span className="pointer-events-none flex h-10 items-center justify-center">
                   <ItemPreview
@@ -181,7 +185,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
               </button>
             </li>
           ))}
-          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:pt-2">
+          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:col-span-2 md:pt-2">
             Zonen
           </li>
           {ZONE_TEMPLATES.map((template) => (
@@ -190,7 +194,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                 type="button"
                 title={`Zone ${template.name} aufs Feld ziehen`}
                 onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
-                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-xs leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
               >
                 <span className="pointer-events-none flex h-10 items-center justify-center">
                   <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />

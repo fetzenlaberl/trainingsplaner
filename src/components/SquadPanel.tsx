@@ -4,10 +4,21 @@ import type { ItemTemplate } from '../items/palette'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { FORMATIONS, type Side } from '../teams/formations'
 import { itemForPlayer, placeLineup } from '../teams/lineupActions'
-import { playerLabel, type Team } from '../teams/team'
+import { NAME_STYLES, playerLabel, type NameStyle, type Team } from '../teams/team'
 import { listTeams } from '../teams/teamDb'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, inputClass } from './ui'
+
+const NAME_STYLE_KEY = 'trainingsplaner.squadNameStyle'
+
+function loadNameStyle(): NameStyle {
+  try {
+    const value = localStorage.getItem(NAME_STYLE_KEY)
+    return NAME_STYLES.some((o) => o.value === value) ? (value as NameStyle) : 'full'
+  } catch {
+    return 'full'
+  }
+}
 
 interface SquadPanelProps {
   /** Starts dragging a player onto the pitch (same mechanism as the item palette). */
@@ -20,10 +31,19 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
   const [teamId, setTeamId] = useState<string | null>(null)
   const [formationKey, setFormationKey] = useState(FORMATIONS[0].key)
   const [side, setSide] = useState<Side>('left')
+  const [nameStyle, setNameStyleState] = useState<NameStyle>(loadNameStyle)
+  const setNameStyle = (value: NameStyle) => {
+    setNameStyleState(value)
+    try {
+      localStorage.setItem(NAME_STYLE_KEY, value)
+    } catch {
+      // Only a convenience; the choice is simply not remembered.
+    }
+  }
   const setView = useViewStore((s) => s.setView)
   const sceneItems = useDrillStore((s) => currentScene(s).items)
   // Players already on the pitch (same name and number) get a check mark.
-  const onPitch = useMemo(() => new Set(sceneItems.map((i) => `${i.label}|${i.name}`)), [sceneItems])
+  const onPitch = useMemo(() => new Set(sceneItems.map((i) => `${i.label ?? ''}|${i.name ?? ''}`)), [sceneItems])
 
   useEffect(() => {
     let cancelled = false
@@ -87,11 +107,24 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
               <option value="left">Eigenes Tor links</option>
               <option value="right">Eigenes Tor rechts</option>
             </select>
+            <select
+              className={inputClass}
+              aria-label="Name auf dem Feld"
+              title="Für einzelne Spieler und für die Aufstellung"
+              value={nameStyle}
+              onChange={(e) => setNameStyle(e.target.value as NameStyle)}
+            >
+              {NAME_STYLES.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className={`${buttonClass} justify-center bg-emerald-700 text-white hover:bg-emerald-600`}
               title="Startelf in dieser Formation aufs Feld stellen"
-              onClick={() => placeLineup(team, formation, side)}
+              onClick={() => placeLineup(team, formation, side, nameStyle)}
             >
               Aufstellen
             </button>
@@ -100,8 +133,8 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
           <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto md:max-h-none">
             {team.players.length === 0 && <li className="text-xs text-slate-400">Kader ist leer.</li>}
             {team.players.map((player) => {
-              const item = itemForPlayer(team, player)
-              const placed = onPitch.has(`${item.label ?? ''}|${player.name}`)
+              const item = itemForPlayer(team, player, nameStyle)
+              const placed = onPitch.has(`${item.label ?? ''}|${item.name ?? ''}`)
               return (
                 <li key={player.id}>
                   <button

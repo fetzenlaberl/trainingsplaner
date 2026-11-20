@@ -26,6 +26,7 @@ import { FieldView } from './FieldView'
 import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
 import { QuickMenu } from './QuickMenu'
+import { TextBoxDialog } from './TextBoxDialog'
 import { ZoomControls } from './ZoomControls'
 import { addStrokePoint, isFreehand, simplifyPath, strokeLength } from '../lines/freehand'
 
@@ -144,6 +145,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const selectedZone =
     tool === 'select' && !animating ? sceneZones.find((z) => z.id === selectedId) : undefined
   const editingCornersId = useToolStore((s) => s.editingCornersId)
+  const editingTextId = useToolStore((s) => s.editingTextId)
+  const setEditingTextId = useToolStore((s) => s.setEditingTextId)
   const cornerMode = selectedZone !== undefined && editingCornersId === selectedZone.id
   const transformedZone = cornerMode ? undefined : selectedZone
 
@@ -486,6 +489,9 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
         </div>
       )}
       <QuickMenu />
+      {editingTextId && (
+        <TextBoxDialog key={editingTextId} itemId={editingTextId} onClose={() => setEditingTextId(null)} />
+      )}
       {marquee && (
         <div
           className={`pointer-events-none absolute border ${

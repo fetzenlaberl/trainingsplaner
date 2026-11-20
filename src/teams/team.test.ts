@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { resetDbConnection } from '../storage/db'
-import { addPlayer, createTeam, movePlayer, playerLabel, teamFromData } from './team'
+import { addPlayer, createTeam, movePlayer, nameForStyle, nameInitials, playerLabel, teamFromData } from './team'
 import { deleteTeam, listTeams, putTeam } from './teamDb'
 
 describe('team helpers', () => {
@@ -58,5 +58,19 @@ describe('teamDb', () => {
     expect((await listTeams()).map((t) => t.name)).toEqual(['Kampfmannschaft', 'U13'])
     await deleteTeam('a')
     expect((await listTeams()).map((t) => t.id)).toEqual(['b'])
+  })
+})
+
+describe('name styles', () => {
+  it('takes the first letters of first name and surname', () => {
+    expect(nameInitials('Max Müller')).toBe('MM')
+    expect(nameInitials('  anna   von berg ')).toBe('AVB')
+    expect(nameInitials('')).toBe('')
+  })
+
+  it('formats the name tag', () => {
+    expect(nameForStyle('Max Müller', 'full')).toBe('Max Müller')
+    expect(nameForStyle('Max Müller', 'initials')).toBe('MM')
+    expect(nameForStyle('Max Müller', 'none')).toBe('')
   })
 })

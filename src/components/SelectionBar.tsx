@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { isFreehand } from '../lines/freehand'
 import { BALL_STYLES,
   ITEM_SIZE_STEP,
@@ -33,7 +33,6 @@ import { useToolStore } from '../store/toolStore'
 import { nextStep } from '../lines/steps'
 import { LineStylePicker } from './LineStylePicker'
 import { ColorSwatches, LabelInput } from './controls'
-import { TextBoxDialog } from './TextBoxDialog'
 import { buttonClass, dangerButtonClass } from './ui'
 
 const ROTATE_STEP = 15
@@ -163,7 +162,6 @@ function ItemControls({ item }: { item: Item }) {
   const setItemHighlight = useDrillStore((s) => s.setItemHighlight)
   const setItemFacing = useDrillStore((s) => s.setItemFacing)
   const setItemColor = useDrillStore((s) => s.setItemColor)
-  const [editingText, setEditingText] = useState(false)
 
   return (
     <>
@@ -301,10 +299,13 @@ function ItemControls({ item }: { item: Item }) {
             value={item.color}
             onSelect={(color) => setItemColor(item.id, color)}
           />
-          <button type="button" className={buttonClass} onClick={() => setEditingText(true)}>
+          <button
+            type="button"
+            className={buttonClass}
+            onClick={() => useToolStore.getState().setEditingTextId(item.id)}
+          >
             Text bearbeiten
           </button>
-          {editingText && <TextBoxDialog itemId={item.id} onClose={() => setEditingText(false)} />}
         </>
       )}
     </>

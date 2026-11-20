@@ -110,6 +110,31 @@ export function playerLabel(player: Pick<TeamPlayer, 'name' | 'number'>): string
   return [player.number, player.name].filter(Boolean).join(' ') || 'Spieler'
 }
 
+/** How a player's name appears on the pitch. */
+export type NameStyle = 'full' | 'initials' | 'none'
+
+export const NAME_STYLES: { value: NameStyle; label: string }[] = [
+  { value: 'full', label: 'Name auf dem Feld: ganz' },
+  { value: 'initials', label: 'Name auf dem Feld: Anfangsbuchstaben' },
+  { value: 'none', label: 'Name auf dem Feld: keiner' },
+]
+
+/** First letters of first name and surname(s): "Max Müller" -> "MM". */
+export function nameInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toLocaleUpperCase('de'))
+    .join('')
+}
+
+/** Name tag text for a player in the given style. */
+export function nameForStyle(name: string, style: NameStyle): string {
+  if (style === 'none') return ''
+  return style === 'initials' ? nameInitials(name) : name
+}
+
 export function sortTeams(teams: Team[]): Team[] {
   return [...teams].sort((a, b) => a.name.localeCompare(b.name, 'de'))
 }
