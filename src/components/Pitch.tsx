@@ -9,15 +9,17 @@ import {
   gridLines,
   PITCH_COLORS,
   PITCH_LINE_WIDTHS,
+  resolveLighting,
+  resolveMowing,
   ROUNDED_CORNER_RADIUS,
+  stripeColor,
   type PitchStyle,
 } from '../field/pitchStyle'
 import { ViewRotationContext } from './viewRotationContext'
 
-const STRIPE_COUNT = 14
-const FINE_STRIPE_COUNT = 28
-/** Squares of the check pattern along the length */
-const CHECK_COUNT = 14
+/** Zone numbers in the corner of their cell (meters) */
+const CORNER_LABEL_SIZE = 2.2
+const CORNER_LABEL_PADDING = 0.8
 
 const MARKINGS = getPitchMarkings()
 const GOALS = getGoals()
@@ -41,14 +43,19 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const gridWidth = Math.max(0.08, 1.2 / scale)
   const stroke = { stroke: lineColor, strokeWidth: lineWidth }
   const texture = colors.texture ? grassTextureTile() : null
+  const mowing = resolveMowing(pitch)
+  const lighting = resolveLighting(pitch)
   // Zone numbers stay upright in portrait.
   const upright = -useContext(ViewRotationContext)
+  const portrait = upright !== 0
   const labelSize = 3.2
 
   return (
     <Group listening={false}>
       <Rect {...viewport} fill={colors.base} />
-      {colors.stripe && <MowingPattern viewport={viewport} color={colors.stripe} pattern={colors.pattern ?? 'stripes'} />}
+      {mowing.kind !== 'none' && (
+        <MowingPattern viewport={viewport} color={stripeColor(pitch.color)} kind={mowing.kind} count={mowing.count} />
+      )}
       {texture && (
         <Rect
           {...viewport}
@@ -59,14 +66,18 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           fillPatternScaleY={TEXTURE_TILE_METERS / TEXTURE_TILE_PX}
         />
       )}
-      {colors.lighting && (
+      {lighting !== 'none' && (
         <Rect
           {...viewport}
           fillRadialGradientStartPoint={{ x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 }}
           fillRadialGradientEndPoint={{ x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 }}
           fillRadialGradientStartRadius={0}
           fillRadialGradientEndRadius={Math.max(viewport.width, viewport.height) * 0.75}
-          fillRadialGradientColorStops={[0, 'rgba(255,255,240,0.12)', 0.55, 'rgba(255,255,255,0)', 1, 'rgba(0,0,0,0.22)']}
+          fillRadialGradientColorStops={
+            lighting === 'strong'
+              ? [0, 'rgba(255,255,225,0.24)', 0.5, 'rgba(255,255,255,0.03)', 1, 'rgba(0,0,0,0.38)']
+              : [0, 'rgba(255,255,240,0.12)', 0.55, 'rgba(255,255,255,0)', 1, 'rgba(0,0,0,0.22)']
+          }
         />
       )}
 
@@ -114,7 +125,20 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           dash={pitch.grid === 'custom' ? undefined : [gridWidth * 6, gridWidth * 4]}
         />
       ))}
-      {gridLabels(pitch.grid).map((label) => (
+      {gridLabels(pitch.grid).map((label) =>
+        label.cell ? (
+          // Small number in the top left corner of the cell as seen on screen (portrait turns the pitch).
+          <MeterText
+            key={`zone-${label.text}`}
+            text={label.text}
+            x={portrait ? label.cell.x2 - CORNER_LABEL_PADDING : label.cell.x1 + CORNER_LABEL_PADDING}
+            y={label.cell.y1 + CORNER_LABEL_PADDING}
+            rotation={upright}
+            fontSize={CORNER_LABEL_SIZE}
+            fontStyle="bold"
+            fill={colors.grid}
+          />
+        ) : (
         <MeterText
           key={`zone-${label.text}`}
           text={label.text}
@@ -131,49 +155,54 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           fontStyle="bold"
           fill={colors.grid}
         />
-      ))}
+        ),
+      )}
     </Group>
   )
 }
 
-/** Mown grass: wide or fine stripes across the length, or a check pattern. */
+/**
+ * Mown grass: stripes across the length (vertical in landscape), along it, or a check pattern.
+ * Stripe size comes from the pitch; the pattern continues into the grass margin.
+ */
 function MowingPattern({
   viewport,
   color,
-  pattern,
+  kind,
+  count,
 }: {
   viewport: ViewRect
   color: string
-  pattern: 'stripes' | 'fineStripes' | 'check'
+  kind: 'across' | 'along' | 'check'
+  count: number
 }) {
-  if (pattern === 'check') {
-    const size = PITCH.length / CHECK_COUNT
-    const rows = Math.ceil((viewport.y + viewport.height) / size) + 1
-    const firstRow = Math.floor(viewport.y / size)
-    const cells = []
-    for (let col = Math.floor(viewport.x / size); col * size < viewport.x + viewport.width; col++) {
-      for (let row = firstRow; row < rows; row++) {
-        if ((col + row) % 2 !== 0) continue
-        cells.push(
-          <Rect key={`${col}-${row}`} x={col * size} y={row * size} width={size} height={size} fill={color} />,
-        )
+  const sizeX = PITCH.length / count
+  const sizeY = kind === 'along' ? PITCH.width / count : sizeX
+  const cells: { x: number; y: number; w: number; h: number }[] = []
+  const firstCol = Math.floor(viewport.x / sizeX)
+  const lastCol = Math.ceil((viewport.x + viewport.width) / sizeX)
+  const firstRow = Math.floor(viewport.y / sizeY)
+  const lastRow = Math.ceil((viewport.y + viewport.height) / sizeY)
+  if (kind === 'across') {
+    for (let c = firstCol; c < lastCol; c++) {
+      if (c % 2 === 0) cells.push({ x: c * sizeX, y: viewport.y, w: sizeX, h: viewport.height })
+    }
+  } else if (kind === 'along') {
+    for (let r = firstRow; r < lastRow; r++) {
+      if (r % 2 === 0) cells.push({ x: viewport.x, y: r * sizeY, w: viewport.width, h: sizeY })
+    }
+  } else {
+    for (let c = firstCol; c < lastCol; c++) {
+      for (let r = firstRow; r < lastRow; r++) {
+        if ((c + r) % 2 === 0) cells.push({ x: c * sizeX, y: r * sizeY, w: sizeX, h: sizeY })
       }
     }
-    return (
-      <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.width} clipHeight={viewport.height}>
-        {cells}
-      </Group>
-    )
   }
-  const count = pattern === 'fineStripes' ? FINE_STRIPE_COUNT : STRIPE_COUNT
-  const width = PITCH.length / count
   return (
-    <>
-      {Array.from({ length: count }, (_, i) =>
-        i % 2 === 0 ? (
-          <Rect key={i} x={i * width} y={viewport.y} width={width} height={viewport.height} fill={color} />
-        ) : null,
-      )}
-    </>
+    <Group clipX={viewport.x} clipY={viewport.y} clipWidth={viewport.width} clipHeight={viewport.height}>
+      {cells.map((cell) => (
+        <Rect key={`${cell.x}-${cell.y}`} x={cell.x} y={cell.y} width={cell.w} height={cell.h} fill={color} />
+      ))}
+    </Group>
   )
 }

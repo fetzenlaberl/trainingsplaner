@@ -233,12 +233,24 @@ describe('serializeDrill / parseDrill', () => {
       d.pitch.lineWidth = 'thin'
       d.pitch.lineColor = '#fde047'
       d.pitch.roundedCorners = true
+      d.pitch.mowing = 'alongNarrow'
+      d.pitch.lighting = 'strong'
+      d.scenes[0].lines[0].weight = 'extraThick'
       d.scenes[0].items[1].color = 'training'
       d.scenes[0].items[0].type = 'agility'
       d.scenes[0].items[0].label = '4'
     })
     const drill = parseDrill(text)
-    expect(drill.pitch).toMatchObject({ color: 'grassCheck', lineWidth: 'thin', lineColor: '#fde047', roundedCorners: true })
+    expect(drill.pitch).toMatchObject({
+      color: 'grassCheck',
+      lineWidth: 'thin',
+      lineColor: '#fde047',
+      roundedCorners: true,
+      mowing: 'alongNarrow',
+      lighting: 'strong',
+    })
+    expect(drill.scenes[0].lines[0].weight).toBe('extraThick')
+    expect(() => parseDrill(tamper((d) => (d.pitch.mowing = 'diagonal')))).toThrow()
     expect(drill.scenes[0].items[1].color).toBe('training')
     expect(drill.scenes[0].items[0]).toMatchObject({ type: 'agility', label: '4' })
     expect(() => parseDrill(tamper((d) => (d.pitch.lineWidth = 'huge')))).toThrow()

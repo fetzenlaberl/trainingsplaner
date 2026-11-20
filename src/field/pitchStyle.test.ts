@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { displayColor, GRID_ORDER, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -89,6 +89,29 @@ describe('gridLines', () => {
     expect(parseGridSizes('')).toBeNull()
     expect(parseGridSizes('10 abc')).toBeNull()
     expect(parseGridSizes('0 10')).toBeNull()
+  })
+
+  it('puts letters outside the pitch and zone numbers into the cell corners', () => {
+    expect(gridLabels('lettersLong').every((l) => l.x < 0)).toBe(true)
+    expect(gridLabels('lettersAcross').every((l) => l.y < 0)).toBe(true)
+    const fields = gridLabels('letters3x2')
+    expect(fields.slice(0, 3).every((l) => l.y < 0)).toBe(true)
+    expect(fields.slice(3).every((l) => l.y > PITCH.width)).toBe(true)
+    const zones = gridLabels('zones20')
+    expect(zones.every((l) => l.cell !== undefined)).toBe(true)
+    expect(zones[0].cell).toMatchObject({ x1: 0, y1: 0 })
+  })
+
+  it('resolves mowing and lighting from the design unless chosen', () => {
+    expect(resolveMowing({ ...DEFAULT_PITCH_STYLE })).toEqual({ kind: 'across', count: 14 })
+    expect(resolveMowing({ ...DEFAULT_PITCH_STYLE, color: 'grassPlain' }).kind).toBe('none')
+    expect(resolveMowing({ ...DEFAULT_PITCH_STYLE, color: 'grassPlain', mowing: 'alongWide' })).toEqual({ kind: 'along', count: 5 })
+    expect(resolveMowing({ ...DEFAULT_PITCH_STYLE, color: 'grassCheck' }).kind).toBe('check')
+    expect(resolveLighting({ ...DEFAULT_PITCH_STYLE, color: 'grassStadium' })).toBe('soft')
+    expect(resolveLighting({ ...DEFAULT_PITCH_STYLE, lighting: 'strong' })).toBe('strong')
+    // Designs without stripes still get a visible stripe shade
+    expect(stripeColor('grey')).not.toBe(PITCH_COLORS.grey.base)
+    expect(stripeColor('grass')).toBe(PITCH_COLORS.grass.stripe)
   })
 
   it('numbers the club grid 1 to 20 from the own goal', () => {

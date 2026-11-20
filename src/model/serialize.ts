@@ -6,6 +6,11 @@ import {
   MAX_CUSTOM_PARTS,
   MAX_CUSTOM_SIZE,
   type CustomGrid,
+  LIGHTING_OPTIONS,
+  MOWING_OPTIONS,
+  type Lighting,
+  type Mowing,
+  PITCH_LINE_WIDTHS,
   type PitchLineWidth,
   PITCH_COLOR_ORDER,
   type GridType,
@@ -59,7 +64,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 14: more grids (zones without numbers, letter zones, own grid with sizes).
 // Version 15: shirt-shaped players and coach items.
 // Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
-export const FILE_VERSION = 16
+// Version 17: mowing patterns, lighting, extra line weights.
+export const FILE_VERSION = 17
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -202,9 +208,12 @@ function parsePitchStyle(value: unknown): PitchStyle {
   const customGrid = value.customGrid === undefined ? undefined : parseCustomGrid(value.customGrid)
   // Line settings were added in version 16; missing values mean the usual lines.
   if (
-    !(value.lineWidth === undefined || value.lineWidth === 'thin' || value.lineWidth === 'normal' || value.lineWidth === 'thick') ||
+    !(value.lineWidth === undefined || PITCH_LINE_WIDTHS.some((w) => w.value === value.lineWidth)) ||
     !(value.lineColor === undefined || typeof value.lineColor === 'string') ||
-    !(value.roundedCorners === undefined || typeof value.roundedCorners === 'boolean')
+    !(value.roundedCorners === undefined || typeof value.roundedCorners === 'boolean') ||
+    // Mowing and lighting were added in version 17.
+    !(value.mowing === undefined || MOWING_OPTIONS.some((o) => o.value === value.mowing)) ||
+    !(value.lighting === undefined || LIGHTING_OPTIONS.some((o) => o.value === value.lighting))
   ) {
     throw corrupt()
   }
@@ -216,6 +225,8 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(value.lineWidth && value.lineWidth !== 'normal' ? { lineWidth: value.lineWidth as PitchLineWidth } : {}),
     ...(typeof value.lineColor === 'string' ? { lineColor: value.lineColor } : {}),
     ...(value.roundedCorners === true ? { roundedCorners: true } : {}),
+    ...(typeof value.mowing === 'string' ? { mowing: value.mowing as Mowing } : {}),
+    ...(typeof value.lighting === 'string' ? { lighting: value.lighting as Lighting } : {}),
   }
 }
 

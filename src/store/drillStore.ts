@@ -56,7 +56,10 @@ export interface DrillState extends DrillContent {
   /** Shows the own grid with these column and row sizes (meters), as one undo step. */
   setCustomGrid: (grid: CustomGrid) => void
   /** Thickness, color and corners of the pitch markings, as one undo step. */
-  setPitchLines: (change: Partial<Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners'>>) => void
+  /** Lines, mowing and lighting of the pitch (undefined = default), as one undo step. */
+  setPitchLines: (
+    change: Partial<Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting'>>,
+  ) => void
   setOrientation: (orientation: Orientation) => void
   select: (id: string | null) => void
   selectMany: (ids: string[]) => void
@@ -331,6 +334,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (pitch.lineWidth === 'normal') delete pitch.lineWidth
       if (pitch.lineColor === undefined) delete pitch.lineColor
       if (!pitch.roundedCorners) delete pitch.roundedCorners
+      if (pitch.mowing === undefined) delete pitch.mowing
+      if (pitch.lighting === undefined) delete pitch.lighting
       return { ...recorded(s), pitch }
     }),
   setOrientation: (orientation) =>

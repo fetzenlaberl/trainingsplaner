@@ -14,12 +14,14 @@ export type PitchColor =
   | 'white'
 
 /** Thickness of the pitch markings */
-export type PitchLineWidth = 'thin' | 'normal' | 'thick'
+export type PitchLineWidth = 'extraThin' | 'thin' | 'normal' | 'thick' | 'extraThick'
 
 export const PITCH_LINE_WIDTHS: { value: PitchLineWidth; label: string; factor: number }[] = [
+  { value: 'extraThin', label: 'Extra dünn', factor: 0.35 },
   { value: 'thin', label: 'Dünn', factor: 0.55 },
   { value: 'normal', label: 'Normal', factor: 1 },
   { value: 'thick', label: 'Dick', factor: 1.8 },
+  { value: 'extraThick', label: 'Extra dick', factor: 2.6 },
 ]
 
 /** Colors for the pitch markings; null = usual color of the pitch (white, dark on the white pitch) */
@@ -29,7 +31,93 @@ export const PITCH_LINE_COLORS: { value: string | null; label: string }[] = [
   { value: '#fde047', label: 'Gelb' },
   { value: '#111827', label: 'Schwarz' },
   { value: '#e5e7eb', label: 'Hellgrau' },
+  { value: '#dc2626', label: 'Rot' },
+  { value: '#2563eb', label: 'Blau' },
+  { value: '#f97316', label: 'Orange' },
+  { value: '#22c55e', label: 'Grün' },
 ]
+
+/** Mowing pattern; missing = the usual pattern of the chosen grass design */
+export type Mowing =
+  | 'across'
+  | 'acrossNarrow'
+  | 'acrossWide'
+  | 'along'
+  | 'alongNarrow'
+  | 'alongWide'
+  | 'check'
+  | 'none'
+
+export const MOWING_OPTIONS: { value: Mowing | null; label: string }[] = [
+  { value: null, label: 'Wie Design' },
+  { value: 'acrossNarrow', label: 'Querstreifen schmal' },
+  { value: 'across', label: 'Querstreifen normal' },
+  { value: 'acrossWide', label: 'Querstreifen breit' },
+  { value: 'alongNarrow', label: 'Längsstreifen schmal' },
+  { value: 'along', label: 'Längsstreifen normal' },
+  { value: 'alongWide', label: 'Längsstreifen breit' },
+  { value: 'check', label: 'Karo' },
+  { value: 'none', label: 'Keine Streifen' },
+]
+
+/** "Sun in the middle": lighter centre, darker edges; missing = as the grass design */
+export type Lighting = 'none' | 'soft' | 'strong'
+
+export const LIGHTING_OPTIONS: { value: Lighting | null; label: string }[] = [
+  { value: null, label: 'Wie Design' },
+  { value: 'none', label: 'Kein Lichtverlauf' },
+  { value: 'soft', label: 'Sonne in der Mitte – leicht' },
+  { value: 'strong', label: 'Sonne in der Mitte – stark' },
+]
+
+/** Resolved mowing: stripe direction and how many stripes over the pitch length (across) or width (along). */
+export function resolveMowing(style: PitchStyle): { kind: 'across' | 'along' | 'check' | 'none'; count: number } {
+  const scheme = PITCH_COLORS[style.color]
+  const mowing: Mowing =
+    style.mowing ??
+    (scheme.stripe === null
+      ? 'none'
+      : scheme.pattern === 'fineStripes'
+        ? 'acrossNarrow'
+        : scheme.pattern === 'check'
+          ? 'check'
+          : 'across')
+  switch (mowing) {
+    case 'acrossNarrow':
+      return { kind: 'across', count: 28 }
+    case 'across':
+      return { kind: 'across', count: 14 }
+    case 'acrossWide':
+      return { kind: 'across', count: 8 }
+    case 'alongNarrow':
+      return { kind: 'along', count: 17 }
+    case 'along':
+      return { kind: 'along', count: 9 }
+    case 'alongWide':
+      return { kind: 'along', count: 5 }
+    case 'check':
+      return { kind: 'check', count: 14 }
+    case 'none':
+      return { kind: 'none', count: 0 }
+  }
+}
+
+export function resolveLighting(style: PitchStyle): Lighting {
+  return style.lighting ?? (PITCH_COLORS[style.color].lighting ? 'soft' : 'none')
+}
+
+/** Stripe color; designs without stripes get a slightly lighter shade of their base color. */
+export function stripeColor(color: PitchColor): string {
+  const scheme = PITCH_COLORS[color]
+  if (scheme.stripe) return scheme.stripe
+  const n = Number.parseInt(scheme.base.slice(1), 16)
+  const channel = (shift: number) => {
+    const v = (n >> shift) & 255
+    // White surfaces get a faint grey shade, all others a lighter one.
+    return Math.round(v > 240 ? v - 10 : v + (255 - v) * 0.08)
+  }
+  return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`
+}
 
 /** Corner radius of the touch and goal lines when rounded (meters) */
 export const ROUNDED_CORNER_RADIUS = 2.5
@@ -65,6 +153,8 @@ export interface PitchStyle {
   lineColor?: string
   /** Rounded outer corners instead of corner arcs */
   roundedCorners?: boolean
+  mowing?: Mowing
+  lighting?: Lighting
 }
 
 export interface CustomGrid {
@@ -303,6 +393,7 @@ function zones20Layout() {
     number: n,
     x: (x1 + x2) / 2,
     y: (y1 + y2) / 2,
+    cell: { x1, y1, x2, y2 },
   })
   const labels = [
     zone(1, 0, ownBox, 0, wingTop),
@@ -333,7 +424,12 @@ export interface GridLabel {
   text: string
   x: number
   y: number
+  /** Grid cell of the label: then it is drawn small in the cell's top left corner (as seen on screen) */
+  cell?: { x1: number; y1: number; x2: number; y2: number }
 }
+
+/** Distance of the letters outside the pitch lines (meters), inside the grass margin */
+const OUTSIDE_LABEL_DISTANCE = 2.2
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F']
 
@@ -345,17 +441,26 @@ function letterLayout(grid: 'lettersLong' | 'lettersAcross' | 'letters3x2') {
   if (grid === 'lettersLong') {
     const step = width / 6
     for (let i = 1; i < 6; i++) lines.push([0, i * step, length, i * step])
-    LETTERS.forEach((text, i) => labels.push({ text, x: length / 2, y: (i + 0.5) * step }))
+    // Letters outside the pitch, behind the left goal line next to each strip
+    LETTERS.forEach((text, i) => labels.push({ text, x: -OUTSIDE_LABEL_DISTANCE, y: (i + 0.5) * step }))
   } else if (grid === 'lettersAcross') {
     const step = length / 6
     for (let i = 1; i < 6; i++) lines.push([i * step, 0, i * step, width])
-    LETTERS.forEach((text, i) => labels.push({ text, x: (i + 0.5) * step, y: width / 2 }))
+    // Letters outside the pitch, above the top touchline
+    LETTERS.forEach((text, i) => labels.push({ text, x: (i + 0.5) * step, y: -OUTSIDE_LABEL_DISTANCE }))
   } else {
     const stepX = length / 3
     for (let i = 1; i < 3; i++) lines.push([i * stepX, 0, i * stepX, width])
     lines.push([0, width / 2, length, width / 2])
     // A B C in the upper row, D E F in the lower one
-    LETTERS.forEach((text, i) => labels.push({ text, x: ((i % 3) + 0.5) * stepX, y: ((Math.floor(i / 3) + 0.5) * width) / 2 }))
+    // A B C outside above the top touchline, D E F below the bottom one
+    LETTERS.forEach((text, i) =>
+      labels.push({
+        text,
+        x: ((i % 3) + 0.5) * stepX,
+        y: i < 3 ? -OUTSIDE_LABEL_DISTANCE : width + OUTSIDE_LABEL_DISTANCE,
+      }),
+    )
   }
   return { lines, labels }
 }
@@ -394,7 +499,8 @@ export function parseGridSizes(text: string): number[] | null {
 
 /** Zone labels to show for a grid (numbers of the club grid, letters of the letter grids). */
 export function gridLabels(grid: GridType): GridLabel[] {
-  if (grid === 'zones20') return zones20Layout().labels.map((l) => ({ text: String(l.number), x: l.x, y: l.y }))
+  if (grid === 'zones20')
+    return zones20Layout().labels.map((l) => ({ text: String(l.number), x: l.x, y: l.y, cell: l.cell }))
   if (grid === 'lettersLong' || grid === 'lettersAcross' || grid === 'letters3x2') return letterLayout(grid).labels
   return []
 }

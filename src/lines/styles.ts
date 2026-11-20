@@ -1,10 +1,24 @@
 import type { LineType } from '../model/types'
 
 export type LinePattern = 'solid' | 'dashed' | 'dotted' | 'dashdot'
-export type LineWeight = 'thin' | 'medium' | 'thick'
+export type LineWeight = 'extraThin' | 'thin' | 'medium' | 'thick' | 'extraThick'
 
 export const LINE_PATTERNS: LinePattern[] = ['solid', 'dashed', 'dotted', 'dashdot']
-export const LINE_WEIGHTS: LineWeight[] = ['thin', 'medium', 'thick']
+export const LINE_WEIGHTS: LineWeight[] = ['extraThin', 'thin', 'medium', 'thick', 'extraThick']
+
+/** Colors for drawn lines */
+export const LINE_COLORS: { value: string; name: string }[] = [
+  { value: '#ffffff', name: 'Weiß' },
+  { value: '#111827', name: 'Schwarz' },
+  { value: '#facc15', name: 'Gelb' },
+  { value: '#f97316', name: 'Orange' },
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#ec4899', name: 'Pink' },
+  { value: '#7c3aed', name: 'Lila' },
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#06b6d4', name: 'Türkis' },
+  { value: '#22c55e', name: 'Grün' },
+]
 
 export const LINE_PATTERN_LABELS: Record<LinePattern, string> = {
   solid: 'Durchgezogen',
@@ -14,9 +28,11 @@ export const LINE_PATTERN_LABELS: Record<LinePattern, string> = {
 }
 
 export const LINE_WEIGHT_LABELS: Record<LineWeight, string> = {
+  extraThin: 'Extra dünn',
   thin: 'Dünn',
   medium: 'Mittel',
   thick: 'Dick',
+  extraThick: 'Extra dick',
 }
 
 /** Usual pattern of each line type (a run is traditionally dashed). */
@@ -24,7 +40,7 @@ export function defaultPattern(type: LineType): LinePattern {
   return type === 'run' ? 'dashed' : 'solid'
 }
 
-const WEIGHT_FACTOR: Record<LineWeight, number> = { thin: 0.6, medium: 1, thick: 1.7 }
+const WEIGHT_FACTOR: Record<LineWeight, number> = { extraThin: 0.35, thin: 0.6, medium: 1, thick: 1.7, extraThick: 2.6 }
 
 export function weightFactor(weight: LineWeight): number {
   return WEIGHT_FACTOR[weight]

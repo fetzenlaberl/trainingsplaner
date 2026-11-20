@@ -6,6 +6,8 @@ import {
   ORIENTATION_LABELS,
   PITCH_COLOR_ORDER,
   PITCH_COLORS,
+  LIGHTING_OPTIONS,
+  MOWING_OPTIONS,
   PITCH_LINE_COLORS,
   PITCH_LINE_WIDTHS,
 } from '../field/pitchStyle'
@@ -15,7 +17,7 @@ import { Dropdown } from './Dropdown'
 
 const ORIENTATIONS: Orientation[] = ['landscape', 'portrait']
 
-/** Menu for orientation, pitch color and grid overlay. */
+/** Menus for the pitch look (orientation, grass, mowing, light), its lines and the grid overlay. */
 export function PitchStyleMenu() {
   const pitch = useDrillStore((s) => s.pitch)
   const setPitchColor = useDrillStore((s) => s.setPitchColor)
@@ -42,9 +44,27 @@ export function PitchStyleMenu() {
             checked: pitch.color === color,
             onSelect: () => setPitchColor(color),
           })),
+          ...MOWING_OPTIONS.map((o) => ({
+            section: 'Mähmuster',
+            label: o.label,
+            checked: (pitch.mowing ?? null) === o.value,
+            onSelect: () => setPitchLines({ mowing: o.value ?? undefined }),
+          })),
+          ...LIGHTING_OPTIONS.map((o) => ({
+            section: 'Lichtverlauf',
+            label: o.label,
+            checked: (pitch.lighting ?? null) === o.value,
+            onSelect: () => setPitchLines({ lighting: o.value ?? undefined }),
+          })),
+        ]}
+      />
+      <Dropdown
+        label="Linien"
+        align="right"
+        items={[
           ...PITCH_LINE_WIDTHS.map((w) => ({
-            section: 'Linien',
-            label: `Linien ${w.label.toLowerCase()}`,
+            section: 'Stärke',
+            label: w.label,
             checked: (pitch.lineWidth ?? 'normal') === w.value,
             onSelect: () => setPitchLines({ lineWidth: w.value }),
           })),
@@ -60,6 +80,12 @@ export function PitchStyleMenu() {
             checked: pitch.roundedCorners === true,
             onSelect: () => setPitchLines({ roundedCorners: !pitch.roundedCorners }),
           },
+        ]}
+      />
+      <Dropdown
+        label="Raster"
+        align="right"
+        items={[
           ...GRID_ORDER.map((grid) => ({
             section: 'Raster',
             label: GRID_LABELS[grid],

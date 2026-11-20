@@ -1,17 +1,11 @@
 import type { ReactNode } from 'react'
+import { LINE_COLORS } from '../lines/styles'
 import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore, type Tool } from '../store/toolStore'
 import { LineStylePicker } from './LineStylePicker'
 import { SelectionBar } from './SelectionBar'
 
-const LINE_COLORS: { value: string; name: string }[] = [
-  { value: '#ffffff', name: 'Weiß' },
-  { value: '#111827', name: 'Schwarz' },
-  { value: '#facc15', name: 'Gelb' },
-  { value: '#dc2626', name: 'Rot' },
-  { value: '#2563eb', name: 'Blau' },
-]
 
 /** Small line style samples for the tool buttons. */
 const ICON_PROPS = {
