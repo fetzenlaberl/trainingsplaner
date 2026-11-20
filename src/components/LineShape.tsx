@@ -71,6 +71,8 @@ export function LineShape({
     case 'pass':
     case 'run':
     case 'line':
+    case 'free':
+    case 'freeArrow':
       bodyShapes = <KonvaLine points={flatten(body)} {...stroke} />
       break
     case 'dribble':

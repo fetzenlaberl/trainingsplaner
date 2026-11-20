@@ -26,6 +26,7 @@ import { SELECTION_COLOR } from './konvaUtils'
 import { LineShape } from './LineShape'
 import { QuickMenu } from './QuickMenu'
 import { ZoomControls } from './ZoomControls'
+import { addStrokePoint, isFreehand, simplifyPath, strokeLength } from '../lines/freehand'
 
 const PADDING = 12
 /** Shorter strokes (meters) are treated as accidental taps. */
@@ -62,6 +63,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
   const pitch = useDrillStore((s) => s.pitch)
   const addLine = useDrillStore((s) => s.addLine)
+  const addStrokeLine = useDrillStore((s) => s.addStrokeLine)
+  const penOnly = useToolStore((s) => s.penOnly)
   const select = useDrillStore((s) => s.select)
   const selectedId = useDrillStore((s) => s.selectedId)
   const updateZone = useDrillStore((s) => s.updateZone)
@@ -77,7 +80,8 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const numberSteps = useToolStore((s) => s.numberSteps)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
-  const [draft, setDraft] = useState<{ start: Point; end: Point } | null>(null)
+  /** Line being drawn: start and end, or all points of a freehand stroke */
+  const [draft, setDraft] = useState<Point[] | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const stageRef = useRef<Konva.Stage>(null)
   const transformerRef = useRef<Konva.Transformer>(null)
@@ -310,27 +314,47 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
       return
     }
     if (e.evt.pointerType === 'mouse' && e.evt.button !== 0) return
+    // "Nur Stift zeichnet": a finger moves the view instead of drawing.
+    if (penOnly && e.evt.pointerType === 'touch') {
+      startPan(e)
+      return
+    }
     const start = clientToMeters(e.evt.clientX, e.evt.clientY)
     if (!start || !isInsideRect(viewport, start.x, start.y)) return
     const lineType = tool
+    const freehand = isFreehand(lineType)
     cleanupRef.current?.()
-    setDraft({ start, end: start })
+    let stroke: Point[] = [start]
+    setDraft([start, start])
 
     const endAt = (ev: PointerEvent): Point => {
       const pos = clientToMeters(ev.clientX, ev.clientY) ?? start
       return clampToRect(viewport, pos.x, pos.y)
     }
-    const onMove = (ev: PointerEvent) => setDraft({ start, end: endAt(ev) })
+    const style = {
+      pattern: linePattern === 'auto' ? undefined : linePattern,
+      weight: lineWeight,
+      numbered: numberSteps,
+    }
+    const onMove = (ev: PointerEvent) => {
+      if (!freehand) {
+        setDraft([start, endAt(ev)])
+        return
+      }
+      // Pens report extra points between frames; use them all for a smooth stroke.
+      const events = typeof ev.getCoalescedEvents === 'function' ? ev.getCoalescedEvents() : []
+      for (const sample of events.length > 0 ? events : [ev]) stroke = addStrokePoint(stroke, endAt(sample))
+      setDraft(stroke.length > 1 ? stroke : [start, start])
+    }
     const onUp = (ev: PointerEvent) => {
       cleanup()
-      const end = endAt(ev)
-      if (distance(start, end) >= MIN_LINE_LENGTH) {
-        addLine(lineType, start, end, lineColor, {
-          pattern: linePattern === 'auto' ? undefined : linePattern,
-          weight: lineWeight,
-          numbered: numberSteps,
-        })
+      if (freehand) {
+        stroke = addStrokePoint(stroke, endAt(ev))
+        if (strokeLength(stroke) >= MIN_LINE_LENGTH) addStrokeLine(lineType, simplifyPath(stroke), lineColor, style)
+        return
       }
+      const end = endAt(ev)
+      if (distance(start, end) >= MIN_LINE_LENGTH) addLine(lineType, start, end, lineColor, style)
     }
     const cleanup = () => {
       window.removeEventListener('pointermove', onMove)
@@ -377,7 +401,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 {draft && tool !== 'select' && (
                   <LineShape
                     type={tool}
-                    points={[draft.start, draft.end]}
+                    points={draft}
                     smooth
                     pattern={linePattern === 'auto' ? defaultPattern(tool) : linePattern}
                     weight={lineWeight}

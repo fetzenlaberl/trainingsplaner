@@ -207,6 +207,15 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines.map((l) => l.step)).toEqual([null, null])
   })
 
+  it('round-trips freehand strokes with many points', () => {
+    const points = Array.from({ length: 30 }, (_, i) => ({ x: i, y: Math.sin(i) * 3 + 20 }))
+    const text = tamper((d) => {
+      d.scenes[0].lines[0].type = 'freeArrow'
+      d.scenes[0].lines[0].points = points
+    })
+    expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'freeArrow', points })
+  })
+
   it('round-trips plain lines without arrowhead', () => {
     const text = tamper((d) => {
       d.scenes[0].lines[0].type = 'line'

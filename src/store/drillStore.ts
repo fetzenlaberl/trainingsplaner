@@ -95,6 +95,13 @@ export interface DrillState extends DrillContent {
     color: string,
     style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean },
   ) => string
+  /** Adds a freehand stroke (already simplified points, meters) and returns its id. */
+  addStrokeLine: (
+    type: LineType,
+    points: Point[],
+    color: string,
+    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean },
+  ) => string
   /** Sets the action step number of a line (null = none). */
   setLineStep: (id: string, step: number | null) => void
   /** Closes gaps in the step numbers of the current scene. */
@@ -468,11 +475,12 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       })),
     })),
 
-  addLine: (type, start, end, color, style = {}) => {
+  addLine: (type, start, end, color, style = {}) => get().addStrokeLine(type, [start, end], color, style),
+  addStrokeLine: (type, points, color, style = {}) => {
     const line: Line = {
       id: createId('line'),
       type,
-      points: [start, end],
+      points,
       smooth: true,
       color,
       pattern: style.pattern ?? defaultPattern(type),

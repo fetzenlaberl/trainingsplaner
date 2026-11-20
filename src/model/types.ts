@@ -52,7 +52,8 @@ export interface Point {
 }
 
 /** 'line' is a plain line without arrowhead, e.g. for markings. */
-export type LineType = 'pass' | 'run' | 'dribble' | 'shot' | 'line'
+/** free / freeArrow: freehand stroke (finger or pen) without / with arrow head */
+export type LineType = 'pass' | 'run' | 'dribble' | 'shot' | 'line' | 'free' | 'freeArrow'
 
 export interface Line {
   id: string

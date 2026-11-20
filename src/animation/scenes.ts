@@ -12,6 +12,9 @@ const MOVERS: Record<LineType, ItemType[]> = {
   dribble: ['player', 'ball'],
   // Plain lines are markings and move nothing.
   line: [],
+  // Freehand strokes are drawings and move nothing either.
+  free: [],
+  freeArrow: [],
 }
 
 function nearestItem(items: Item[], type: ItemType, point: Point, exclude: Set<string>) {

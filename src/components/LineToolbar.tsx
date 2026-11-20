@@ -84,6 +84,15 @@ const TOOLS: { tool: Tool; name: string; icon: ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    tool: 'free',
+    name: 'Freihand',
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M2 10 C5 2 8 2 10 7 S15 13 18 6 S23 3 25 5" />
+      </svg>
+    ),
+  },
 ]
 
 export function LineToolbar() {
@@ -101,12 +110,15 @@ export function LineToolbar() {
   const multiSelect = useToolStore((s) => s.multiSelect)
   const setMultiSelect = useToolStore((s) => s.setMultiSelect)
   const select = useDrillStore((s) => s.select)
+  const penOnly = useToolStore((s) => s.penOnly)
+  const setPenOnly = useToolStore((s) => s.setPenOnly)
+  const freehand = tool === 'free' || tool === 'freeArrow'
 
   return (
     <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
       <div role="group" aria-label="Werkzeug" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
         {TOOLS.map((t) => {
-          const active = t.tool === tool
+          const active = t.tool === tool || (t.tool === 'free' && tool === 'freeArrow')
           return (
             <button
               key={t.tool}
@@ -149,6 +161,32 @@ export function LineToolbar() {
         })}
       </div>
 
+      {freehand && (
+        <button
+          type="button"
+          aria-pressed={tool === 'freeArrow'}
+          title="Freihandlinien mit Pfeilspitze am Ende zeichnen"
+          onClick={() => setTool(tool === 'freeArrow' ? 'free' : 'freeArrow')}
+          className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+            tool === 'freeArrow' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          ➝ Pfeil
+        </button>
+      )}
+      {tool !== 'select' && (
+        <button
+          type="button"
+          aria-pressed={penOnly}
+          title="Am Tablet: nur der Stift (z. B. Apple Pencil) zeichnet, mit dem Finger verschiebst und zoomst du"
+          onClick={() => setPenOnly(!penOnly)}
+          className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+            penOnly ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          ✎ Nur Stift zeichnet
+        </button>
+      )}
       {tool !== 'select' && (
         <LineStylePicker
           allowAuto

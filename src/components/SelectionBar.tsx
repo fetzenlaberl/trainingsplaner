@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { isFreehand } from '../lines/freehand'
 import {
   ITEM_SIZE_STEP,
   MAX_ITEM_SIZE,
@@ -329,7 +330,7 @@ function LineControls({ line }: { line: Line }) {
         }}
         onWeight={(weight) => setLineStyle(line.id, { weight })}
       />
-      {line.points.length > 2 && (
+      {line.points.length > 2 && !isFreehand(line.type) && (
         <>
           <button
             type="button"

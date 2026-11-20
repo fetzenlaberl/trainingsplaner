@@ -1,4 +1,5 @@
 import type { KonvaEventObject } from 'konva/lib/Node'
+import { isFreehand } from '../lines/freehand'
 import { useRef, useState } from 'react'
 import { Circle, Group, Line as KonvaLine, Rect } from 'react-konva'
 import { distance, flatten, pointOnSegment, samplePath } from '../lines/geometry'
@@ -82,7 +83,8 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
 export function LineHandles({ scale }: { scale: number }) {
   const line = useDrillStore((s) => selectLines(s).find((l) => l.id === s.selectedId))
   const draggingId = useToolStore((s) => s.draggingId)
-  if (!line || draggingId === line.id) return null
+  // Freehand strokes have too many points for handles; they are moved as a whole.
+  if (!line || draggingId === line.id || isFreehand(line.type)) return null
   return <SelectedLineHandles line={line} scale={scale} />
 }
 

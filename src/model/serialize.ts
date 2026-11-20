@@ -51,7 +51,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 10: hurdle, ring, flag, marker disc and rebounder.
 // Version 11: library area (training drill or tactics / line-up).
 // Version 12: corner section fields (cornerLeft, cornerRight).
-export const FILE_VERSION = 12
+// Version 13: freehand lines (free, freeArrow).
+export const FILE_VERSION = 13
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -74,7 +75,7 @@ const ITEM_TYPES: ItemType[] = [
   'text',
   'textbox',
 ]
-const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot', 'line']
+const LINE_TYPES: LineType[] = ['pass', 'run', 'dribble', 'shot', 'line', 'free', 'freeArrow']
 export const CATEGORIES: Category[] = [
   'warmup',
   'technique',

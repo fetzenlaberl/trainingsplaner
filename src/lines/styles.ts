@@ -32,7 +32,7 @@ export function weightFactor(weight: LineWeight): number {
 
 /** Lines without an arrowhead (plain markings). */
 export function hasArrow(type: LineType): boolean {
-  return type !== 'line'
+  return type !== 'line' && type !== 'free'
 }
 
 /**
