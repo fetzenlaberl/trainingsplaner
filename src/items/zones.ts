@@ -77,10 +77,19 @@ export function regularPolygon(n: number, width: number, height: number): Point[
 
 export const ZONE_GOAL_OPTIONS: ZoneGoals[] = [0, 4, 6]
 
-/** Corners of the regular shape: rectangle clockwise from top left, triangle from the tip. */
+/** Points on an ellipse that become the movable points when a circle zone is reshaped */
+export const ELLIPSE_POINTS = 8
+/** Curve tension through the points; with 8 points this looks like the ellipse itself */
+export const ELLIPSE_TENSION = 0.55
+
+/**
+ * Corners of the regular shape: rectangle clockwise from top left, triangle from the tip,
+ * ellipse as ELLIPSE_POINTS points from the top (drawn as a smooth curve through them).
+ */
 export function baseCorners(shape: ZoneShape, width: number, height: number): Point[] {
   const w = width / 2
   const h = height / 2
+  if (shape === 'ellipse') return regularPolygon(ELLIPSE_POINTS, width, height)
   if (shape === 'triangle') {
     return [
       { x: 0, y: -h },
@@ -96,9 +105,8 @@ export function baseCorners(shape: ZoneShape, width: number, height: number): Po
   ]
 }
 
-/** Corners as drawn (free corners or the regular shape); empty for ellipses. */
+/** Corners as drawn (free corners or the regular shape); for ellipses the points of the curve. */
 export function zoneCorners(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corners'>): Point[] {
-  if (zone.shape === 'ellipse') return []
   return zone.corners ?? baseCorners(zone.shape, zone.width, zone.height)
 }
 

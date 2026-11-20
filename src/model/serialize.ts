@@ -67,7 +67,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 17: mowing patterns, lighting, extra line weights.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
 // Version 19: imported pictures (picture items, background picture).
-export const FILE_VERSION = 19
+export const FILE_VERSION = 20
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -356,11 +356,12 @@ function parseLine(value: unknown): Line {
   }
 }
 
-function parseCorners(value: unknown, shape: ZoneShape): Point[] | null {
+function parseCorners(value: unknown): Point[] | null {
   if (value === undefined || value === null) return null
   const corners = (value as unknown[]).map(parsePoint)
-  // Since version 7 the outline may have any number of corners (rectangles and triangles only).
-  if (shape === 'ellipse' || corners.length < MIN_CORNERS || corners.length > MAX_CORNERS) throw corrupt()
+  // Since version 7 the outline may have any number of corners; since version 20 ellipses
+  // may have free points too (smooth curve).
+  if (corners.length < MIN_CORNERS || corners.length > MAX_CORNERS) throw corrupt()
   return corners.map((p) => ({
     x: Math.min(Math.max(p.x, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),
     y: Math.min(Math.max(p.y, -MAX_ZONE_SIZE), MAX_ZONE_SIZE),
@@ -405,7 +406,7 @@ function parseZone(value: unknown): Zone {
     dashed: value.dashed,
     label: value.label,
     goals: (value.goals as ZoneGoals | undefined) ?? 0,
-    corners: parseCorners(value.corners, value.shape as ZoneShape),
+    corners: parseCorners(value.corners),
   }
 }
 

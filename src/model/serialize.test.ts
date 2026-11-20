@@ -402,6 +402,15 @@ describe('serializeDrill / parseDrill', () => {
   })
 })
 
+describe('reshaped ellipse zones', () => {
+  it('keeps the free points of an ellipse', () => {
+    const corners = [{ x: 0, y: -4 }, { x: 5, y: 0 }, { x: 0, y: 6 }, { x: -3, y: 0 }]
+    const zone = { ...drill.scenes[0].zones[0], shape: 'ellipse' as const, corners }
+    const reshaped: Drill = { ...drill, scenes: [{ ...drill.scenes[0], zones: [zone] }] }
+    expect(parseDrill(serializeDrill(reshaped)).scenes[0].zones[0].corners).toEqual(corners)
+  })
+})
+
 describe('parseDrill rejects invalid files', () => {
   it('rejects text that is not JSON', () => {
     expectError('hallo', /keine gültige JSON-Datei/)
@@ -433,7 +442,6 @@ describe('parseDrill rejects invalid files', () => {
     ['fill opacity not a number', (d) => (d.scenes[0].zones[0].fillOpacity = 'halb')],
     ['unsupported number of goals', (d) => (d.scenes[0].zones[0].goals = 5)],
     ['outline with only two corners', (d) => d.scenes[0].zones[0].corners.splice(2)],
-    ['ellipse with corners', (d) => (d.scenes[0].zones[0].shape = 'ellipse')],
     ['unknown line pattern', (d) => (d.scenes[0].lines[0].pattern = 'zigzag')],
     ['unknown line weight', (d) => (d.scenes[0].lines[0].weight = 'huge')],
     ['step not a number', (d) => (d.scenes[0].lines[0].step = 'eins')],

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { baseCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
+import { ELLIPSE_POINTS, baseCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
 
 const rect = (width: number, height: number) => baseCorners('rect', width, height)
 
@@ -17,7 +17,7 @@ describe('baseCorners / zoneCorners / zoneExtent', () => {
     expect(baseCorners('triangle', 20, 10)[0]).toEqual({ x: 0, y: -5 })
   })
 
-  it('uses free corners when set and has none for ellipses', () => {
+  it('uses free corners when set and curve points for ellipses', () => {
     const corners = [
       { x: 0, y: -8 },
       { x: 10, y: 0 },
@@ -25,7 +25,10 @@ describe('baseCorners / zoneCorners / zoneExtent', () => {
       { x: -10, y: 0 },
     ]
     expect(zoneCorners({ shape: 'rect', width: 1, height: 1, corners })).toBe(corners)
-    expect(zoneCorners({ shape: 'ellipse', width: 10, height: 10, corners: null })).toEqual([])
+    const curve = zoneCorners({ shape: 'ellipse', width: 10, height: 6, corners: null })
+    expect(curve).toHaveLength(ELLIPSE_POINTS)
+    expect(curve[0]).toEqual({ x: 0, y: -3 })
+    expect(curve[2]).toEqual({ x: 5, y: 0 })
     expect(zoneExtent({ shape: 'rect', width: 1, height: 1, corners })).toEqual({ width: 20, height: 16 })
   })
 })

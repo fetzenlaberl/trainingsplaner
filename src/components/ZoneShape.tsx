@@ -3,7 +3,7 @@ import { Ellipse, Group, Line } from 'react-konva'
 import { MeterText } from './MeterText'
 import { displayColor } from '../field/pitchStyle'
 import { MINIGOAL } from '../items/equipment'
-import { zoneCorners, zoneExtent, zoneGoalPositions } from '../items/zones'
+import { ELLIPSE_TENSION, zoneCorners, zoneExtent, zoneGoalPositions } from '../items/zones'
 import { flatten } from '../lines/geometry'
 import type { Zone } from '../model/types'
 import { GoalShape } from './EquipmentShapes'
@@ -46,6 +46,8 @@ export function ZoneShape({
     strokeWidth,
     dash: dashed ? [strokeWidth * 5, strokeWidth * 3] : undefined,
   }
+  // A reshaped circle is a smooth curve through its points.
+  const smooth = shape === 'ellipse' ? ELLIPSE_TENSION : 0
   const outlinePoints = flatten(zoneCorners({ shape, width, height, corners }))
   const fontSize = Math.min(
     2,
@@ -55,15 +57,15 @@ export function ZoneShape({
 
   return (
     <>
-      {shape === 'ellipse' ? (
+      {shape === 'ellipse' && !corners ? (
         <>
           <Ellipse radiusX={width / 2} radiusY={height / 2} fill={fill} opacity={fillOpacity} />
           <Ellipse radiusX={width / 2} radiusY={height / 2} {...outline} />
         </>
       ) : (
         <>
-          <Line points={outlinePoints} closed fill={fill} opacity={fillOpacity} />
-          <Line points={outlinePoints} closed {...outline} lineJoin="round" />
+          <Line points={outlinePoints} closed tension={smooth} fill={fill} opacity={fillOpacity} />
+          <Line points={outlinePoints} closed tension={smooth} {...outline} lineJoin="round" />
         </>
       )}
       {shape === 'rect' &&

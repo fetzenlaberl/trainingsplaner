@@ -427,7 +427,24 @@ function ZoneControls({ zone }: { zone: Zone }) {
       <span className="text-sm text-slate-300 tabular-nums" title="Größe der Zone">
         {formatMeters(extent.width)} × {formatMeters(extent.height)} m
       </span>
-      {zone.shape !== 'ellipse' && (
+      {zone.shape === 'ellipse' ? (
+        <>
+          <button
+            type="button"
+            aria-pressed={editingCorners}
+            title="Punkte einzeln verschieben, z. B. für Ei- oder Bohnenform"
+            onClick={() => setEditingCornersId(editingCorners ? null : zone.id)}
+            className={`${buttonClass} ${editingCorners ? 'bg-emerald-600 text-white hover:bg-emerald-500' : ''}`}
+          >
+            {editingCorners ? 'Form fertig' : 'Form bearbeiten'}
+          </button>
+          {zone.corners && (
+            <button type="button" className={buttonClass} onClick={() => updateZone(zone.id, { corners: null })}>
+              Form zurücksetzen
+            </button>
+          )}
+        </>
+      ) : (
         <>
           <button
             type="button"
