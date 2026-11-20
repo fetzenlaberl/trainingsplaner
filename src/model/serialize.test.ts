@@ -216,6 +216,17 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'freeArrow', points })
   })
 
+  it('round-trips shirt players and coaches', () => {
+    const text = tamper((d) => {
+      d.scenes[0].items[0].shape = 'shirt'
+      d.scenes[0].items[1].type = 'coach'
+      d.scenes[0].items[1].label = 'CO'
+    })
+    const items = parseDrill(text).scenes[0].items
+    expect(items[0].shape).toBe('shirt')
+    expect(items[1]).toMatchObject({ type: 'coach', label: 'CO' })
+  })
+
   it('round-trips plain lines without arrowhead', () => {
     const text = tamper((d) => {
       d.scenes[0].lines[0].type = 'line'

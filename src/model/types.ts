@@ -19,11 +19,12 @@ export type ItemType =
   | 'flag'
   | 'disc'
   | 'rebounder'
+  | 'coach'
   | 'text'
   | 'textbox'
 
 /** How a player is drawn; other item types ignore it. */
-export type PlayerShape = 'circle' | 'triangle' | 'cross'
+export type PlayerShape = 'circle' | 'triangle' | 'cross' | 'shirt'
 
 export interface Item {
   id: string

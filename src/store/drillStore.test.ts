@@ -17,6 +17,7 @@ import {
   HISTORY_LIMIT,
   MIN_SCENE_DURATION_MS,
   FIRST_PLAYER_NUMBER,
+  nextPlayerLetter,
   nextPlayerNumber,
   normalizeAngle,
   useDrillStore,
@@ -699,6 +700,21 @@ describe('helpers', () => {
     ]
     expect(nextPlayerNumber(items, 'red')).toBe(8)
     expect(nextPlayerNumber(items, 'green')).toBe(FIRST_PLAYER_NUMBER)
+  })
+
+  it('gives letter players the next free letter and plain players no number', () => {
+    const letter = ITEM_TEMPLATES.find((t) => t.key === 'letter-red')!.item
+    const plain = ITEM_TEMPLATES.find((t) => t.key === 'plain-red')!.item
+    const coach = ITEM_TEMPLATES.find((t) => t.key === 'coach-TT')!.item
+    const [a, b, c, d] = store().addItems([
+      { item: letter, x: 10, y: 10 },
+      { item: letter, x: 12, y: 10 },
+      { item: plain, x: 14, y: 10 },
+      { item: coach, x: 16, y: 10 },
+    ])
+    const label = (id: string) => currentScene(store()).items.find((i) => i.id === id)?.label
+    expect([label(a), label(b), label(c), label(d)]).toEqual(['A', 'B', '', 'TT'])
+    expect(nextPlayerLetter(currentScene(store()).items, TEAM_COLORS.red)).toBe('C')
   })
 
   it('normalizeAngle keeps angles in [0, 360)', () => {

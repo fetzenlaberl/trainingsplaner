@@ -56,7 +56,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 12: corner section fields (cornerLeft, cornerRight).
 // Version 13: freehand lines (free, freeArrow).
 // Version 14: more grids (zones without numbers, letter zones, own grid with sizes).
-export const FILE_VERSION = 14
+// Version 15: shirt-shaped players and coach items.
+export const FILE_VERSION = 15
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -76,6 +77,7 @@ const ITEM_TYPES: ItemType[] = [
   'flag',
   'disc',
   'rebounder',
+  'coach',
   'text',
   'textbox',
 ]

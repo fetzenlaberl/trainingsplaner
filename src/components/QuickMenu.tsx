@@ -60,6 +60,9 @@ export function QuickMenu() {
       className="fixed z-50 flex flex-col gap-2 rounded-xl border border-slate-600 bg-slate-900/95 p-3 shadow-2xl"
       style={{ left: Math.max(8, left), top: Math.max(8, top), width: MENU_WIDTH }}
     >
+      {item.type === 'coach' && (
+        <LabelInput caption="Kürzel" value={item.label} onChange={(label) => setItemLabel(item.id, label)} />
+      )}
       {item.type === 'player' && (
         <>
           <LabelInput caption="Nummer" value={item.label} onChange={(label) => setItemLabel(item.id, label)} />

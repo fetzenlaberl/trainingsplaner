@@ -25,6 +25,16 @@ import type { Item } from '../model/types'
 const PLAYER_RADIUS = 1
 const TRIANGLE_RADIUS = 1.3
 const CROSS_HALF = 0.85
+/** Half height of the jersey in meters */
+const SHIRT_SIZE = 1.15
+/** Jersey outline in units of SHIRT_SIZE: collar, shoulders, sleeves, body */
+const SHIRT_OUTLINE = [
+  -0.34, -1, 0, -0.72, 0.34, -1, 0.78, -0.86, 1.08, -0.42, 0.74, -0.18, 0.62, -0.36, 0.62, 1, -0.62, 1, -0.62,
+  -0.36, -0.74, -0.18, -1.08, -0.42, -0.78, -0.86,
+]
+const SHIRT_COLLAR = [-0.34, -1, 0, -0.72, 0.34, -1]
+/** Half side of the coach badge in meters */
+const COACH_HALF = 0.95
 const BALL_RADIUS = 0.55
 const CONE_RADIUS = 0.5
 const GOAL_WIDTH = 5
@@ -112,6 +122,37 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return <FlagShape color={color} rotation={rotation} />
     case 'disc':
       return <DiscShape color={color} />
+    case 'coach':
+      return (
+        <Group>
+          {glow > 0 && <HighlightRing strength={glow} />}
+          <Group rotation={upright}>
+            <Rect
+              x={-COACH_HALF}
+              y={-COACH_HALF}
+              width={COACH_HALF * 2}
+              height={COACH_HALF * 2}
+              cornerRadius={0.35}
+              fill={color}
+              stroke="#ffffff"
+              strokeWidth={0.15}
+            />
+            <MeterText
+              text={label}
+              width={COACH_HALF * 2}
+              height={COACH_HALF * 2}
+              offsetX={COACH_HALF}
+              offsetY={COACH_HALF}
+              align="center"
+              verticalAlign="middle"
+              fontSize={0.85}
+              fontStyle="bold"
+              fill={contrastTextColor(color)}
+            />
+          </Group>
+          {name && <NameTag name={name} />}
+        </Group>
+      )
     case 'rebounder':
       return <ReboundShape color={color} rotation={rotation} />
     case 'text':
@@ -202,6 +243,43 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
             stroke="#ffffff"
             strokeWidth={0.18}
             fillAfterStrokeEnabled
+          />
+        </Group>
+      </Group>
+    )
+  }
+  if (shape === 'shirt') {
+    // Own jersey outline (sleeves, V collar); always upright so it reads like a line-up sheet.
+    return (
+      <Group>
+        <FacingMarker color={color} rotation={rotation} distance={SHIRT_SIZE + 0.35} />
+        <Group rotation={upright}>
+          <Line
+            points={SHIRT_OUTLINE.map((v) => v * SHIRT_SIZE)}
+            closed
+            fill={color}
+            stroke="#ffffff"
+            strokeWidth={0.13}
+            lineJoin="round"
+          />
+          <Line
+            points={SHIRT_COLLAR.map((v) => v * SHIRT_SIZE)}
+            stroke="#ffffff"
+            strokeWidth={0.1}
+            lineJoin="round"
+            lineCap="round"
+          />
+          <MeterText
+            text={label}
+            width={SHIRT_SIZE * 1.4}
+            height={SHIRT_SIZE * 1.2}
+            offsetX={SHIRT_SIZE * 0.7}
+            offsetY={SHIRT_SIZE * 0.45}
+            align="center"
+            verticalAlign="middle"
+            fontSize={0.95}
+            fontStyle="bold"
+            fill={contrastTextColor(color)}
           />
         </Group>
       </Group>

@@ -33,6 +33,7 @@ const SHAPE_LABELS: Record<PlayerShape, { icon: string; name: string }> = {
   circle: { icon: '●', name: 'Kreis' },
   triangle: { icon: '▲', name: 'Dreieck' },
   cross: { icon: '✕', name: 'Kreuz' },
+  shirt: { icon: '👕', name: 'Trikot' },
 }
 
 function formatMeters(value: number): string {
@@ -240,9 +241,9 @@ function ItemControls({ item }: { item: Item }) {
         </>
       )}
 
-      {(item.type === 'player' || item.type === 'text') && (
+      {(item.type === 'player' || item.type === 'text' || item.type === 'coach') && (
         <LabelInput
-          caption={item.type === 'player' ? 'Nummer' : 'Beschriftung'}
+          caption={item.type === 'player' ? 'Nummer' : item.type === 'coach' ? 'Kürzel' : 'Beschriftung'}
           value={item.label}
           onChange={(label) => setItemLabel(item.id, label)}
         />

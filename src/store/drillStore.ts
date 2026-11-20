@@ -5,7 +5,7 @@ import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps } from '../lines/steps'
 import type { CustomGrid, GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
-import { clampItemSize, COLORABLE_TYPES, DEFAULT_PLAYER_SIZE, type NewItem } from '../items/palette'
+import { clampItemSize, COLORABLE_TYPES, DEFAULT_PLAYER_SIZE, NEXT_LETTER_LABEL, type NewItem } from '../items/palette'
 import {
   clampFillOpacity,
   clampZoneSize,
@@ -165,6 +165,18 @@ export function nextPlayerNumber(items: Item[], color: string, shape: PlayerShap
     if (!Number.isNaN(n) && n > max) max = n
   }
   return max + 1
+}
+
+/** Next free letter (A–Z) for players of the given color and shape; after Z it starts again. */
+export function nextPlayerLetter(items: Item[], color: string, shape: PlayerShape = 'circle'): string {
+  const used = new Set(
+    items.filter((i) => i.type === 'player' && i.color === color && i.shape === shape).map((i) => i.label),
+  )
+  for (let code = 65; code <= 90; code++) {
+    const letter = String.fromCharCode(code)
+    if (!used.has(letter)) return letter
+  }
+  return 'A'
 }
 
 /** Anything that can be selected on the pitch. */
@@ -413,8 +425,10 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     const items = [...currentScene(s).items]
     const created = entries.map(({ item, x, y }) => {
       const label =
-        item.label ??
-        (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : '')
+        item.label === NEXT_LETTER_LABEL
+          ? nextPlayerLetter(items, item.color, item.shape ?? 'circle')
+          : (item.label ??
+            (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : ''))
       const newItem: Item = {
         id: createId('item'),
         type: item.type,

@@ -3,13 +3,25 @@ import type { Item, ItemType, PlayerShape } from '../model/types'
 export type NewItem = Pick<Item, 'type' | 'color'> &
   Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight'>>
 
-export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross']
+export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
 /** Players start larger so they are easy to see on the full field. */
 export const DEFAULT_PLAYER_SIZE = 1.5
 
 /** The goalkeeper is labeled instead of numbered. */
 export const KEEPER_LABEL = 'TM'
+
+/** Placeholder label: the new player gets the next free letter (A, B, C …) instead of a number. */
+export const NEXT_LETTER_LABEL = '#next-letter#'
+
+/** Coaches: Trainer, Co-Trainer, Konditionstrainer, Tormanntrainer. */
+export const COACH_ROLES: { label: string; name: string }[] = [
+  { label: 'TR', name: 'Trainer' },
+  { label: 'CO', name: 'Co-Trainer' },
+  { label: 'KT', name: 'Konditionstrainer' },
+  { label: 'TT', name: 'Tormanntrainer' },
+]
+export const COACH_COLOR = '#111827'
 
 export const MIN_ITEM_SIZE = 0.5
 export const MAX_ITEM_SIZE = 2.5
@@ -60,6 +72,17 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'triangle-blue', name: 'Dreieck Blau', item: player(TEAM_COLORS.blue, 'triangle') },
   { key: 'cross-red', name: 'Kreuz Rot', item: player(TEAM_COLORS.red, 'cross') },
   { key: 'cross-blue', name: 'Kreuz Blau', item: player(TEAM_COLORS.blue, 'cross') },
+  { key: 'shirt-red', name: 'Trikot Rot', item: player(TEAM_COLORS.red, 'shirt') },
+  { key: 'shirt-blue', name: 'Trikot Blau', item: player(TEAM_COLORS.blue, 'shirt') },
+  { key: 'plain-red', name: 'Ohne Nummer Rot', item: { ...player(TEAM_COLORS.red, 'circle'), label: '' } },
+  { key: 'plain-blue', name: 'Ohne Nummer Blau', item: { ...player(TEAM_COLORS.blue, 'circle'), label: '' } },
+  { key: 'letter-red', name: 'Buchstabe Rot', item: { ...player(TEAM_COLORS.red, 'circle'), label: NEXT_LETTER_LABEL } },
+  { key: 'letter-blue', name: 'Buchstabe Blau', item: { ...player(TEAM_COLORS.blue, 'circle'), label: NEXT_LETTER_LABEL } },
+  ...COACH_ROLES.map((role) => ({
+    key: `coach-${role.label}`,
+    name: role.name,
+    item: { type: 'coach' as const, color: COACH_COLOR, label: role.label, size: DEFAULT_PLAYER_SIZE },
+  })),
   { key: 'ball', name: 'Ball', item: { type: 'ball', color: '#ffffff' } },
   { key: 'cone', name: 'Hütchen', item: { type: 'cone', color: '#f97316' } },
   { key: 'pole', name: 'Stange', item: { type: 'pole', color: '#facc15' } },
@@ -95,6 +118,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   flag: 1.1,
   disc: 0.6,
   rebounder: 1.4,
+  coach: 3,
   text: 6,
   textbox: 12,
 }
@@ -112,6 +136,7 @@ export const COLORABLE_TYPES: ItemType[] = [
   'ring',
   'flag',
   'disc',
+  'coach',
   'text',
 ]
 
