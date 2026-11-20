@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { isFreehand } from '../lines/freehand'
-import {
+import { BALL_STYLES,
   ITEM_SIZE_STEP,
   MAX_ITEM_SIZE,
   MIN_ITEM_SIZE,
@@ -191,6 +191,9 @@ function ItemControls({ item }: { item: Item }) {
         </button>
       </div>
 
+      {item.type === 'ball' && (
+        <ColorSwatches label="Ball" colors={BALL_STYLES} value={item.color} onSelect={(color) => setItemColor(item.id, color)} />
+      )}
       {COLORABLE_TYPES.includes(item.type) && (
         <ColorSwatches
           label="Farbe"

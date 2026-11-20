@@ -717,6 +717,17 @@ describe('helpers', () => {
     expect(nextPlayerLetter(currentScene(store()).items, TEAM_COLORS.red)).toBe('C')
   })
 
+  it('changes pitch lines as one undo step and drops default values', () => {
+    store().setPitchLines({ lineWidth: 'thick', roundedCorners: true, lineColor: '#111827' })
+    expect(store().pitch).toMatchObject({ lineWidth: 'thick', roundedCorners: true, lineColor: '#111827' })
+    store().setPitchLines({ lineWidth: 'normal', roundedCorners: false, lineColor: undefined })
+    expect('lineWidth' in store().pitch).toBe(false)
+    expect('roundedCorners' in store().pitch).toBe(false)
+    expect('lineColor' in store().pitch).toBe(false)
+    store().undo()
+    expect(store().pitch.lineWidth).toBe('thick')
+  })
+
   it('normalizeAngle keeps angles in [0, 360)', () => {
     expect(normalizeAngle(360)).toBe(0)
     expect(normalizeAngle(-90)).toBe(270)

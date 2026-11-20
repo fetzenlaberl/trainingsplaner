@@ -23,6 +23,23 @@ export const COACH_ROLES: { label: string; name: string }[] = [
 ]
 export const COACH_COLOR = '#111827'
 
+/** Ball designs; "training" is a white ball with colored segments. */
+export const TRAINING_BALL = 'training'
+export const BALL_STYLES: { value: string; name: string; swatch?: string }[] = [
+  { value: '#ffffff', name: 'Klassisch' },
+  { value: '#facc15', name: 'Gelb' },
+  { value: '#f97316', name: 'Orange (Winterball)' },
+  { value: '#ec4899', name: 'Pink' },
+  {
+    value: TRAINING_BALL,
+    name: 'Trainingsball',
+    swatch: 'conic-gradient(#2563eb 0 33%, #facc15 0 66%, #dc2626 0)',
+  },
+]
+
+/** Coordination grid: squares per side (stored in the label) and side of one square in meters */
+export const AGILITY_SQUARE = 1.2
+
 export const MIN_ITEM_SIZE = 0.5
 export const MAX_ITEM_SIZE = 2.5
 export const ITEM_SIZE_STEP = 0.25
@@ -84,6 +101,7 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
     item: { type: 'coach' as const, color: COACH_COLOR, label: role.label, size: DEFAULT_PLAYER_SIZE },
   })),
   { key: 'ball', name: 'Ball', item: { type: 'ball', color: '#ffffff' } },
+  { key: 'ball-training', name: 'Trainingsball', item: { type: 'ball', color: TRAINING_BALL } },
   { key: 'cone', name: 'Hütchen', item: { type: 'cone', color: '#f97316' } },
   { key: 'pole', name: 'Stange', item: { type: 'pole', color: '#facc15' } },
   { key: 'goal', name: 'Tor', item: { type: 'goal', color: '#ffffff' } },
@@ -92,6 +110,8 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'dummy', name: 'Dummy', item: { type: 'dummy', color: '#2563eb' } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
   { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
+  { key: 'agility-3', name: 'Koordinationsraster 3×3', item: { type: 'agility', color: '#facc15', label: '3' } },
+  { key: 'agility-4', name: 'Koordinationsraster 4×4', item: { type: 'agility', color: '#f97316', label: '4' } },
   { key: 'hurdle', name: 'Hürde', item: { type: 'hurdle', color: '#f97316' } },
   { key: 'ring', name: 'Ring', item: { type: 'ring', color: '#facc15' } },
   { key: 'flag', name: 'Fahne', item: { type: 'flag', color: '#dc2626' } },
@@ -118,6 +138,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   flag: 1.1,
   disc: 0.6,
   rebounder: 1.4,
+  agility: 5.2,
   coach: 3,
   text: 6,
   textbox: 12,
@@ -136,6 +157,7 @@ export const COLORABLE_TYPES: ItemType[] = [
   'ring',
   'flag',
   'disc',
+  'agility',
   'coach',
   'text',
 ]
@@ -152,6 +174,7 @@ export const ROTATABLE_TYPES: ItemType[] = [
   'hurdle',
   'flag',
   'rebounder',
+  'agility',
   'text',
   'textbox',
 ]

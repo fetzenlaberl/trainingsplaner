@@ -6,6 +6,7 @@ import {
   MAX_CUSTOM_PARTS,
   MAX_CUSTOM_SIZE,
   type CustomGrid,
+  type PitchLineWidth,
   PITCH_COLOR_ORDER,
   type GridType,
   type PitchColor,
@@ -57,7 +58,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 13: freehand lines (free, freeArrow).
 // Version 14: more grids (zones without numbers, letter zones, own grid with sizes).
 // Version 15: shirt-shaped players and coach items.
-export const FILE_VERSION = 15
+// Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
+export const FILE_VERSION = 16
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -77,6 +79,7 @@ const ITEM_TYPES: ItemType[] = [
   'flag',
   'disc',
   'rebounder',
+  'agility',
   'coach',
   'text',
   'textbox',
@@ -197,11 +200,22 @@ function parsePitchStyle(value: unknown): PitchStyle {
     throw corrupt()
   }
   const customGrid = value.customGrid === undefined ? undefined : parseCustomGrid(value.customGrid)
+  // Line settings were added in version 16; missing values mean the usual lines.
+  if (
+    !(value.lineWidth === undefined || value.lineWidth === 'thin' || value.lineWidth === 'normal' || value.lineWidth === 'thick') ||
+    !(value.lineColor === undefined || typeof value.lineColor === 'string') ||
+    !(value.roundedCorners === undefined || typeof value.roundedCorners === 'boolean')
+  ) {
+    throw corrupt()
+  }
   return {
     color: value.color as PitchColor,
     grid: value.grid as GridType,
     orientation: (value.orientation as Orientation | undefined) ?? 'landscape',
     ...(customGrid ? { customGrid } : {}),
+    ...(value.lineWidth && value.lineWidth !== 'normal' ? { lineWidth: value.lineWidth as PitchLineWidth } : {}),
+    ...(typeof value.lineColor === 'string' ? { lineColor: value.lineColor } : {}),
+    ...(value.roundedCorners === true ? { roundedCorners: true } : {}),
   }
 }
 

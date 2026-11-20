@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { COLORABLE_TYPES, ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_COLORS } from '../items/palette'
+import { BALL_STYLES, COLORABLE_TYPES, ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_COLORS } from '../items/palette'
 import { currentScene, isLine, isZone, useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { ColorSwatches, LabelInput } from './controls'
@@ -68,6 +68,11 @@ export function QuickMenu() {
           <LabelInput caption="Nummer" value={item.label} onChange={(label) => setItemLabel(item.id, label)} />
           <LabelInput caption="Name" placeholder="für Aufstellung" value={item.name} onChange={(name) => setItemName(item.id, name)} />
         </>
+      )}
+      {item.type === 'ball' && (
+        <div className="flex flex-wrap items-center gap-1">
+          <ColorSwatches label="Ball" colors={BALL_STYLES} value={item.color} onSelect={(color) => setItemColor(item.id, color)} />
+        </div>
       )}
       {COLORABLE_TYPES.includes(item.type) && (
         <div className="flex flex-wrap items-center gap-1">

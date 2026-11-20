@@ -50,7 +50,8 @@ export function ColorSwatches({
   onSelect,
 }: {
   label: string
-  colors: { value: string; name: string }[]
+  /** swatch: CSS background for the button when the value is not a plain color */
+  colors: { value: string; name: string; swatch?: string }[]
   value: string
   onSelect: (color: string) => void
 }) {
@@ -68,7 +69,7 @@ export function ColorSwatches({
           className={`h-7 w-7 rounded-full border-2 ${
             value === c.value ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'
           }`}
-          style={{ backgroundColor: c.value }}
+          style={{ background: c.swatch ?? c.value }}
         />
       ))}
     </div>

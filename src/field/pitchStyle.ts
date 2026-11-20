@@ -1,7 +1,38 @@
 import { PITCH } from './dimensions'
 import type { Orientation } from './orientation'
 
-export type PitchColor = 'grass' | 'grassPlain' | 'darkGreen' | 'lightGreen' | 'blue' | 'grey' | 'white'
+export type PitchColor =
+  | 'grass'
+  | 'grassFine'
+  | 'grassCheck'
+  | 'grassStadium'
+  | 'grassPlain'
+  | 'darkGreen'
+  | 'lightGreen'
+  | 'blue'
+  | 'grey'
+  | 'white'
+
+/** Thickness of the pitch markings */
+export type PitchLineWidth = 'thin' | 'normal' | 'thick'
+
+export const PITCH_LINE_WIDTHS: { value: PitchLineWidth; label: string; factor: number }[] = [
+  { value: 'thin', label: 'Dünn', factor: 0.55 },
+  { value: 'normal', label: 'Normal', factor: 1 },
+  { value: 'thick', label: 'Dick', factor: 1.8 },
+]
+
+/** Colors for the pitch markings; null = usual color of the pitch (white, dark on the white pitch) */
+export const PITCH_LINE_COLORS: { value: string | null; label: string }[] = [
+  { value: null, label: 'Automatisch' },
+  { value: '#ffffff', label: 'Weiß' },
+  { value: '#fde047', label: 'Gelb' },
+  { value: '#111827', label: 'Schwarz' },
+  { value: '#e5e7eb', label: 'Hellgrau' },
+]
+
+/** Corner radius of the touch and goal lines when rounded (meters) */
+export const ROUNDED_CORNER_RADIUS = 2.5
 
 export type GridType =
   | 'none'
@@ -28,6 +59,12 @@ export interface PitchStyle {
   orientation: Orientation
   /** Own grid (grid "custom"): column widths along the length and row heights across, in meters */
   customGrid?: CustomGrid
+  /** Thickness of the markings (missing = normal) */
+  lineWidth?: PitchLineWidth
+  /** Color of the markings (missing = usual color of the pitch) */
+  lineColor?: string
+  /** Rounded outer corners instead of corner arcs */
+  roundedCorners?: boolean
 }
 
 export interface CustomGrid {
@@ -51,6 +88,12 @@ interface ColorScheme {
   base: string
   /** Mowing stripes, or null for a plain surface */
   stripe: string | null
+  /** How the stripes are mown (default: wide stripes) */
+  pattern?: 'stripes' | 'fineStripes' | 'check'
+  /** Fine grass texture on top */
+  texture?: boolean
+  /** Soft floodlight: lighter in the middle, darker at the edges */
+  lighting?: boolean
   line: string
   grid: string
   goalFill: string
@@ -61,6 +104,36 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     label: 'Rasengrün',
     base: '#2f7d32',
     stripe: '#388e3c',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  grassFine: {
+    label: 'Rasen fein gemäht',
+    base: '#2b7631',
+    stripe: '#33833a',
+    pattern: 'fineStripes',
+    texture: true,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  grassCheck: {
+    label: 'Rasen Karo-Muster',
+    base: '#2d7a32',
+    stripe: '#368a3c',
+    pattern: 'check',
+    texture: true,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  grassStadium: {
+    label: 'Stadion (Flutlicht)',
+    base: '#28702e',
+    stripe: '#318037',
+    texture: true,
+    lighting: true,
     line: '#ffffff',
     grid: 'rgba(255,255,255,0.6)',
     goalFill: 'rgba(255,255,255,0.25)',
@@ -117,6 +190,9 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
 
 export const PITCH_COLOR_ORDER: PitchColor[] = [
   'grass',
+  'grassFine',
+  'grassCheck',
+  'grassStadium',
   'grassPlain',
   'darkGreen',
   'lightGreen',

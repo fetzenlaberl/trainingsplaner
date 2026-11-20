@@ -1,9 +1,10 @@
 import Konva from 'konva'
 import { useContext, useMemo } from 'react'
-import { Circle, Group, Line, Rect, RegularPolygon } from 'react-konva'
+import { Circle, Group, Line, Rect, RegularPolygon, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
+import { AGILITY_SQUARE, TRAINING_BALL } from '../items/palette'
 import { MINIGOAL } from '../items/equipment'
 import {
   DiscShape,
@@ -71,6 +72,7 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
     case 'textbox':
       return <TextBox text={label} background={color} rotation={rotation + upright} />
     case 'ball':
+      if (color === TRAINING_BALL) return <TrainingBall />
       return (
         <Group>
           <Circle radius={BALL_RADIUS} fill={color} stroke="#111827" strokeWidth={0.08} />
@@ -122,6 +124,8 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return <FlagShape color={color} rotation={rotation} />
     case 'disc':
       return <DiscShape color={color} />
+    case 'agility':
+      return <AgilityGrid color={color} count={label === '4' ? 4 : 3} rotation={rotation} />
     case 'coach':
       return (
         <Group>
@@ -404,6 +408,43 @@ function TextBox({ text, background, rotation }: { text: string; background: str
         wrap="word"
         fill={contrastTextColor(background)}
       />
+    </Group>
+  )
+}
+
+/** White ball with three colored segments. */
+function TrainingBall() {
+  const segments = ['#2563eb', '#facc15', '#dc2626']
+  return (
+    <Group>
+      <Circle radius={BALL_RADIUS} fill="#ffffff" />
+      {segments.map((fill, i) => (
+        <Wedge key={fill} radius={BALL_RADIUS} angle={60} rotation={i * 120 - 90} fill={fill} />
+      ))}
+      <Circle radius={BALL_RADIUS * 0.28} fill="#ffffff" />
+      <Circle radius={BALL_RADIUS} stroke="#111827" strokeWidth={0.08} />
+    </Group>
+  )
+}
+
+/** Coordination grid on the ground: count × count squares with marker discs at the corners. */
+function AgilityGrid({ color, count, rotation }: { color: string; count: number; rotation: number }) {
+  const half = (count * AGILITY_SQUARE) / 2
+  const positions = Array.from({ length: count + 1 }, (_, i) => -half + i * AGILITY_SQUARE)
+  return (
+    <Group rotation={rotation}>
+      <Rect x={-half} y={-half} width={half * 2} height={half * 2} fill="rgba(255,255,255,0.06)" />
+      {positions.map((p, i) => (
+        <Line key={`v${i}`} points={[p, -half, p, half]} stroke={color} strokeWidth={0.07} />
+      ))}
+      {positions.map((p, i) => (
+        <Line key={`h${i}`} points={[-half, p, half, p]} stroke={color} strokeWidth={0.07} />
+      ))}
+      {positions.flatMap((x, i) =>
+        positions.map((y, j) => (
+          <Circle key={`${i}-${j}`} x={x} y={y} radius={0.13} fill={color} stroke="#111827" strokeWidth={0.03} />
+        )),
+      )}
     </Group>
   )
 }

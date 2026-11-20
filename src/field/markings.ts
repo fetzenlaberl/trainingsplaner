@@ -2,7 +2,7 @@ import { PITCH } from './dimensions'
 
 export type Marking =
   | { kind: 'rect'; x: number; y: number; width: number; height: number }
-  | { kind: 'line'; points: number[] }
+  | { kind: 'line'; points: number[]; corner?: boolean }
   | { kind: 'circle'; x: number; y: number; radius: number }
   | { kind: 'spot'; x: number; y: number }
 
@@ -106,6 +106,7 @@ export function getPitchMarkings(): Marking[] {
     markings.push({
       kind: 'line',
       points: arcPoints(cx, cy, cornerArcRadius, start, start + 90, 12),
+      corner: true,
     })
   }
 

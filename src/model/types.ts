@@ -19,6 +19,7 @@ export type ItemType =
   | 'flag'
   | 'disc'
   | 'rebounder'
+  | 'agility'
   | 'coach'
   | 'text'
   | 'textbox'

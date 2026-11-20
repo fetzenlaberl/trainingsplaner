@@ -227,6 +227,29 @@ describe('serializeDrill / parseDrill', () => {
     expect(items[1]).toMatchObject({ type: 'coach', label: 'CO' })
   })
 
+  it('round-trips pitch line settings, grass designs, ball designs and the coordination grid', () => {
+    const text = tamper((d) => {
+      d.pitch.color = 'grassCheck'
+      d.pitch.lineWidth = 'thin'
+      d.pitch.lineColor = '#fde047'
+      d.pitch.roundedCorners = true
+      d.scenes[0].items[1].color = 'training'
+      d.scenes[0].items[0].type = 'agility'
+      d.scenes[0].items[0].label = '4'
+    })
+    const drill = parseDrill(text)
+    expect(drill.pitch).toMatchObject({ color: 'grassCheck', lineWidth: 'thin', lineColor: '#fde047', roundedCorners: true })
+    expect(drill.scenes[0].items[1].color).toBe('training')
+    expect(drill.scenes[0].items[0]).toMatchObject({ type: 'agility', label: '4' })
+    expect(() => parseDrill(tamper((d) => (d.pitch.lineWidth = 'huge')))).toThrow()
+  })
+
+  it('leaves line settings out of older files', () => {
+    const pitch = parseDrill(tamper(() => undefined)).pitch
+    expect(pitch.lineWidth).toBeUndefined()
+    expect(pitch.roundedCorners).toBeUndefined()
+  })
+
   it('round-trips plain lines without arrowhead', () => {
     const text = tamper((d) => {
       d.scenes[0].lines[0].type = 'line'
