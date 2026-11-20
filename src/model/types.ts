@@ -12,6 +12,8 @@ export type ItemType =
   | 'pole'
   | 'slalom'
   | 'dummy'
+  | 'poleDummy'
+  | 'figureDummy'
   | 'wall'
   | 'ladder'
   | 'hurdle'
@@ -46,6 +48,8 @@ export interface Item {
   name: string
   /** Glowing ring to highlight a player */
   highlight: boolean
+  /** false: player without facing arrow (missing = with arrow) */
+  facing?: boolean
 }
 
 export interface Point {

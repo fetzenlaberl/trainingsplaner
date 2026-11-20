@@ -44,9 +44,36 @@ export const ZONE_TEMPLATES: ZoneTemplate[] = [
       { x: -12, y: 7 },
     ],
   },
+  {
+    key: 'zone-polygon',
+    name: 'Vieleck',
+    shape: 'rect',
+    goals: 0,
+    width: 20,
+    height: 20,
+    corners: regularPolygon(6, 20, 20),
+  },
   { key: 'field-4', name: 'Kleinfeld 4 Tore', shape: 'rect', goals: 4, width: 30, height: 20 },
   { key: 'field-6', name: 'Kleinfeld 6 Tore', shape: 'rect', goals: 6, width: 40, height: 25 },
 ]
+
+/** Corner counts offered for the polygon zone */
+export const MIN_POLYGON_CORNERS = 3
+export const MAX_POLYGON_CORNERS = 12
+
+/**
+ * Regular polygon with n corners fitted into width × height (relative to the centre),
+ * starting with a corner at the top.
+ */
+export function regularPolygon(n: number, width: number, height: number): Point[] {
+  // Plain numbers here: the templates above call this before the constants are defined.
+  const count = Math.round(Math.min(Math.max(n, 3), 12))
+  return Array.from({ length: count }, (_, i) => {
+    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / count
+    // Rounded to centimeters so files stay readable.
+    return { x: Math.round(Math.cos(angle) * (width / 2) * 100) / 100, y: Math.round(Math.sin(angle) * (height / 2) * 100) / 100 }
+  })
+}
 
 export const ZONE_GOAL_OPTIONS: ZoneGoals[] = [0, 4, 6]
 

@@ -23,6 +23,7 @@ export function ItemPreview({ item, scale }: ItemPreviewProps) {
             label={item.label ?? (item.type === 'player' ? String(FIRST_PLAYER_NUMBER) : '')}
             rotation={item.rotation ?? 0}
             shape={item.shape ?? 'circle'}
+            facing={item.facing}
           />
         </Group>
       </Layer>

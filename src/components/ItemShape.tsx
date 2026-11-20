@@ -2,6 +2,7 @@ import Konva from 'konva'
 import { useContext, useMemo } from 'react'
 import { Circle, Group, Line, Rect, RegularPolygon, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
+import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
 import { AGILITY_SQUARE, TRAINING_BALL } from '../items/palette'
@@ -48,7 +49,7 @@ const TEXTBOX_FONT_SIZE = 1.1
 const NAME_FONT_SIZE = 0.8
 const GLOW_COLOR = '#fde047'
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'> & {
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing'> & {
   /** Player name tag (empty = none) */
   name?: string
   /** Highlight ring strength 0..1 */
@@ -56,7 +57,7 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape'> 
 }
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation, shape, name = '', glow = 0 }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0 }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
   const upright = -useContext(ViewRotationContext)
   const onWhite = pitchColor === 'white'
@@ -65,7 +66,7 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return (
         <Group>
           {glow > 0 && <HighlightRing strength={glow} />}
-          <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} />
+          <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} facing={facing} />
           {name && <NameTag name={name} />}
         </Group>
       )
@@ -106,6 +107,19 @@ export function ItemShape({ type, color, label, rotation, shape, name = '', glow
       return <GoalShape width={MINIGOAL.width} depth={MINIGOAL.depth} color={color} rotation={rotation} />
     case 'slalom':
       return <SlalomShape color={color} rotation={rotation} />
+    case 'poleDummy':
+      // Seen from the side, so it always stands upright on screen.
+      return (
+        <Group rotation={upright}>
+          <PoleDummyShape color={color} />
+        </Group>
+      )
+    case 'figureDummy':
+      return (
+        <Group rotation={upright}>
+          <FigureDummyShape color={color} />
+        </Group>
+      )
     case 'dummy':
       return (
         <Group rotation={rotation}>
@@ -196,7 +210,7 @@ function FacingMarker({ color, rotation, distance }: { color: string; rotation: 
   )
 }
 
-function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'type'>) {
+function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<ShapeProps, 'type'>) {
   const upright = -useContext(ViewRotationContext)
   if (shape === 'triangle') {
     // The tip of the triangle shows the facing direction, so no extra marker.
@@ -224,7 +238,7 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
     ]
     return (
       <Group>
-        <FacingMarker color={color} rotation={rotation} distance={CROSS_HALF + 0.6} />
+        {facing && <FacingMarker color={color} rotation={rotation} distance={CROSS_HALF + 0.6} />}
         {arms.map((points, i) => (
           <Line key={`outline-${i}`} points={points} stroke="#ffffff" strokeWidth={0.6} lineCap="round" />
         ))}
@@ -256,7 +270,7 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
     // Own jersey outline (sleeves, V collar); always upright so it reads like a line-up sheet.
     return (
       <Group>
-        <FacingMarker color={color} rotation={rotation} distance={SHIRT_SIZE + 0.35} />
+        {facing && <FacingMarker color={color} rotation={rotation} distance={SHIRT_SIZE + 0.35} />}
         <Group rotation={upright}>
           <Line
             points={SHIRT_OUTLINE.map((v) => v * SHIRT_SIZE)}
@@ -291,7 +305,7 @@ function PlayerShapeView({ color, label, rotation, shape }: Omit<ShapeProps, 'ty
   }
   return (
     <Group>
-      <FacingMarker color={color} rotation={rotation} distance={PLAYER_RADIUS + 0.3} />
+      {facing && <FacingMarker color={color} rotation={rotation} distance={PLAYER_RADIUS + 0.3} />}
       <Circle radius={PLAYER_RADIUS} fill={color} stroke="#ffffff" strokeWidth={0.15} />
       <Group rotation={upright}>
         <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 2} />

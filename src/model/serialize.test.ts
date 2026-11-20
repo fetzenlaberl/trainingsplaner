@@ -262,6 +262,17 @@ describe('serializeDrill / parseDrill', () => {
     expect(pitch.roundedCorners).toBeUndefined()
   })
 
+  it('round-trips players without arrow and perspective dummies', () => {
+    const text = tamper((d) => {
+      d.scenes[0].items[0].facing = false
+      d.scenes[0].items[1].type = 'poleDummy'
+    })
+    const items = parseDrill(text).scenes[0].items
+    expect(items[0].facing).toBe(false)
+    expect(items[1].type).toBe('poleDummy')
+    expect(parseDrill(tamper(() => undefined)).scenes[0].items[0].facing).toBeUndefined()
+  })
+
   it('round-trips plain lines without arrowhead', () => {
     const text = tamper((d) => {
       d.scenes[0].lines[0].type = 'line'

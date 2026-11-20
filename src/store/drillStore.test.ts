@@ -728,6 +728,17 @@ describe('helpers', () => {
     expect(store().pitch.lineWidth).toBe('thick')
   })
 
+  it('adds plain symbols without number and arrow and toggles the arrow', () => {
+    const bare = ITEM_TEMPLATES.find((t) => t.key === 'bare-cross-blue')!.item
+    const id = store().addItem(bare, 20, 20)
+    const item = () => currentScene(store()).items.find((i) => i.id === id)!
+    expect(item()).toMatchObject({ label: '', facing: false, shape: 'cross' })
+    store().setItemFacing(id, true)
+    expect('facing' in item() && item().facing !== undefined).toBe(false)
+    store().setItemFacing(id, false)
+    expect(item().facing).toBe(false)
+  })
+
   it('normalizeAngle keeps angles in [0, 360)', () => {
     expect(normalizeAngle(360)).toBe(0)
     expect(normalizeAngle(-90)).toBe(270)

@@ -92,6 +92,8 @@ export interface DrillState extends DrillContent {
   setItemShape: (id: string, shape: PlayerShape) => void
   setItemColor: (id: string, color: string) => void
   setItemHighlight: (id: string, highlight: boolean) => void
+  /** Shows or hides the facing arrow of a player. */
+  setItemFacing: (id: string, facing: boolean) => void
   /** Gives every item of the current scene the same size. */
   setAllItemSizes: (size: number) => void
   /** Adds a straight line (meters) and returns its id. */
@@ -457,6 +459,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         highlight: item.highlight ?? false,
         color: item.color,
         label,
+        ...(item.facing === false ? { facing: false } : {}),
       }
       // Later items of the same call see the earlier ones when numbering.
       items.push(newItem)
@@ -494,6 +497,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
+    })),
+  setItemFacing: (id, facing) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { facing: facing ? undefined : false }) })),
     })),
   setItemHighlight: (id, highlight) =>
     set((s) => ({

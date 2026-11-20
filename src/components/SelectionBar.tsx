@@ -10,7 +10,16 @@ import { BALL_STYLES,
   ROTATABLE_TYPES,
   TEXTBOX_COLORS,
 } from '../items/palette'
-import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS, ZONE_GOAL_OPTIONS, zoneExtent } from '../items/zones'
+import {
+  MAX_POLYGON_CORNERS,
+  MAX_ZONE_FILL_OPACITY,
+  MIN_POLYGON_CORNERS,
+  regularPolygon,
+  ZONE_COLORS,
+  ZONE_GOAL_OPTIONS,
+  zoneCorners,
+  zoneExtent,
+} from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
   currentScene,
@@ -152,6 +161,7 @@ function ItemControls({ item }: { item: Item }) {
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
   const setItemName = useDrillStore((s) => s.setItemName)
   const setItemHighlight = useDrillStore((s) => s.setItemHighlight)
+  const setItemFacing = useDrillStore((s) => s.setItemFacing)
   const setItemColor = useDrillStore((s) => s.setItemColor)
   const [editingText, setEditingText] = useState(false)
 
@@ -268,6 +278,15 @@ function ItemControls({ item }: { item: Item }) {
             className={`${buttonClass} ${item.highlight ? 'bg-yellow-500 text-slate-900 hover:bg-yellow-400' : ''}`}
           >
             ✦ Hervorheben
+          </button>
+          <button
+            type="button"
+            aria-pressed={item.facing !== false}
+            title="Pfeil für die Blickrichtung anzeigen oder ausblenden"
+            onClick={() => setItemFacing(item.id, item.facing === false)}
+            className={`${buttonClass} ${item.facing !== false ? 'bg-emerald-700 hover:bg-emerald-600' : ''}`}
+          >
+            ➤ Richtungspfeil
           </button>
         </>
       )}
@@ -399,6 +418,9 @@ function ZoneControls({ zone }: { zone: Zone }) {
   const setEditingCornersId = useToolStore((s) => s.setEditingCornersId)
   const editingCorners = editingCornersId === zone.id
   const extent = zoneExtent(zone)
+  const cornerCount = zoneCorners(zone).length
+  // A regular polygon in the current size of the zone; free corners can be moved afterwards.
+  const setPolygon = (n: number) => updateZone(zone.id, { corners: regularPolygon(n, extent.width, extent.height) })
 
   return (
     <>
@@ -421,6 +443,28 @@ function ZoneControls({ zone }: { zone: Zone }) {
               Ecken zurücksetzen
             </button>
           )}
+          <div role="group" aria-label="Vieleck" className="flex items-center gap-1" title="Gleichmäßiges Vieleck mit dieser Eckenzahl">
+            <span className="text-sm text-slate-400">Vieleck</span>
+            <button
+              type="button"
+              className={buttonClass}
+              aria-label="Eine Ecke weniger"
+              disabled={cornerCount <= MIN_POLYGON_CORNERS}
+              onClick={() => setPolygon(cornerCount - 1)}
+            >
+              −
+            </button>
+            <span className="w-14 text-center text-sm text-slate-300 tabular-nums">{cornerCount} Ecken</span>
+            <button
+              type="button"
+              className={buttonClass}
+              aria-label="Eine Ecke mehr"
+              disabled={cornerCount >= MAX_POLYGON_CORNERS}
+              onClick={() => setPolygon(cornerCount + 1)}
+            >
+              +
+            </button>
+          </div>
         </>
       )}
       <ColorSwatches

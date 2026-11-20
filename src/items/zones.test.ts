@@ -1,15 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  baseCorners,
-  edgeMidpoints,
-  insertCorner,
-  MAX_CORNERS,
-  removeCorner,
-  ZONE_TEMPLATES,
-  zoneCorners,
-  zoneExtent,
-  zoneGoalPositions,
-} from './zones'
+import { baseCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
 
 const rect = (width: number, height: number) => baseCorners('rect', width, height)
 
@@ -133,5 +123,20 @@ describe('ZONE_TEMPLATES', () => {
     for (const key of ['zone-rhombus', 'zone-trapezoid']) {
       expect(ZONE_TEMPLATES.find((t) => t.key === key)?.corners).toHaveLength(4)
     }
+  })
+})
+
+describe('regularPolygon', () => {
+  it('fits n corners into the size, starting at the top', () => {
+    const hexagon = regularPolygon(6, 20, 10)
+    expect(hexagon).toHaveLength(6)
+    expect(hexagon[0]).toEqual({ x: 0, y: -5 })
+    expect(Math.max(...hexagon.map((p) => p.x))).toBeLessThanOrEqual(10)
+    expect(regularPolygon(1, 10, 10)).toHaveLength(MIN_POLYGON_CORNERS)
+    expect(regularPolygon(50, 10, 10)).toHaveLength(MAX_POLYGON_CORNERS)
+  })
+
+  it('offers a polygon zone template', () => {
+    expect(ZONE_TEMPLATES.find((t) => t.key === 'zone-polygon')?.corners).toHaveLength(6)
   })
 })

@@ -7,3 +7,17 @@ export function contrastTextColor(hex: string): string {
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
   return luminance > 0.6 ? '#111827' : '#ffffff'
 }
+
+/** Lighter (amount > 0) or darker (amount < 0) version of a hex color, amount between -1 and 1. */
+export function shadeColor(hex: string, amount: number): string {
+  const value = hex.replace('#', '')
+  if (!/^[0-9a-fA-F]{6}$/.test(value)) return hex
+  const channel = (i: number) => {
+    const c = Number.parseInt(value.slice(i, i + 2), 16)
+    const shaded = amount >= 0 ? c + (255 - c) * amount : c * (1 + amount)
+    return Math.round(Math.min(255, Math.max(0, shaded)))
+      .toString(16)
+      .padStart(2, '0')
+  }
+  return `#${channel(0)}${channel(2)}${channel(4)}`
+}

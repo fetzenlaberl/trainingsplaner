@@ -65,7 +65,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 15: shirt-shaped players and coach items.
 // Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
 // Version 17: mowing patterns, lighting, extra line weights.
-export const FILE_VERSION = 17
+// Version 18: players without facing arrow, polygon zone, perspective dummies.
+export const FILE_VERSION = 18
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -78,6 +79,8 @@ const ITEM_TYPES: ItemType[] = [
   'pole',
   'slalom',
   'dummy',
+  'poleDummy',
+  'figureDummy',
   'wall',
   'ladder',
   'hurdle',
@@ -267,7 +270,9 @@ function parseItem(value: unknown): Item {
     typeof value.label !== 'string' ||
     // Name tag and highlight were added in version 4.
     !(value.name === undefined || typeof value.name === 'string') ||
-    !(value.highlight === undefined || typeof value.highlight === 'boolean')
+    !(value.highlight === undefined || typeof value.highlight === 'boolean') ||
+    // The facing switch was added in version 18.
+    !(value.facing === undefined || typeof value.facing === 'boolean')
   ) {
     throw corrupt()
   }
@@ -283,6 +288,7 @@ function parseItem(value: unknown): Item {
     label: value.label,
     name: (value.name as string | undefined) ?? '',
     highlight: (value.highlight as boolean | undefined) ?? false,
+    ...(value.facing === false ? { facing: false } : {}),
   }
 }
 

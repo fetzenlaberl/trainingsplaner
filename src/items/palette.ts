@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -77,6 +77,9 @@ export const TEAM_COLORS = {
   keeper: '#facc15',
 } as const
 
+/** Names of the plain symbols (no number, no arrow) */
+const BARE_NAMES = { circle: 'Kreis', cross: 'Kreuz', triangle: 'Dreieck' } as const
+
 function player(color: string, shape: PlayerShape): NewItem {
   return { type: 'player', color, shape, size: DEFAULT_PLAYER_SIZE }
 }
@@ -93,6 +96,13 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'shirt-blue', name: 'Trikot Blau', item: player(TEAM_COLORS.blue, 'shirt') },
   { key: 'plain-red', name: 'Ohne Nummer Rot', item: { ...player(TEAM_COLORS.red, 'circle'), label: '' } },
   { key: 'plain-blue', name: 'Ohne Nummer Blau', item: { ...player(TEAM_COLORS.blue, 'circle'), label: '' } },
+  ...(['circle', 'cross', 'triangle'] as const).flatMap((shape) =>
+    (['red', 'blue'] as const).map((team) => ({
+      key: `bare-${shape}-${team}`,
+      name: `${BARE_NAMES[shape]} ${team === 'red' ? 'Rot' : 'Blau'} schlicht`,
+      item: { ...player(TEAM_COLORS[team], shape), label: '', facing: false },
+    })),
+  ),
   { key: 'letter-red', name: 'Buchstabe Rot', item: { ...player(TEAM_COLORS.red, 'circle'), label: NEXT_LETTER_LABEL } },
   { key: 'letter-blue', name: 'Buchstabe Blau', item: { ...player(TEAM_COLORS.blue, 'circle'), label: NEXT_LETTER_LABEL } },
   ...COACH_ROLES.map((role) => ({
@@ -108,6 +118,8 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'minigoal', name: 'Minitor', item: { type: 'minigoal', color: '#ffffff' } },
   { key: 'slalom', name: 'Stangenreihe', item: { type: 'slalom', color: '#facc15' } },
   { key: 'dummy', name: 'Dummy', item: { type: 'dummy', color: '#2563eb' } },
+  { key: 'pole-dummy', name: 'Stangendummy', item: { type: 'poleDummy', color: '#f97316', size: 1.6 } },
+  { key: 'figure-dummy', name: 'Figurendummy', item: { type: 'figureDummy', color: '#2563eb', size: 1.6 } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
   { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
   { key: 'agility-3', name: 'Koordinationsraster 3×3', item: { type: 'agility', color: '#facc15', label: '3' } },
@@ -131,6 +143,8 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   minigoal: 1.6,
   slalom: 6.6,
   dummy: 1,
+  poleDummy: 2.8,
+  figureDummy: 2.8,
   wall: 2.6,
   ladder: 4.2,
   hurdle: 1.2,
@@ -151,6 +165,8 @@ export const COLORABLE_TYPES: ItemType[] = [
   'pole',
   'slalom',
   'dummy',
+  'poleDummy',
+  'figureDummy',
   'wall',
   'ladder',
   'hurdle',
