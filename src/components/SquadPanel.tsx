@@ -4,7 +4,7 @@ import type { ItemTemplate } from '../items/palette'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { FORMATIONS, type Side } from '../teams/formations'
 import { itemForPlayer, placeLineup, realignTeam } from '../teams/lineupActions'
-import { NAME_STYLES, playerLabel, type NameStyle, type Team } from '../teams/team'
+import { NAME_STYLES, playerLabel, SQUAD_LOOKS, type NameStyle, type SquadLook, type Team } from '../teams/team'
 import { listTeams } from '../teams/teamDb'
 import { useViewStore } from '../store/viewStore'
 import { buttonClass, inputClass } from './ui'
@@ -17,6 +17,17 @@ function loadNameStyle(): NameStyle {
     return NAME_STYLES.some((o) => o.value === value) ? (value as NameStyle) : 'full'
   } catch {
     return 'full'
+  }
+}
+
+const LOOK_KEY = 'trainingsplaner.squadLook'
+
+function loadLook(): SquadLook {
+  try {
+    const value = localStorage.getItem(LOOK_KEY)
+    return SQUAD_LOOKS.some((o) => o.value === value) ? (value as SquadLook) : 'arrow'
+  } catch {
+    return 'arrow'
   }
 }
 
@@ -34,6 +45,15 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
   const [asNewScene, setAsNewScene] = useState(true)
   const [realignMessage, setRealignMessage] = useState<string | null>(null)
   const [nameStyle, setNameStyleState] = useState<NameStyle>(loadNameStyle)
+  const [look, setLookState] = useState<SquadLook>(loadLook)
+  const setLook = (value: SquadLook) => {
+    setLookState(value)
+    try {
+      localStorage.setItem(LOOK_KEY, value)
+    } catch {
+      // Only a convenience; the choice is simply not remembered.
+    }
+  }
   const setNameStyle = (value: NameStyle) => {
     setNameStyleState(value)
     try {
@@ -122,11 +142,24 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
                 </option>
               ))}
             </select>
+            <select
+              className={inputClass}
+              aria-label="Aussehen der Spieler"
+              title="Für einzelne Spieler und für die Aufstellung"
+              value={look}
+              onChange={(e) => setLook(e.target.value as SquadLook)}
+            >
+              {SQUAD_LOOKS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className={`${buttonClass} justify-center bg-emerald-700 text-white hover:bg-emerald-600`}
               title="Startelf in dieser Formation aufs Feld stellen"
-              onClick={() => placeLineup(team, formation, side, nameStyle)}
+              onClick={() => placeLineup(team, formation, side, nameStyle, look)}
             >
               Aufstellen
             </button>
@@ -156,7 +189,7 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
           <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto md:max-h-none">
             {team.players.length === 0 && <li className="text-xs text-slate-400">Kader ist leer.</li>}
             {team.players.map((player) => {
-              const item = itemForPlayer(team, player, nameStyle)
+              const item = itemForPlayer(team, player, nameStyle, look)
               const placed = onPitch.has(`${item.label ?? ''}|${item.name ?? ''}`)
               return (
                 <li key={player.id}>

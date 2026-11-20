@@ -182,6 +182,16 @@ export const NAME_STYLES: { value: NameStyle; label: string }[] = [
   { value: 'none', label: 'Name auf dem Feld: keiner' },
 ]
 
+/** How squad players look on the pitch: a circle with direction arrow, or a shape without arrow. */
+export type SquadLook = 'arrow' | 'circle' | 'triangle' | 'shirt'
+
+export const SQUAD_LOOKS: { value: SquadLook; label: string }[] = [
+  { value: 'arrow', label: 'Spieler: Kreis mit Pfeil' },
+  { value: 'circle', label: 'Spieler: Kreis ohne Pfeil' },
+  { value: 'triangle', label: 'Spieler: Dreieck ohne Pfeil' },
+  { value: 'shirt', label: 'Spieler: Trikot' },
+]
+
 /** First letters of first name and surname(s): "Max Müller" -> "MM". */
 export function nameInitials(name: string): string {
   return name

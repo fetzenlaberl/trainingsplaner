@@ -5,31 +5,42 @@ import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { realignLineup } from './realign'
 import { assignLineup, slotPosition, type Formation, type Side } from './formations'
-import { isKeeper, nameForStyle, type NameStyle, type Team, type TeamPlayer } from './team'
+import { isKeeper, nameForStyle, type NameStyle, type SquadLook, type Team, type TeamPlayer } from './team'
+
+/** Shape and arrow of squad players in the chosen look */
+function lookOf(look: SquadLook): Pick<NewItem, 'shape' | 'facing'> {
+  return look === 'arrow' ? { shape: 'circle' } : { shape: look, facing: false }
+}
 
 /** Player item for a squad member (number, name tag and team color). */
-export function itemForPlayer(team: Team, player: TeamPlayer, nameStyle: NameStyle = 'full'): NewItem {
+export function itemForPlayer(team: Team, player: TeamPlayer, nameStyle: NameStyle = 'full', look: SquadLook = 'arrow'): NewItem {
   const keeper = isKeeper(player.position)
   return {
     type: 'player',
     color: keeper ? TEAM_COLORS.keeper : team.color,
     label: player.number || (keeper ? KEEPER_LABEL : undefined),
     name: nameForStyle(player.name, nameStyle) || undefined,
-    shape: 'circle',
+    ...lookOf(look),
   }
 }
 
 /** Puts a team in a formation onto the current scene (one undo step). */
-export function placeLineup(team: Team, formation: Formation, side: Side, nameStyle: NameStyle = 'full'): void {
+export function placeLineup(
+  team: Team,
+  formation: Formation,
+  side: Side,
+  nameStyle: NameStyle = 'full',
+  look: SquadLook = 'arrow',
+): void {
   const lineup = assignLineup(team.players, formation)
   const entries = formation.slots.map((slot, i) => {
     const { x, y, rotation } = slotPosition(slot, side, fieldSize(useDrillStore.getState().fieldType))
     const player = lineup[i]
     const item: NewItem = player
-      ? itemForPlayer(team, player, nameStyle)
+      ? itemForPlayer(team, player, nameStyle, look)
       : slot.position === 'TW'
-        ? { type: 'player', color: TEAM_COLORS.keeper, label: KEEPER_LABEL, shape: 'circle' }
-        : { type: 'player', color: team.color, shape: 'circle' }
+        ? { type: 'player', color: TEAM_COLORS.keeper, label: KEEPER_LABEL, ...lookOf(look) }
+        : { type: 'player', color: team.color, ...lookOf(look) }
     return { item: { ...item, rotation }, x, y }
   })
   usePlaybackStore.getState().stop()
