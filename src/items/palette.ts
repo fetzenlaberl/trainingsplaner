@@ -78,6 +78,8 @@ export const TEAM_COLORS = {
   red: '#dc2626',
   blue: '#2563eb',
   keeper: '#facc15',
+  /** Neutral player (joker) who plays with the team in possession */
+  neutral: '#9ca3af',
 } as const
 
 /** Names of the plain symbols (no number, no arrow) */
@@ -87,8 +89,6 @@ const BARE_NAMES = { circle: 'Kreis', cross: 'Kreuz', triangle: 'Dreieck' } as c
 const SHIRT_PLAIN_COLORS = [
   { key: 'red', name: 'Rot', color: TEAM_COLORS.red },
   { key: 'blue', name: 'Blau', color: TEAM_COLORS.blue },
-  { key: 'yellow', name: 'Gelb', color: '#facc15' },
-  { key: 'green', name: 'Grün', color: '#16a34a' },
 ]
 
 function player(color: string, shape: PlayerShape): NewItem {
@@ -99,6 +99,8 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'player-red', name: 'Spieler Rot', item: player(TEAM_COLORS.red, 'circle') },
   { key: 'player-blue', name: 'Spieler Blau', item: player(TEAM_COLORS.blue, 'circle') },
   { key: 'keeper', name: 'Torwart', item: { ...player(TEAM_COLORS.keeper, 'circle'), label: KEEPER_LABEL } },
+  // Neutral player: plays in both directions, so no direction arrow.
+  { key: 'neutral', name: 'Neutraler Spieler', item: { ...player(TEAM_COLORS.neutral, 'circle'), label: 'N', facing: false } },
   { key: 'triangle-red', name: 'Dreieck Rot', item: player(TEAM_COLORS.red, 'triangle') },
   { key: 'triangle-blue', name: 'Dreieck Blau', item: player(TEAM_COLORS.blue, 'triangle') },
   { key: 'cross-red', name: 'Kreuz Rot', item: player(TEAM_COLORS.red, 'cross') },

@@ -853,3 +853,11 @@ describe('scenes', () => {
     expect(store().sceneIndex).toBe(0)
   })
 })
+
+describe('palette', () => {
+  it('offers a neutral player with N and no direction arrow', () => {
+    const neutral = ITEM_TEMPLATES.find((t) => t.key === 'neutral')
+    expect(neutral?.item).toMatchObject({ type: 'player', shape: 'circle', label: 'N', facing: false })
+    expect(ITEM_TEMPLATES.some((t) => t.key === 'shirt-plain-yellow' || t.key === 'shirt-plain-green')).toBe(false)
+  })
+})
