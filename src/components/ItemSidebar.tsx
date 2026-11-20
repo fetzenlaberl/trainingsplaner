@@ -135,7 +135,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-28'}`}
+      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36'}`}
     >
       <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
         {([

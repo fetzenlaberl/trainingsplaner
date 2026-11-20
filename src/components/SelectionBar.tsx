@@ -279,6 +279,7 @@ function ItemControls({ item }: { item: Item }) {
           >
             ✦ Hervorheben
           </button>
+          {item.shape !== 'shirt' && (
           <button
             type="button"
             aria-pressed={item.facing !== false}
@@ -288,6 +289,7 @@ function ItemControls({ item }: { item: Item }) {
           >
             ➤ Richtungspfeil
           </button>
+          )}
         </>
       )}
 

@@ -275,10 +275,10 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
     )
   }
   if (shape === 'shirt') {
-    // Own jersey outline (sleeves, V collar); always upright so it reads like a line-up sheet.
+    // Own jersey outline (sleeves, V collar); always upright so it reads like a line-up sheet,
+    // and never with a direction arrow.
     return (
       <Group>
-        {facing && <FacingMarker color={color} rotation={rotation} distance={SHIRT_SIZE + 0.35} />}
         <Group rotation={upright}>
           <Line
             points={SHIRT_OUTLINE.map((v) => v * SHIRT_SIZE)}
