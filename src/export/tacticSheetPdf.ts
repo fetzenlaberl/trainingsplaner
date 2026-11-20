@@ -29,7 +29,7 @@ export async function exportTacticSheet(options: TacticSheetOptions): Promise<vo
     options.content === 'scene'
       ? currentScene(state)
       : { durationMs: 0, items: [], lines: [], zones: [] }
-  const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderSceneToCanvas(state.fieldType, pitch, scene)])
+  const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderSceneToCanvas(state.fieldType, pitch, scene, undefined, state.images)])
   const image = canvas.toDataURL('image/jpeg', 0.92)
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })

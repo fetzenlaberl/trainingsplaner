@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 import { Circle, Group, Line, Rect } from 'react-konva'
 import { MeterText } from './MeterText'
+import { PitchBackground } from './PictureShapes'
 import { PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
 import { getGoals, getPitchMarkings } from '../field/markings'
 import { grassTextureTile, TEXTURE_TILE_METERS, TEXTURE_TILE_PX } from '../field/grassTexture'
@@ -65,6 +66,9 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           fillPatternScaleX={TEXTURE_TILE_METERS / TEXTURE_TILE_PX}
           fillPatternScaleY={TEXTURE_TILE_METERS / TEXTURE_TILE_PX}
         />
+      )}
+      {pitch.background && (
+        <PitchBackground id={pitch.background} opacity={pitch.backgroundOpacity ?? 1} viewport={viewport} upright={upright} />
       )}
       {lighting !== 'none' && (
         <Rect

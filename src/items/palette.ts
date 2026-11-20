@@ -40,6 +40,9 @@ export const BALL_STYLES: { value: string; name: string; swatch?: string }[] = [
 /** Coordination grid: squares per side (stored in the label) and side of one square in meters */
 export const AGILITY_SQUARE = 1.2
 
+/** Width of an imported picture on the pitch at size 1 (meters) */
+export const IMAGE_BASE_WIDTH = 20
+
 export const MIN_ITEM_SIZE = 0.5
 export const MAX_ITEM_SIZE = 2.5
 export const ITEM_SIZE_STEP = 0.25
@@ -154,6 +157,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   rebounder: 1.4,
   agility: 5.2,
   coach: 3,
+  image: 20,
   text: 6,
   textbox: 12,
 }
@@ -191,6 +195,7 @@ export const ROTATABLE_TYPES: ItemType[] = [
   'flag',
   'rebounder',
   'agility',
+  'image',
   'text',
   'textbox',
 ]

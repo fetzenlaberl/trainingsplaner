@@ -34,14 +34,20 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png}'],
-        // The 32 MB MP4 converter is not downloaded up front; it is cached on first use (below).
-        globIgnores: ['**/ffmpeg-core-*'],
+        // The 32 MB MP4 converter and the PDF reader are not downloaded up front;
+        // they are cached on first use (below).
+        globIgnores: ['**/ffmpeg-core-*', '**/pdf-*.js', '**/pdf.worker*'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /ffmpeg-core-.*\.(js|wasm)$/,
             handler: 'CacheFirst',
             options: { cacheName: 'ffmpeg-core', expiration: { maxEntries: 4 } },
+          },
+          {
+            urlPattern: /\/pdf(\.worker\.min)?-[^/]*\.m?js$/,
+            handler: 'CacheFirst',
+            options: { cacheName: 'pdf-reader', expiration: { maxEntries: 6 } },
           },
         ],
       },

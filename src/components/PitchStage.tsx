@@ -64,6 +64,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
   const pitch = useDrillStore((s) => s.pitch)
   const addLine = useDrillStore((s) => s.addLine)
   const addStrokeLine = useDrillStore((s) => s.addStrokeLine)
+  const images = useDrillStore((s) => s.images)
   const penOnly = useToolStore((s) => s.penOnly)
   const select = useDrillStore((s) => s.select)
   const selectedId = useDrillStore((s) => s.selectedId)
@@ -397,6 +398,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
                 offsetX={layout.offsetX}
                 offsetY={layout.offsetY}
                 interactive={tool === 'select' && !locked && !zoomAreaMode}
+                images={images}
               >
                 {draft && tool !== 'select' && (
                   <LineShape

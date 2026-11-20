@@ -155,6 +155,10 @@ export interface PitchStyle {
   roundedCorners?: boolean
   mowing?: Mowing
   lighting?: Lighting
+  /** Picture (id in Drill.images) shown instead of the grass */
+  background?: string
+  /** Opacity of the background picture, 0.1–1 (missing = 1) */
+  backgroundOpacity?: number
 }
 
 export interface CustomGrid {

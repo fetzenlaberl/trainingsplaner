@@ -26,6 +26,8 @@ interface RecordOptions {
   fieldType: FieldType
   pitch: PitchStyle
   scenes: Scene[]
+  /** Imported pictures of the drill */
+  images: Record<string, string>
   speed: number
   /** Perspective tilt in degrees, or null for a flat video */
   tilt: number | null
@@ -42,6 +44,7 @@ export async function recordAnimation({
   fieldType,
   pitch,
   scenes,
+  images,
   speed,
   tilt,
   onProgress,
@@ -99,6 +102,7 @@ export async function recordAnimation({
               offsetX={0}
               offsetY={0}
               interactive={false}
+              images={images}
             />
           </Layer>
         </Stage>,

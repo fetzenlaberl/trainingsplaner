@@ -273,6 +273,22 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(tamper(() => undefined)).scenes[0].items[0].facing).toBeUndefined()
   })
 
+  it('round-trips pictures and the background picture', () => {
+    const text = tamper((d) => {
+      d.images = { 'img-1': 'data:image/jpeg;base64,AAAA' }
+      d.scenes[0].items[0].type = 'image'
+      d.scenes[0].items[0].label = 'img-1'
+      d.pitch.background = 'img-1'
+      d.pitch.backgroundOpacity = 0.7
+    })
+    const drill = parseDrill(text)
+    expect(drill.images).toEqual({ 'img-1': 'data:image/jpeg;base64,AAAA' })
+    expect(drill.pitch).toMatchObject({ background: 'img-1', backgroundOpacity: 0.7 })
+    expect(drill.scenes[0].items[0]).toMatchObject({ type: 'image', label: 'img-1' })
+    // Only picture data is accepted, nothing else (e.g. scripts or web addresses)
+    expect(() => parseDrill(tamper((d) => (d.images = { x: 'https://example.com/a.png' })))).toThrow()
+  })
+
   it('round-trips plain lines without arrowhead', () => {
     const text = tamper((d) => {
       d.scenes[0].lines[0].type = 'line'

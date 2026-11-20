@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ImagesContext } from './imagesContext'
 import { Group } from 'react-konva'
 import type { FieldType, Rect as ViewRect } from '../field/dimensions'
 import { viewRect, viewRotation } from '../field/orientation'
@@ -10,6 +11,8 @@ import { FieldZones } from './FieldZones'
 import { Pitch } from './Pitch'
 import { PitchColorContext } from './pitchColorContext'
 import { ViewRotationContext } from './viewRotationContext'
+
+const NO_IMAGES: Record<string, string> = {}
 
 interface FieldViewProps {
   fieldType: FieldType
@@ -27,6 +30,8 @@ interface FieldViewProps {
   interactive: boolean
   /** Extra content drawn on top, in meter units (e.g. drawing preview, handles) */
   children?: ReactNode
+  /** Imported pictures of the drill (id → data URL) */
+  images?: Record<string, string>
 }
 
 /** Pitch, lines and items, converted from meters to pixels. Used on screen and for export. */
@@ -42,6 +47,7 @@ export function FieldView({
   offsetY,
   interactive,
   children,
+  images = NO_IMAGES,
 }: FieldViewProps) {
   // In portrait the field is drawn rotated; positions are fitted in view coordinates.
   const vr = viewRect(viewport, pitch.orientation)
@@ -58,6 +64,7 @@ export function FieldView({
       clipWidth={viewport.width}
       clipHeight={viewport.height}
     >
+      <ImagesContext.Provider value={images}>
       <PitchColorContext.Provider value={pitch.color}>
         <ViewRotationContext.Provider value={rotation}>
           <Pitch fieldType={fieldType} pitch={pitch} viewport={viewport} scale={scale} />
@@ -67,6 +74,7 @@ export function FieldView({
           {children}
         </ViewRotationContext.Provider>
       </PitchColorContext.Provider>
+      </ImagesContext.Provider>
     </Group>
   )
 }

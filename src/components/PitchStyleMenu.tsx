@@ -17,6 +17,12 @@ import { Dropdown } from './Dropdown'
 
 const ORIENTATIONS: Orientation[] = ['landscape', 'portrait']
 
+const BACKGROUND_OPACITIES = [
+  { value: 1, label: 'Deckend' },
+  { value: 0.7, label: 'Leicht durchscheinend (70 %)' },
+  { value: 0.4, label: 'Durchscheinend (40 %)' },
+]
+
 /** Menus for the pitch look (orientation, grass, mowing, light), its lines and the grid overlay. */
 export function PitchStyleMenu() {
   const pitch = useDrillStore((s) => s.pitch)
@@ -24,6 +30,7 @@ export function PitchStyleMenu() {
   const setGrid = useDrillStore((s) => s.setGrid)
   const setOrientation = useDrillStore((s) => s.setOrientation)
   const setPitchLines = useDrillStore((s) => s.setPitchLines)
+  const setPitchBackground = useDrillStore((s) => s.setPitchBackground)
   const [customOpen, setCustomOpen] = useState(false)
 
   return (
@@ -50,6 +57,21 @@ export function PitchStyleMenu() {
             checked: (pitch.mowing ?? null) === o.value,
             onSelect: () => setPitchLines({ mowing: o.value ?? undefined }),
           })),
+          ...(pitch.background
+            ? [
+                ...BACKGROUND_OPACITIES.map((o) => ({
+                  section: 'Hintergrundbild',
+                  label: o.label,
+                  checked: (pitch.backgroundOpacity ?? 1) === o.value,
+                  onSelect: () => setPitchBackground({ backgroundOpacity: o.value }),
+                })),
+                {
+                  section: 'Hintergrundbild',
+                  label: 'Hintergrundbild entfernen',
+                  onSelect: () => setPitchBackground({ background: undefined }),
+                },
+              ]
+            : []),
           ...LIGHTING_OPTIONS.map((o) => ({
             section: 'Lichtverlauf',
             label: o.label,

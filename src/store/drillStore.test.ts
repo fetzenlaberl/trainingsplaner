@@ -739,6 +739,22 @@ describe('helpers', () => {
     expect(item().facing).toBe(false)
   })
 
+  it('keeps only pictures that are still used when saving', () => {
+    const a = store().addImage('data:image/png;base64,AAA')
+    const b = store().addImage('data:image/png;base64,BBB')
+    // The same picture twice is stored once.
+    expect(store().addImage('data:image/png;base64,AAA')).toBe(a)
+    const item = store().addItem({ type: 'image', color: '#ffffff', label: a }, 10, 10)
+    store().setPitchBackground({ background: b, backgroundOpacity: 0.4 })
+    expect(Object.keys(currentDrill(store()).images ?? {}).sort()).toEqual([a, b].sort())
+    expect(store().pitch.backgroundOpacity).toBe(0.4)
+    store().deleteElement(item)
+    store().setPitchBackground({ background: undefined })
+    expect(currentDrill(store()).images).toBeUndefined()
+    expect(store().pitch.background).toBeUndefined()
+    expect(store().pitch.backgroundOpacity).toBeUndefined()
+  })
+
   it('normalizeAngle keeps angles in [0, 360)', () => {
     expect(normalizeAngle(360)).toBe(0)
     expect(normalizeAngle(-90)).toBe(270)

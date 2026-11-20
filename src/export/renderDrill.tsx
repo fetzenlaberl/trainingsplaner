@@ -7,12 +7,13 @@ import { viewRect } from '../field/orientation'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { Scene } from '../model/types'
 import { currentScene, useDrillStore } from '../store/drillStore'
+import { preloadImages } from '../import/imageCache'
 import { EXPORT_SCALE, exportSize } from './layout'
 
 /** Renders the scene shown in the editor (see renderSceneToCanvas). */
 export function renderDrillToCanvas(pxPerMeter = EXPORT_SCALE): Promise<HTMLCanvasElement> {
   const state = useDrillStore.getState()
-  return renderSceneToCanvas(state.fieldType, state.pitch, currentScene(state), pxPerMeter)
+  return renderSceneToCanvas(state.fieldType, state.pitch, currentScene(state), pxPerMeter, state.images)
 }
 
 /**
@@ -24,7 +25,10 @@ export async function renderSceneToCanvas(
   pitch: PitchStyle,
   { items, lines, zones }: Scene,
   pxPerMeter = EXPORT_SCALE,
+  images: Record<string, string> = {},
 ): Promise<HTMLCanvasElement> {
+  // Pictures must be loaded before drawing, or they would be missing in the export.
+  await preloadImages(Object.values(images))
   const viewport = getViewport(fieldType)
   const { width, height } = exportSize(viewRect(viewport, pitch.orientation), pxPerMeter)
 
@@ -58,6 +62,7 @@ export async function renderSceneToCanvas(
               offsetX={0}
               offsetY={0}
               interactive={false}
+              images={images}
             />
           </Layer>
         </Stage>,

@@ -3,6 +3,7 @@ import { useContext, useMemo } from 'react'
 import { Circle, Group, Line, Rect, RegularPolygon, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
 import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
+import { PictureItem } from './PictureShapes'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
 import { AGILITY_SQUARE, TRAINING_BALL } from '../items/palette'
@@ -138,6 +139,13 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       return <FlagShape color={color} rotation={rotation} />
     case 'disc':
       return <DiscShape color={color} />
+    case 'image':
+      // Pictures stay upright on screen in portrait, plus their own rotation.
+      return (
+        <Group rotation={rotation + upright}>
+          <PictureItem id={label} />
+        </Group>
+      )
     case 'agility':
       return <AgilityGrid color={color} count={label === '4' ? 4 : 3} rotation={rotation} />
     case 'coach':

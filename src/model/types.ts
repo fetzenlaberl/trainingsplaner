@@ -23,6 +23,7 @@ export type ItemType =
   | 'rebounder'
   | 'agility'
   | 'coach'
+  | 'image'
   | 'text'
   | 'textbox'
 
@@ -137,4 +138,6 @@ export interface Drill {
   /** Pitch color and grid overlay */
   pitch: PitchStyle
   scenes: Scene[]
+  /** Imported pictures (id → data URL), used by picture items (id in the label) and the background */
+  images?: Record<string, string>
 }

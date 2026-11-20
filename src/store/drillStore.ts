@@ -37,6 +37,8 @@ export interface DrillState extends DrillContent {
   category: Category | null
   area: DrillArea
   info: DrillInfo
+  /** Imported pictures (id → data URL); unused ones are left out when saving */
+  images: Record<string, string>
   /** The single selected element, or null when nothing or several elements are selected */
   selectedId: string | null
   /** All selected elements (rectangle, Shift/Ctrl + click, "Mehrfach") */
@@ -55,6 +57,10 @@ export interface DrillState extends DrillContent {
   setGrid: (grid: GridType) => void
   /** Shows the own grid with these column and row sizes (meters), as one undo step. */
   setCustomGrid: (grid: CustomGrid) => void
+  /** Stores an imported picture (data URL) and returns its id; not part of the undo history. */
+  addImage: (src: string) => string
+  /** Background picture (id, or undefined to remove) and its opacity, as one undo step. */
+  setPitchBackground: (change: { background?: string; backgroundOpacity?: number }) => void
   /** Thickness, color and corners of the pitch markings, as one undo step. */
   /** Lines, mowing and lighting of the pitch (undefined = default), as one undo step. */
   setPitchLines: (
@@ -219,8 +225,10 @@ export function findElement(
 
 /** Builds the drill (as saved to a file) from the current state. */
 export function currentDrill(
-  state: Pick<DrillState, 'title' | 'description' | 'category' | 'area' | 'info' | 'fieldType' | 'pitch' | 'scenes'>,
+  state: Pick<DrillState, 'title' | 'description' | 'category' | 'area' | 'info' | 'fieldType' | 'pitch' | 'scenes'> &
+    Partial<Pick<DrillState, 'images'>>,
 ): Drill {
+  const images = usedImages(state.images ?? {}, state.pitch, state.scenes)
   return {
     title: state.title,
     description: state.description,
@@ -230,7 +238,21 @@ export function currentDrill(
     fieldType: state.fieldType,
     pitch: state.pitch,
     scenes: state.scenes,
+    ...(images ? { images } : {}),
   }
+}
+
+/** Only the pictures still shown somewhere (as item in any scene or as background); undefined if none. */
+export function usedImages(
+  images: Record<string, string>,
+  pitch: PitchStyle,
+  scenes: Scene[],
+): Record<string, string> | undefined {
+  const ids = new Set<string>()
+  if (pitch.background) ids.add(pitch.background)
+  for (const scene of scenes) for (const item of scene.items) if (item.type === 'image') ids.add(item.label)
+  const used = Object.fromEntries(Object.entries(images).filter(([id]) => ids.has(id)))
+  return Object.keys(used).length > 0 ? used : undefined
 }
 
 export function normalizeAngle(degrees: number): number {
@@ -306,6 +328,7 @@ function stateFromDrill(drill: Drill) {
     fieldType: drill.fieldType,
     pitch: drill.pitch,
     scenes: drill.scenes.length > 0 ? drill.scenes : emptyDrill().scenes,
+    images: drill.images ?? {},
     sceneIndex: 0,
     selectedId: null,
     selectedIds: [],
@@ -329,6 +352,24 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
   setCustomGrid: (customGrid) => set((s) => ({ ...recorded(s), pitch: { ...s.pitch, grid: 'custom', customGrid } })),
+  addImage: (src) => {
+    // The same picture imported twice is stored once.
+    const existing = Object.entries(get().images).find(([, value]) => value === src)
+    if (existing) return existing[0]
+    const id = createId('img')
+    set((s) => ({ images: { ...s.images, [id]: src } }))
+    return id
+  },
+  setPitchBackground: (change) =>
+    set((s) => {
+      const pitch = { ...s.pitch, ...change }
+      if (!pitch.background) {
+        delete pitch.background
+        delete pitch.backgroundOpacity
+      }
+      if (pitch.backgroundOpacity === undefined || pitch.backgroundOpacity >= 1) delete pitch.backgroundOpacity
+      return { ...recorded(s), pitch }
+    }),
   setPitchLines: (change) =>
     set((s) => {
       const pitch = { ...s.pitch, ...change }

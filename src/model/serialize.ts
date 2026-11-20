@@ -66,7 +66,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
 // Version 17: mowing patterns, lighting, extra line weights.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
-export const FILE_VERSION = 18
+// Version 19: imported pictures (picture items, background picture).
+export const FILE_VERSION = 19
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -90,6 +91,7 @@ const ITEM_TYPES: ItemType[] = [
   'rebounder',
   'agility',
   'coach',
+  'image',
   'text',
   'textbox',
 ]
@@ -169,7 +171,20 @@ export function drillFromData(data: unknown): Drill {
     fieldType: data.fieldType as FieldType,
     pitch: parsePitchStyle(data.pitch),
     scenes: data.scenes.map(parseScene),
+    ...parseImages(data.images),
   }
+}
+
+/** Pictures were added in version 19; only data URLs of pictures are accepted. */
+function parseImages(value: unknown): { images?: Record<string, string> } {
+  if (value === undefined) return {}
+  if (!isRecord(value)) throw corrupt()
+  const images: Record<string, string> = {}
+  for (const [id, src] of Object.entries(value)) {
+    if (typeof src !== 'string' || !src.startsWith('data:image/')) throw corrupt()
+    images[id] = src
+  }
+  return Object.keys(images).length > 0 ? { images } : {}
 }
 
 /** Turns a title into a safe file name (without extension). */
@@ -209,6 +224,13 @@ function parsePitchStyle(value: unknown): PitchStyle {
     throw corrupt()
   }
   const customGrid = value.customGrid === undefined ? undefined : parseCustomGrid(value.customGrid)
+  // Background picture: version 19.
+  if (
+    !(value.background === undefined || typeof value.background === 'string') ||
+    !(value.backgroundOpacity === undefined || (isNumber(value.backgroundOpacity) && value.backgroundOpacity > 0 && value.backgroundOpacity <= 1))
+  ) {
+    throw corrupt()
+  }
   // Line settings were added in version 16; missing values mean the usual lines.
   if (
     !(value.lineWidth === undefined || PITCH_LINE_WIDTHS.some((w) => w.value === value.lineWidth)) ||
@@ -230,6 +252,8 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(value.roundedCorners === true ? { roundedCorners: true } : {}),
     ...(typeof value.mowing === 'string' ? { mowing: value.mowing as Mowing } : {}),
     ...(typeof value.lighting === 'string' ? { lighting: value.lighting as Lighting } : {}),
+    ...(typeof value.background === 'string' ? { background: value.background } : {}),
+    ...(isNumber(value.backgroundOpacity) ? { backgroundOpacity: value.backgroundOpacity } : {}),
   }
 }
 

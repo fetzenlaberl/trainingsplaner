@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { importFile, type ImportTarget } from '../import/importActions'
 import { downloadBlob } from '../export/download'
 import { isEditorDirty, saveToLibraryWithFeedback, unlinkEditor } from '../library/libraryActions'
 import { useLibraryLink } from '../library/libraryStore'
@@ -25,6 +26,8 @@ export function FileBar() {
   const savedJson = useLibraryLink((s) => s.savedJson)
   const inLibrary = useLibraryLink((s) => s.libraryId !== null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const importTargetRef = useRef<ImportTarget>('item')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const dirty = drillJson !== savedJson
@@ -58,6 +61,22 @@ export function FileBar() {
     }
   }
 
+  function startImport(target: ImportTarget) {
+    importTargetRef.current = target
+    const input = importInputRef.current
+    if (!input) return
+    input.accept = target === 'text' ? '.txt,.md,text/plain' : 'image/*,.pdf,application/pdf'
+    input.click()
+  }
+
+  async function handleImport(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const error = await importFile(file, importTargetRef.current)
+    if (error) window.alert('Import fehlgeschlagen: ' + error)
+  }
+
   async function handleSaveToLibrary() {
     setSaving(true)
     await saveToLibraryWithFeedback()
@@ -85,8 +104,27 @@ export function FileBar() {
           { label: 'Neue Übung', onSelect: handleNew },
           { label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
           { label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
+          {
+            section: 'Importieren',
+            label: 'Bild oder PDF aufs Feld …',
+            hint: 'Foto, PNG, JPG oder erste PDF-Seite als Objekt',
+            onSelect: () => startImport('item'),
+          },
+          {
+            section: 'Importieren',
+            label: 'Hintergrundbild …',
+            hint: 'Bild oder PDF statt Rasen, z. B. Foto vom eigenen Platz',
+            onSelect: () => startImport('background'),
+          },
+          {
+            section: 'Importieren',
+            label: 'Text als Textfeld …',
+            hint: 'Textdatei (.txt)',
+            onSelect: () => startImport('text'),
+          },
         ]}
       />
+      <input ref={importInputRef} type="file" className="hidden" onChange={(e) => void handleImport(e)} />
       <input
         ref={fileInputRef}
         type="file"

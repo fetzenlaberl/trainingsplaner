@@ -1,4 +1,5 @@
 import { downloadBlob } from '../export/download'
+import { preloadImages } from '../import/imageCache'
 import { fileNameFromTitle } from '../model/serialize'
 import { useDrillStore } from '../store/drillStore'
 import { exportTilt } from '../store/perspectiveStore'
@@ -20,13 +21,15 @@ export async function exportVideo(
   signal: AbortSignal,
 ): Promise<void> {
   // Take a copy of the drill now, so edits during the export do not affect the video.
-  const { title, fieldType, pitch, scenes } = useDrillStore.getState()
+  const { title, fieldType, pitch, scenes, images } = useDrillStore.getState()
+  await preloadImages(Object.values(images))
   const { speed } = usePlaybackStore.getState()
 
   const recording = await recordAnimation({
     fieldType,
     pitch,
     scenes,
+    images,
     speed,
     tilt: exportTilt(),
     signal,

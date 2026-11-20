@@ -12,7 +12,7 @@ const THUMBNAIL_SCALE = 4
 
 async function createThumbnail(drill: Drill): Promise<string | null> {
   try {
-    const canvas = await renderSceneToCanvas(drill.fieldType, drill.pitch, drill.scenes[0], THUMBNAIL_SCALE)
+    const canvas = await renderSceneToCanvas(drill.fieldType, drill.pitch, drill.scenes[0], THUMBNAIL_SCALE, drill.images)
     return canvas.toDataURL('image/jpeg', 0.8)
   } catch {
     return null // The drill is still saved, just without a preview image.

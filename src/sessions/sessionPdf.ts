@@ -112,7 +112,7 @@ export async function exportSessionPdf(session: TrainingSession): Promise<void> 
   for (const row of rows) {
     const entry = row.block.drillId ? byId.get(row.block.drillId) : undefined
     if (!entry) continue
-    const canvas = await renderSceneToCanvas(entry.drill.fieldType, entry.drill.pitch, entry.drill.scenes[0])
+    const canvas = await renderSceneToCanvas(entry.drill.fieldType, entry.drill.pitch, entry.drill.scenes[0], undefined, entry.drill.images)
     const description = [
       drillInfoLine(entry.drill.info),
       entry.drill.description.trim(),

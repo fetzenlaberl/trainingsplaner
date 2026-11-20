@@ -24,7 +24,8 @@ export function startAutosave(): () => void {
       s.area === prev.area &&
       s.fieldType === prev.fieldType &&
       s.pitch === prev.pitch &&
-      s.scenes === prev.scenes
+      s.scenes === prev.scenes &&
+      s.images === prev.images
     ) {
       return
     }
