@@ -110,7 +110,7 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
                     onPointerDown={(e) =>
                       onStartDrag(e, { key: player.id, name: playerLabel(player), item: { ...item, size: 1.5 } })
                     }
-                    className="flex w-full touch-none cursor-grab items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-200 select-none hover:bg-slate-800"
+                    className="flex w-full cursor-grab touch-pan-y items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-200 select-none hover:bg-slate-800"
                   >
                     <span
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"

@@ -4,6 +4,7 @@ import { ZONE_TEMPLATES, type ZoneTemplate } from '../items/zones'
 import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
+import { CollapseButton } from './CollapseControls'
 import { ItemPreview } from './ItemPreview'
 import { SquadPanel } from './SquadPanel'
 import { ZonePreview } from './ZonePreview'
@@ -12,6 +13,9 @@ import type { DropTarget } from './PitchStage'
 const ICON_SIZE_PX = 36
 const ZONE_ICON_SIZE_PX = 34
 const FALLBACK_SCALE = 10
+/** Touch: holding still this long, or moving across the list, picks the object up. */
+const PICK_UP_MS = 300
+const MOVE_THRESHOLD = 8
 
 type Template = { kind: 'item'; template: ItemTemplate } | { kind: 'zone'; template: ZoneTemplate }
 
@@ -42,15 +46,56 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   useEffect(() => () => cleanupRef.current?.(), [])
 
-  function startDrag(e: ReactPointerEvent, dragged: Template) {
-    if (e.pointerType === 'mouse' && e.button !== 0) return
-    e.preventDefault()
+  /**
+   * Mouse: dragging starts at once. Touch and pen: moving along the list scrolls it;
+   * moving across it (towards the pitch) or holding still for a moment picks the object up.
+   */
+  function startDrag(e: ReactPointerEvent, dragged: Template, verticalOnly = false) {
+    if (e.pointerType === 'mouse') {
+      if (e.button !== 0) return
+      e.preventDefault()
+      beginDrag(dragged, e.clientX, e.clientY)
+      return
+    }
+    cleanupRef.current?.()
+    const startX = e.clientX
+    const startY = e.clientY
+    // The list scrolls vertically on wide screens (sidebar) and horizontally on narrow ones.
+    const verticalList = verticalOnly || window.matchMedia('(min-width: 768px)').matches
+    let picked = false
+    const pickUp = (x: number, y: number) => {
+      if (picked) return
+      picked = true
+      cancelPending()
+      beginDrag(dragged, x, y)
+    }
+    const timer = window.setTimeout(() => pickUp(startX, startY), PICK_UP_MS)
+    const onMove = (ev: PointerEvent) => {
+      const along = Math.abs(verticalList ? ev.clientY - startY : ev.clientX - startX)
+      const across = Math.abs(verticalList ? ev.clientX - startX : ev.clientY - startY)
+      if (across > MOVE_THRESHOLD && across > along) pickUp(ev.clientX, ev.clientY)
+      else if (along > MOVE_THRESHOLD) cancelPending() // the list is being scrolled
+    }
+    const cancelPending = () => {
+      window.clearTimeout(timer)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', cancelPending)
+      window.removeEventListener('pointercancel', cancelPending)
+      if (cleanupRef.current === cancelPending) cleanupRef.current = null
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', cancelPending)
+    window.addEventListener('pointercancel', cancelPending)
+    cleanupRef.current = cancelPending
+  }
+
+  function beginDrag(dragged: Template, clientX: number, clientY: number) {
     cleanupRef.current?.()
 
     setDrag({
       dragged,
-      clientX: e.clientX,
-      clientY: e.clientY,
+      clientX,
+      clientY,
       scale: dropTargetRef.current?.scale ?? FALLBACK_SCALE,
       rotation: dropTargetRef.current?.rotation ?? 0,
     })
@@ -70,7 +115,10 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           : addZone(dragged.template, pos.x, pos.y),
       )
     }
+    // While an object is carried, a finger must not scroll the page or the list.
+    const blockScroll = (ev: TouchEvent) => ev.preventDefault()
     const cleanup = () => {
+      window.removeEventListener('touchmove', blockScroll)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', cleanup)
@@ -78,6 +126,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       setDrag(null)
     }
 
+    window.addEventListener('touchmove', blockScroll, { passive: false })
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', cleanup)
@@ -106,10 +155,11 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
             {label}
           </button>
         ))}
+        <CollapseButton bar="sidebar" label="Objektleiste" className="h-auto w-7" />
       </div>
       {mode === 'squad' ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template })} />
+          <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template }, true)} />
         </div>
       ) : (
         <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
@@ -119,7 +169,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                 type="button"
                 title={`${template.name} aufs Feld ziehen`}
                 onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
-                className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
               >
                 <span className="pointer-events-none flex h-10 items-center justify-center">
                   <ItemPreview
@@ -140,7 +190,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                 type="button"
                 title={`Zone ${template.name} aufs Feld ziehen`}
                 onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
-                className="flex w-20 touch-none cursor-grab flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-xs text-slate-300 select-none hover:bg-slate-800 md:w-full"
               >
                 <span className="pointer-events-none flex h-10 items-center justify-center">
                   <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />

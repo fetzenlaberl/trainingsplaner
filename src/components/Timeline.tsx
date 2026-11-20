@@ -50,7 +50,7 @@ export function Timeline() {
   }
 
   return (
-    <div className="flex flex-col gap-2 border-t border-slate-700 bg-slate-900 px-3 py-2">
+    <div className="flex flex-col gap-2 border-t border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"

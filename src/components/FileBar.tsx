@@ -66,6 +66,9 @@ export function FileBar() {
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      <button type="button" className={buttonClass} title="Neue, leere Übung beginnen" onClick={handleNew}>
+        + Neu
+      </button>
       <input
         className={`${inputClass} w-48`}
         value={title}

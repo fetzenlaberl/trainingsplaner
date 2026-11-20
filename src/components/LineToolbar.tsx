@@ -103,7 +103,7 @@ export function LineToolbar() {
   const select = useDrillStore((s) => s.select)
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-slate-900 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
       <div role="group" aria-label="Werkzeug" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
         {TOOLS.map((t) => {
           const active = t.tool === tool
