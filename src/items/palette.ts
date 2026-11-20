@@ -83,6 +83,14 @@ export const TEAM_COLORS = {
 /** Names of the plain symbols (no number, no arrow) */
 const BARE_NAMES = { circle: 'Kreis', cross: 'Kreuz', triangle: 'Dreieck' } as const
 
+/** Shirts without number */
+const SHIRT_PLAIN_COLORS = [
+  { key: 'red', name: 'Rot', color: TEAM_COLORS.red },
+  { key: 'blue', name: 'Blau', color: TEAM_COLORS.blue },
+  { key: 'yellow', name: 'Gelb', color: '#facc15' },
+  { key: 'green', name: 'Grün', color: '#16a34a' },
+]
+
 function player(color: string, shape: PlayerShape): NewItem {
   return { type: 'player', color, shape, size: DEFAULT_PLAYER_SIZE }
 }
@@ -97,6 +105,11 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'cross-blue', name: 'Kreuz Blau', item: player(TEAM_COLORS.blue, 'cross') },
   { key: 'shirt-red', name: 'Trikot Rot', item: player(TEAM_COLORS.red, 'shirt') },
   { key: 'shirt-blue', name: 'Trikot Blau', item: player(TEAM_COLORS.blue, 'shirt') },
+  ...SHIRT_PLAIN_COLORS.map(({ key, name, color }) => ({
+    key: `shirt-plain-${key}`,
+    name: `Trikot ${name} ohne Nummer`,
+    item: { ...player(color, 'shirt'), label: '' },
+  })),
   { key: 'plain-red', name: 'Ohne Nummer Rot', item: { ...player(TEAM_COLORS.red, 'circle'), label: '' } },
   { key: 'plain-blue', name: 'Ohne Nummer Blau', item: { ...player(TEAM_COLORS.blue, 'circle'), label: '' } },
   ...(['circle', 'cross', 'triangle'] as const).flatMap((shape) =>
