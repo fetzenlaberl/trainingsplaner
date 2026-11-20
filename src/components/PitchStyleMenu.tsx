@@ -31,7 +31,7 @@ const BACKGROUND_OPACITIES = [
   { value: 0.4, label: 'Durchscheinend (40 %)' },
 ]
 
-/** Menus for the pitch look (orientation, grass, mowing, light), its lines and the grid overlay. */
+/** Menus for the pitch look (orientation, mowing, light), its color, its lines, their color and the grid overlay. */
 export function PitchStyleMenu() {
   const pitch = useDrillStore((s) => s.pitch)
   const setPitchColor = useDrillStore((s) => s.setPitchColor)
@@ -71,18 +71,6 @@ export function PitchStyleMenu() {
             checked: pitch.orientation === orientation,
             onSelect: () => setOrientation(orientation),
           })),
-          ...PITCH_COLOR_ORDER.map((color) => ({
-            section: 'Farbe',
-            label: PITCH_COLORS[color].label,
-            checked: !pitch.gradient && pitch.color === color,
-            onSelect: () => setPitchColor(color),
-          })),
-          {
-            section: 'Farbe',
-            label: pitch.gradient ? 'Farbverlauf ändern …' : 'Farbverlauf (zwei Farben) …',
-            checked: Boolean(pitch.gradient),
-            onSelect: () => setGradientOpen(true),
-          },
           ...MOWING_OPTIONS.map((o) => ({
             section: 'Mähmuster',
             label: o.label,
@@ -119,6 +107,24 @@ export function PitchStyleMenu() {
         ]}
       />
       <Dropdown
+        label="Feldfarbe"
+        align="right"
+        items={[
+          ...PITCH_COLOR_ORDER.map((color) => ({
+            section: 'Farbe des Feldes',
+            label: PITCH_COLORS[color].label,
+            checked: !pitch.gradient && pitch.color === color,
+            onSelect: () => setPitchColor(color),
+          })),
+          {
+            section: 'Farbe des Feldes',
+            label: pitch.gradient ? 'Farbverlauf ändern …' : 'Farbverlauf (zwei Farben) …',
+            checked: Boolean(pitch.gradient),
+            onSelect: () => setGradientOpen(true),
+          },
+        ]}
+      />
+      <Dropdown
         label="Linien"
         align="right"
         items={[
@@ -127,12 +133,6 @@ export function PitchStyleMenu() {
             label: w.label,
             checked: (pitch.lineWidth ?? 'normal') === w.value,
             onSelect: () => setPitchLines({ lineWidth: w.value }),
-          })),
-          ...PITCH_LINE_COLORS.map((c) => ({
-            section: 'Linienfarbe',
-            label: c.label,
-            checked: (pitch.lineColor ?? null) === c.value,
-            onSelect: () => setPitchLines({ lineColor: c.value ?? undefined }),
           })),
           {
             section: 'Ecken',
@@ -147,6 +147,18 @@ export function PitchStyleMenu() {
             checked: pitch.retreatLines === true,
             onSelect: () => setPitchLines({ retreatLines: !pitch.retreatLines }),
           },
+        ]}
+      />
+      <Dropdown
+        label="Linienfarbe"
+        align="right"
+        items={[
+          ...PITCH_LINE_COLORS.map((c) => ({
+            section: 'Farbe der Spielfeldlinien',
+            label: c.label,
+            checked: (pitch.lineColor ?? null) === c.value,
+            onSelect: () => setPitchLines({ lineColor: c.value ?? undefined }),
+          })),
         ]}
       />
       <Dropdown
