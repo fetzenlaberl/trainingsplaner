@@ -64,13 +64,20 @@ export const FORMATIONS: Formation[] = [
 export type Side = 'left' | 'right'
 
 /** Field position (meters) of a slot for a team whose own goal is on the given side. */
-export function slotPosition(slot: FormationSlot, side: Side): { x: number; y: number; rotation: number } {
-  // Stay inside the own half with a little room to the lines.
-  const depthMeters = 3 + slot.depth * (PITCH.length / 2 - 5)
-  const y = 5 + slot.width * (PITCH.width - 10)
+export function slotPosition(
+  slot: FormationSlot,
+  side: Side,
+  size: { length: number; width: number } = PITCH,
+): { x: number; y: number; rotation: number } {
+  // Stay inside the own half with a little room to the lines (less room on small fields).
+  const scale = Math.min(1, size.width / PITCH.width)
+  const goalRoom = 3 * scale
+  const sideRoom = 5 * scale
+  const depthMeters = goalRoom + slot.depth * (size.length / 2 - goalRoom - 2 * scale)
+  const y = sideRoom + slot.width * (size.width - 2 * sideRoom)
   return side === 'left'
     ? { x: depthMeters, y, rotation: 0 }
-    : { x: PITCH.length - depthMeters, y: PITCH.width - y, rotation: 180 }
+    : { x: size.length - depthMeters, y: size.width - y, rotation: 180 }
 }
 
 /**

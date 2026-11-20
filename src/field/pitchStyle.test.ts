@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { gridCells, letterName, pitchGridLabels, lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { fitGridToField, gridCells, letterName, pitchGridLabels, lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -235,5 +235,15 @@ describe('pitchGridLabels', () => {
 
   it('finds the zones of the own grid', () => {
     expect(gridCells('custom', { columns: [10, 20], rows: [5, 5, 5] }).cells).toHaveLength(6)
+  })
+})
+
+describe('fitGridToField', () => {
+  it('stretches grids onto a smaller field and keeps the own grid in meters', () => {
+    const thirds = fitGridToField('thirds', { length: 40, width: 20 })
+    expect(thirds.point(105, 68)).toEqual({ x: 40, y: 20 })
+    const custom = fitGridToField('custom', { length: 40, width: 20 })
+    expect(custom.point(52.5, 34)).toEqual({ x: 20, y: 10 })
+    expect(fitGridToField('thirds', { length: 105, width: 68 }).textScale).toBe(1)
   })
 })

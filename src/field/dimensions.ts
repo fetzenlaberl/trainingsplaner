@@ -22,7 +22,17 @@ export const PITCH = {
 /** Grass margin around the pitch so goals and corners are not cut off. */
 export const RUNOFF = 4
 
-export type FieldType = 'full' | 'half' | 'penalty' | 'cornerLeft' | 'cornerRight' | 'empty'
+export type FieldType =
+  | 'full'
+  | 'half'
+  | 'penalty'
+  | 'cornerLeft'
+  | 'cornerRight'
+  | 'futsal'
+  | 'hall'
+  | 'corridor'
+  | 'quarter'
+  | 'empty'
 
 export interface Rect {
   x: number
@@ -37,10 +47,41 @@ export const FIELD_TYPE_LABELS: Record<FieldType, string> = {
   penalty: 'Strafraum',
   cornerLeft: 'Ecke links',
   cornerRight: 'Ecke rechts',
+  futsal: 'Futsal',
+  hall: 'Halle mit Bande',
+  corridor: 'Korridor',
+  quarter: 'Viertelfeld',
   empty: 'Leere Fläche',
 }
 
-export const FIELD_TYPES: FieldType[] = ['full', 'half', 'penalty', 'cornerLeft', 'cornerRight', 'empty']
+export const FIELD_TYPES: FieldType[] = [
+  'full',
+  'half',
+  'penalty',
+  'cornerLeft',
+  'cornerRight',
+  'futsal',
+  'hall',
+  'corridor',
+  'quarter',
+  'empty',
+]
+
+/** Smaller fields of their own (not a part of the big pitch): playing area in meters. */
+export const SMALL_FIELDS = {
+  futsal: { length: 40, width: 20 },
+  hall: { length: 40, width: 20 },
+  corridor: { length: 50, width: 25 },
+  quarter: { length: 52, width: 34 },
+} as const
+
+/** Room around a small field for goals, boards and labels (meters). */
+export const SMALL_FIELD_RUNOFF = 3
+
+/** Playing area (length along x, width along y) the lines and grids of a field type refer to. */
+export function fieldSize(type: FieldType): { length: number; width: number } {
+  return type in SMALL_FIELDS ? SMALL_FIELDS[type as keyof typeof SMALL_FIELDS] : { length: PITCH.length, width: PITCH.width }
+}
 
 /** Corner sections: depth from the goal line, and how far they reach past the far side of the penalty area. */
 export const CORNER_VIEW_DEPTH = 30
@@ -50,6 +91,18 @@ export const CORNER_VIEW_BEYOND_BOX = 6
 export function getViewport(type: FieldType): Rect {
   const { length, width } = PITCH
   switch (type) {
+    case 'futsal':
+    case 'hall':
+    case 'corridor':
+    case 'quarter': {
+      const size = SMALL_FIELDS[type]
+      return {
+        x: -SMALL_FIELD_RUNOFF,
+        y: -SMALL_FIELD_RUNOFF,
+        width: size.length + 2 * SMALL_FIELD_RUNOFF,
+        height: size.width + 2 * SMALL_FIELD_RUNOFF,
+      }
+    }
     case 'full':
     case 'empty':
       return {

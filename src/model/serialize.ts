@@ -78,7 +78,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 20: reshaped circle zones, light source/kind, own pitch gradient, own grid labels.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
 // Version 19: imported pictures (picture items, background picture).
-export const FILE_VERSION = 20
+export const FILE_VERSION = 21
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 

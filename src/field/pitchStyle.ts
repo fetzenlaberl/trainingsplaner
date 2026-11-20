@@ -787,6 +787,39 @@ export function pitchGridLabels(style: PitchStyle, upright = 0): GridLabel[] {
 }
 
 /**
+ * Grids are laid out on the big pitch; on a smaller field they are stretched to its size
+ * (the own grid keeps its sizes in meters and is only centred). Text shrinks with the field.
+ */
+export function fitGridToField(
+  grid: GridType,
+  size: { length: number; width: number },
+): { point: (x: number, y: number) => { x: number; y: number }; textScale: number } {
+  const sx = size.length / PITCH.length
+  const sy = size.width / PITCH.width
+  const textScale = Math.sqrt(sx * sy)
+  if (sx === 1 && sy === 1) return { point: (x, y) => ({ x, y }), textScale: 1 }
+  if (grid === 'custom') {
+    const dx = (size.length - PITCH.length) / 2
+    const dy = (size.width - PITCH.width) / 2
+    return { point: (x, y) => ({ x: x + dx, y: y + dy }), textScale }
+  }
+  return { point: (x, y) => ({ x: x * sx, y: y * sy }), textScale }
+}
+
+/** Moves a grid label onto a smaller field (see fitGridToField). */
+export function fitGridLabel(label: GridLabel, fit: ReturnType<typeof fitGridToField>, usualSize: number): GridLabel {
+  const at = fit.point(label.x, label.y)
+  const result: GridLabel = { ...label, x: at.x, y: at.y }
+  if (fit.textScale !== 1) result.size = (label.size ?? usualSize) * fit.textScale
+  if (label.cell) {
+    const a = fit.point(label.cell.x1, label.cell.y1)
+    const b = fit.point(label.cell.x2, label.cell.y2)
+    result.cell = { x1: a.x, y1: a.y, x2: b.x, y2: b.y }
+  }
+  return result
+}
+
+/**
  * Grid lines in meters ([x1, y1, x2, y2] each), relative to the full pitch.
  * Lanes follow the sides of the penalty and goal areas (wings, half-spaces, centre);
  * the positional grid adds cross lines at the penalty areas and the halfway line.

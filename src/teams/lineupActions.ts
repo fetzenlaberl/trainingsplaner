@@ -1,3 +1,4 @@
+import { fieldSize } from '../field/dimensions'
 import { KEEPER_LABEL, TEAM_COLORS, type NewItem } from '../items/palette'
 import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
@@ -21,7 +22,7 @@ export function itemForPlayer(team: Team, player: TeamPlayer, nameStyle: NameSty
 export function placeLineup(team: Team, formation: Formation, side: Side, nameStyle: NameStyle = 'full'): void {
   const lineup = assignLineup(team.players, formation)
   const entries = formation.slots.map((slot, i) => {
-    const { x, y, rotation } = slotPosition(slot, side)
+    const { x, y, rotation } = slotPosition(slot, side, fieldSize(useDrillStore.getState().fieldType))
     const player = lineup[i]
     const item: NewItem = player
       ? itemForPlayer(team, player, nameStyle)

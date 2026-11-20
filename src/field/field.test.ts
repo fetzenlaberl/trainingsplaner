@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { FIELD_TYPES, getViewport, PITCH, RUNOFF } from './dimensions'
+import { fieldSize, FIELD_TYPES, getViewport, PITCH, RUNOFF, SMALL_FIELDS } from './dimensions'
 import { clampToRect, fitViewport, isInsideRect, metersToPixels, pixelsToMeters } from './layout'
-import { arcPoints, getGoals, getPitchMarkings } from './markings'
+import { arcPoints, getFieldBoards, getFieldGoals, getFieldMarkings, getGoals, getPitchMarkings } from './markings'
 
 describe('getViewport', () => {
   it('shows the corner sections from the corner flag past the far side of the penalty area', () => {
@@ -127,7 +127,7 @@ describe('markings', () => {
   })
 
   it('draws the outer boundary at 105 x 68 m', () => {
-    expect(getPitchMarkings()[0]).toEqual({ kind: 'rect', x: 0, y: 0, width: 105, height: 68 })
+    expect(getPitchMarkings()[0]).toEqual({ kind: 'rect', x: 0, y: 0, width: 105, height: 68, outer: true })
   })
 
   it('places penalty spots 11 m from each goal line', () => {
@@ -150,5 +150,45 @@ describe('markings', () => {
     expect(right.x).toBe(105)
     expect(left.y + left.height / 2).toBe(34)
     expect(left.height).toBeCloseTo(7.32)
+  })
+})
+
+describe('small fields', () => {
+  it('keeps goals, boards and lines inside the visible area', () => {
+    for (const type of ['futsal', 'hall', 'corridor', 'quarter'] as const) {
+      const view = getViewport(type)
+      const { length, width } = fieldSize(type)
+      expect(SMALL_FIELDS[type]).toEqual({ length, width })
+      const rects = [...getFieldGoals(type), ...(getFieldBoards(type) ? [getFieldBoards(type)!] : [])]
+      for (const r of rects) {
+        expect(r.x).toBeGreaterThanOrEqual(view.x)
+        expect(r.y).toBeGreaterThanOrEqual(view.y)
+        expect(r.x + r.width).toBeLessThanOrEqual(view.x + view.width)
+        expect(r.y + r.height).toBeLessThanOrEqual(view.y + view.height)
+      }
+      expect(getFieldMarkings(type)[0]).toEqual({ kind: 'rect', x: 0, y: 0, width: length, height: width, outer: true })
+    }
+  })
+
+  it('draws futsal with 3 m goals and penalty marks at 6 m and 10 m', () => {
+    const goals = getFieldGoals('futsal')
+    expect(goals.map((g) => g.height)).toEqual([3, 3])
+    const spots = getFieldMarkings('futsal').flatMap((m) => (m.kind === 'spot' ? [m.x] : []))
+    expect(spots.sort((a, b) => a - b)).toEqual([6, 10, 20, 30, 34])
+  })
+
+  it('puts the penalty area 6 m in front of the futsal goal', () => {
+    const area = getFieldMarkings('futsal').find((m) => m.kind === 'line' && !m.corner && Math.abs(m.points[0]) < 1e-9 && m.points[1] > 1)
+    expect(area?.kind).toBe('line')
+    if (area?.kind !== 'line') return
+    const xs = area.points.filter((_, i) => i % 2 === 0)
+    expect(Math.max(...xs)).toBeCloseTo(6)
+  })
+
+  it('has boards only in the hall and goals on all sides only in the quarter field', () => {
+    expect(getFieldBoards('hall')).not.toBeNull()
+    expect(getFieldBoards('futsal')).toBeNull()
+    expect(getFieldGoals('corridor')).toHaveLength(2)
+    expect(getFieldGoals('quarter')).toHaveLength(4)
   })
 })

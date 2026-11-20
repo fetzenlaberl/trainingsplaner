@@ -2,10 +2,12 @@ import { useContext } from 'react'
 import { Circle, Group, Line, Rect } from 'react-konva'
 import { MeterText } from './MeterText'
 import { PitchBackground } from './PictureShapes'
-import { PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
-import { getGoals, getPitchMarkings } from '../field/markings'
+import { fieldSize, PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
+import { BOARDS, getFieldBoards, getFieldGoals, getFieldMarkings, type Goal, type Marking } from '../field/markings'
 import { grassTextureTile, TEXTURE_TILE_METERS, TEXTURE_TILE_PX } from '../field/grassTexture'
 import {
+  fitGridLabel,
+  fitGridToField,
   pitchGridLabels,
   gridLines,
   LIGHT_SOURCES,
@@ -32,8 +34,19 @@ const CORNER_LABEL_PADDING = 0.8
 /** Bigger corner labels keep a little more distance to the lines. */
 const cornerPadding = (label: GridLabel) => CORNER_LABEL_PADDING * Math.sqrt((label.size ?? CORNER_LABEL_SIZE) / CORNER_LABEL_SIZE)
 
-const MARKINGS = getPitchMarkings()
-const GOALS = getGoals()
+/** Lines and goals per field type, computed once. */
+const LAYOUTS = new Map<FieldType, { markings: Marking[]; goals: Goal[] }>()
+function fieldLayout(type: FieldType) {
+  let layout = LAYOUTS.get(type)
+  if (!layout) {
+    layout = { markings: getFieldMarkings(type), goals: getFieldGoals(type) }
+    LAYOUTS.set(type, layout)
+  }
+  return layout
+}
+
+/** Color of the boards around the indoor field */
+const BOARD_COLOR = '#d6d3d1'
 
 interface PitchProps {
   fieldType: FieldType
@@ -60,6 +73,15 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const upright = -useContext(ViewRotationContext)
   const portrait = upright !== 0
   const labelSize = 3.2
+  const size = fieldSize(fieldType)
+  const { markings, goals } = fieldLayout(fieldType)
+  const boards = getFieldBoards(fieldType)
+  const fit = fitGridToField(pitch.grid, size)
+  const fitPoints = (points: number[]) => {
+    const a = fit.point(points[0], points[1])
+    const b = fit.point(points[2], points[3])
+    return [a.x, a.y, b.x, b.y]
+  }
 
   return (
     <Group listening={false}>
@@ -75,6 +97,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           color={pitch.gradient ? 'rgba(255,255,255,0.06)' : stripeColor(pitch.color)}
           kind={mowing.kind}
           count={mowing.count}
+          size={size}
         />
       )}
       {texture && (
@@ -94,13 +117,24 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         <LightOverlay viewport={viewport} upright={upright} lighting={lighting} source={pitch.lightSource} kind={pitch.lightKind} />
       )}
 
+      {boards && (
+        <Rect
+          {...boards}
+          stroke={BOARD_COLOR}
+          strokeWidth={BOARDS.thickness}
+          cornerRadius={BOARDS.cornerRadius}
+          shadowColor="black"
+          shadowOpacity={0.35}
+          shadowBlur={0.4}
+        />
+      )}
       {fieldType !== 'empty' && (
         <>
-          {MARKINGS.map((m, i) => {
+          {markings.map((m, i) => {
             switch (m.kind) {
               case 'rect': {
                 // Rounded corners only on the outer lines (touch and goal lines).
-                const outer = m.x === 0 && m.y === 0 && m.width === PITCH.length
+                const outer = m.outer === true
                 return (
                   <Rect
                     key={i}
@@ -122,7 +156,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
                 return <Circle key={i} x={m.x} y={m.y} radius={spotRadius} fill={lineColor} />
             }
           })}
-          {GOALS.map((g, i) => (
+          {goals.map((g, i) => (
             <Rect key={`goal-${i}`} {...g} fill={colors.goalFill} stroke={lineColor} strokeWidth={lineWidth * 1.5} />
           ))}
         </>
@@ -131,14 +165,16 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
       {gridLines(pitch.grid, pitch.customGrid).map((points, i) => (
         <Line
           key={`grid-${i}`}
-          points={points}
+          points={fitPoints(points)}
           stroke={colors.grid}
           strokeWidth={gridWidth}
           // The own grid is an exercise field: solid lines; other grids are dashed guides.
           dash={pitch.grid === 'custom' ? undefined : [gridWidth * 6, gridWidth * 4]}
         />
       ))}
-      {pitchGridLabels(pitch, upright).map((label) =>
+      {pitchGridLabels(pitch, upright)
+        .map((label) => fitGridLabel(label, fit, label.cell ? CORNER_LABEL_SIZE : labelSize))
+        .map((label) =>
         label.cell ? (
           // Small number in the top left corner of the cell as seen on screen (portrait turns the pitch).
           <MeterText
@@ -183,14 +219,16 @@ function MowingPattern({
   color,
   kind,
   count,
+  size,
 }: {
   viewport: ViewRect
   color: string
   kind: 'across' | 'along' | 'check'
   count: number
+  size: { length: number; width: number }
 }) {
-  const sizeX = PITCH.length / count
-  const sizeY = kind === 'along' ? PITCH.width / count : sizeX
+  const sizeX = size.length / count
+  const sizeY = kind === 'along' ? size.width / count : sizeX
   const cells: { x: number; y: number; w: number; h: number }[] = []
   const firstCol = Math.floor(viewport.x / sizeX)
   const lastCol = Math.ceil((viewport.x + viewport.width) / sizeX)
