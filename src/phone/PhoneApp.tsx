@@ -3,6 +3,7 @@ import { LibraryView } from '../components/LibraryView'
 import { PitchStage, type DropTarget } from '../components/PitchStage'
 import { SessionsView } from '../components/SessionsView'
 import { buttonClass } from '../components/ui'
+import { useFullscreen } from '../hooks/useFullscreen'
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop'
 import { locateTime, totalDuration } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
@@ -98,6 +99,61 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
     selectScene(index)
   }
   const nextSpeed = SPEEDS[(SPEEDS.indexOf(speed as (typeof SPEEDS)[number]) + 1) % SPEEDS.length]
+  const fullscreen = useFullscreen()
+  const [immersive, setImmersive] = useState(false)
+  const [showTip, setShowTip] = useState(false)
+
+  function enterImmersive() {
+    setImmersive(true)
+    // Real fullscreen where the browser allows it (e.g. Android); iPhone Safari does not.
+    if (fullscreen.supported && !fullscreen.active) void fullscreen.toggle()
+    if (!isStandalone() && !tipShown()) {
+      rememberTipShown()
+      setShowTip(true)
+    }
+  }
+
+  function leaveImmersive() {
+    setImmersive(false)
+    setShowTip(false)
+    if (fullscreen.active) void fullscreen.toggle()
+  }
+
+  if (immersive) {
+    return (
+      <div className="relative h-full bg-slate-950">
+        <PitchStage dropTargetRef={dropTargetRef} />
+        <button
+          type="button"
+          aria-label="Vollbild beenden"
+          onClick={leaveImmersive}
+          className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-2 z-20 rounded-full bg-slate-900/80 px-3 py-2 text-sm font-semibold text-white shadow"
+        >
+          ⤡
+        </button>
+        <button
+          type="button"
+          aria-label={playing ? 'Pause' : 'Abspielen'}
+          disabled={total <= 0}
+          onClick={togglePlayback}
+          className="absolute right-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 h-12 w-12 rounded-full bg-emerald-600/90 text-lg text-white shadow-lg disabled:opacity-40"
+        >
+          {playing ? '❚❚' : '▶'}
+        </button>
+        {showTip && (
+          <div
+            role="status"
+            className="absolute inset-x-3 bottom-20 z-20 rounded-lg bg-slate-900/95 p-3 text-sm text-slate-100 shadow-lg"
+          >
+            Tipp: Über <b>Teilen → „Zum Home-Bildschirm“</b> verschwinden auch die Leisten von Safari.
+            <button type="button" className="ml-2 font-semibold text-emerald-400" onClick={() => setShowTip(false)}>
+              OK
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -113,6 +169,9 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
           ‹ {backLabel}
         </button>
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{title}</h1>
+        <button type="button" className={buttonClass} title="Nur das Feld zeigen" onClick={enterImmersive}>
+          ⤢ Vollbild
+        </button>
       </header>
       <div className="min-h-0 flex-1">
         <PitchStage dropTargetRef={dropTargetRef} />
@@ -159,4 +218,28 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
       </div>
     </div>
   )
+}
+
+const TIP_KEY = 'trainingsplaner.homeScreenTipShown'
+
+/** Started from the home screen (no Safari bars). */
+function isStandalone(): boolean {
+  const nav = navigator as Navigator & { standalone?: boolean }
+  return nav.standalone === true || window.matchMedia('(display-mode: standalone)').matches
+}
+
+function tipShown(): boolean {
+  try {
+    return localStorage.getItem(TIP_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function rememberTipShown(): void {
+  try {
+    localStorage.setItem(TIP_KEY, '1')
+  } catch {
+    // Not critical: the tip may show again.
+  }
 }
