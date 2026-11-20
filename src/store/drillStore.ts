@@ -95,6 +95,11 @@ export interface DrillState extends DrillContent {
   /** Adds several items at once (e.g. a line-up) as one undo step; returns their ids. */
   addItems: (entries: { item: NewItem; x: number; y: number }[]) => string[]
   moveItem: (id: string, x: number, y: number) => void
+  /**
+   * Puts several items on new places and turns them (one undo step). With newScene the
+   * moves happen in a new scene after the current one, so playback shows the change.
+   */
+  placeItems: (moves: { id: string; x: number; y: number; rotation: number }[], newScene: boolean) => void
   rotateItem: (id: string, rotation: number) => void
   setItemSize: (id: string, size: number) => void
   setItemShape: (id: string, shape: PlayerShape) => void
@@ -525,6 +530,26 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set({ ...recorded(s), scenes: editScene(s, (scene) => ({ items: [...scene.items, ...created] })) })
     return created.map((i) => i.id)
   },
+  placeItems: (moves, newScene) =>
+    set((s) => {
+      if (moves.length === 0) return {}
+      const byId = new Map(moves.map((m) => [m.id, m]))
+      const moved = (scene: Scene): Scene => ({
+        ...scene,
+        items: scene.items.map((item) => {
+          const m = byId.get(item.id)
+          return m ? { ...item, x: m.x, y: m.y, rotation: normalizeAngle(m.rotation) } : item
+        }),
+      })
+      const current = currentScene(s)
+      if (!newScene) {
+        return { ...recorded(s), scenes: s.scenes.map((scene, i) => (i === s.sceneIndex ? moved(scene) : scene)) }
+      }
+      // A plain copy (no lines), so only the new places differ from the current scene.
+      const scenes = [...s.scenes]
+      scenes.splice(s.sceneIndex + 1, 0, moved({ durationMs: current.durationMs, items: current.items, lines: [], zones: current.zones }))
+      return { ...recorded(s), scenes, sceneIndex: s.sceneIndex + 1, ...selection([]) }
+    }),
   moveItem: (id, x, y) =>
     set((s) => ({
       ...recorded(s),

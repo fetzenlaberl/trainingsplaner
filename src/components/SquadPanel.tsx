@@ -3,7 +3,7 @@ import { contrastTextColor } from '../items/colors'
 import type { ItemTemplate } from '../items/palette'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { FORMATIONS, type Side } from '../teams/formations'
-import { itemForPlayer, placeLineup } from '../teams/lineupActions'
+import { itemForPlayer, placeLineup, realignTeam } from '../teams/lineupActions'
 import { NAME_STYLES, playerLabel, type NameStyle, type Team } from '../teams/team'
 import { listTeams } from '../teams/teamDb'
 import { useViewStore } from '../store/viewStore'
@@ -31,6 +31,8 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
   const [teamId, setTeamId] = useState<string | null>(null)
   const [formationKey, setFormationKey] = useState(FORMATIONS[0].key)
   const [side, setSide] = useState<Side>('left')
+  const [asNewScene, setAsNewScene] = useState(true)
+  const [realignMessage, setRealignMessage] = useState<string | null>(null)
   const [nameStyle, setNameStyleState] = useState<NameStyle>(loadNameStyle)
   const setNameStyle = (value: NameStyle) => {
     setNameStyleState(value)
@@ -128,6 +130,27 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
             >
               Aufstellen
             </button>
+            <button
+              type="button"
+              className={`${buttonClass} justify-center`}
+              title="Die Spieler dieser Mannschaft, die schon auf dem Feld stehen, auf die Plätze des gewählten Systems stellen"
+              onClick={() => {
+                const moved = realignTeam(team, formation, side, asNewScene)
+                setRealignMessage(moved === 0 ? 'Keine Spieler dieser Mannschaft auf dem Feld. Erst „Aufstellen“.' : null)
+              }}
+            >
+              Auf System ausrichten
+            </button>
+            <label className="flex items-center gap-1.5 px-1 text-xs text-slate-300">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-emerald-500"
+                checked={asNewScene}
+                onChange={(e) => setAsNewScene(e.target.checked)}
+              />
+              als neue Szene (Animation)
+            </label>
+            {realignMessage && <p className="px-1 text-xs text-amber-300">{realignMessage}</p>}
           </div>
 
           <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto md:max-h-none">

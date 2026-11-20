@@ -1,8 +1,9 @@
 import { fieldSize } from '../field/dimensions'
 import { KEEPER_LABEL, TEAM_COLORS, type NewItem } from '../items/palette'
-import { useDrillStore } from '../store/drillStore'
+import { currentScene, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
+import { realignLineup } from './realign'
 import { assignLineup, slotPosition, type Formation, type Side } from './formations'
 import { isKeeper, nameForStyle, type NameStyle, type Team, type TeamPlayer } from './team'
 
@@ -35,4 +36,19 @@ export function placeLineup(team: Team, formation: Formation, side: Side, nameSt
   useToolStore.getState().setTool('select')
   useDrillStore.getState().select(null)
   useDrillStore.getState().addItems(entries)
+}
+
+/**
+ * Moves the team's players on the pitch onto the places of another formation (one undo
+ * step), optionally in a new scene. Returns how many players were moved.
+ */
+export function realignTeam(team: Team, formation: Formation, side: Side, newScene: boolean): number {
+  const state = useDrillStore.getState()
+  const moves = realignLineup(team, formation, side, fieldSize(state.fieldType), currentScene(state).items)
+  if (moves.length === 0) return 0
+  usePlaybackStore.getState().stop()
+  useToolStore.getState().setTool('select')
+  state.select(null)
+  state.placeItems(moves, newScene)
+  return moves.length
 }

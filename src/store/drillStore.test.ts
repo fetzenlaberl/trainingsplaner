@@ -861,3 +861,27 @@ describe('palette', () => {
     expect(ITEM_TEMPLATES.some((t) => t.key === 'shirt-plain-yellow' || t.key === 'shirt-plain-green')).toBe(false)
   })
 })
+
+describe('placeItems', () => {
+  it('moves items in the current scene as one undo step', () => {
+    const [a, b] = store().addItems([
+      { item: { type: 'player', color: '#dc2626' }, x: 1, y: 1 },
+      { item: { type: 'player', color: '#dc2626' }, x: 2, y: 2 },
+    ])
+    store().placeItems([{ id: a, x: 10, y: 20, rotation: 180 }, { id: b, x: 30, y: 40, rotation: 0 }], false)
+    const items = currentScene(store()).items
+    expect(items.find((i) => i.id === a)).toMatchObject({ x: 10, y: 20, rotation: 180 })
+    expect(store().scenes).toHaveLength(1)
+    store().undo()
+    expect(currentScene(store()).items.find((i) => i.id === a)).toMatchObject({ x: 1, y: 1 })
+  })
+
+  it('can put the moves into a new scene after the current one', () => {
+    const [a] = store().addItems([{ item: { type: 'player', color: '#dc2626' }, x: 1, y: 1 }])
+    store().placeItems([{ id: a, x: 10, y: 20, rotation: 0 }], true)
+    expect(store().scenes).toHaveLength(2)
+    expect(store().sceneIndex).toBe(1)
+    expect(store().scenes[0].items[0]).toMatchObject({ x: 1, y: 1 })
+    expect(store().scenes[1].items[0]).toMatchObject({ x: 10, y: 20 })
+  })
+})
