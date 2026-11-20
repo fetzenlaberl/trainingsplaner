@@ -451,11 +451,11 @@ function ZoneControls({ zone }: { zone: Zone }) {
           <button
             type="button"
             aria-pressed={editingCorners}
-            title="Ecken einzeln verschieben, z. B. für Raute oder Trapez"
+            title="Ecken ziehst du direkt an den weißen Punkten; hier kommen neue Ecken an den Seiten dazu (Doppeltipp auf eine Ecke entfernt sie)"
             onClick={() => setEditingCornersId(editingCorners ? null : zone.id)}
             className={`${buttonClass} ${editingCorners ? 'bg-emerald-600 text-white hover:bg-emerald-500' : ''}`}
           >
-            {editingCorners ? 'Ecken fertig' : 'Ecken bearbeiten'}
+            {editingCorners ? 'Ecken fertig' : 'Ecken hinzufügen'}
           </button>
           {zone.corners && (
             <button type="button" className={buttonClass} onClick={() => updateZone(zone.id, { corners: null })}>
