@@ -65,7 +65,7 @@ export interface DrillState extends DrillContent {
   /** Lines, mowing and lighting of the pitch (undefined = default), as one undo step. */
   setPitchLines: (
     change: Partial<
-      Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient'>
+      Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient' | 'gridLabelStyle'>
     >,
   ) => void
   setOrientation: (orientation: Orientation) => void
@@ -390,6 +390,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (pitch.lightSource === undefined || pitch.lightSource === 'center') delete pitch.lightSource
       if (pitch.lightKind === undefined || pitch.lightKind === 'spot') delete pitch.lightKind
       if (pitch.gradient === undefined) delete pitch.gradient
+      if (pitch.gridLabelStyle === undefined) delete pitch.gridLabelStyle
       return { ...recorded(s), pitch }
     }),
   setOrientation: (orientation) =>

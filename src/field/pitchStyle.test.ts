@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { gridCells, letterName, pitchGridLabels, lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -182,5 +182,58 @@ describe('lightingStops', () => {
     const strong = lightingStops('strong', 'spot')
     expect(soft[5]).not.toBe(strong[5])
     expect(lightingStops('strong', 'vignette')[1]).toBe('rgba(255,255,235,0.000)')
+  })
+})
+
+describe('pitchGridLabels', () => {
+  const style = (grid: Parameters<typeof gridCells>[0], own?: Partial<NonNullable<typeof DEFAULT_PITCH_STYLE.gridLabelStyle>>) => ({
+    ...DEFAULT_PITCH_STYLE,
+    grid,
+    ...(own ? { gridLabelStyle: { kind: 'numbers' as const, position: 'corner' as const, size: 'medium' as const, ...own } } : {}),
+  })
+
+  it('keeps the usual labels without own settings', () => {
+    expect(pitchGridLabels(style('zones20'))).toEqual(gridLabels('zones20'))
+  })
+
+  it('numbers every zone row by row from the top left', () => {
+    const labels = pitchGridLabels(style('positional', {}))
+    expect(labels).toHaveLength(20)
+    expect(labels[0]).toMatchObject({ text: '1', cell: { x1: 0, y1: 0 } })
+    // Second label: next zone to the right in the top row.
+    expect(labels[1].cell!.y1).toBe(0)
+    expect(labels[1].cell!.x1).toBeGreaterThan(0)
+  })
+
+  it('counts from the top left of the screen in portrait', () => {
+    const labels = pitchGridLabels(style('thirds', { position: 'center' }), 90)
+    // Portrait: the screen's top shows the pitch's right end.
+    expect(labels[0].x).toBeGreaterThan(labels[2].x)
+    expect(labels.map((l) => l.text)).toEqual(['1', '2', '3'])
+  })
+
+  it('gives letters, sizes and no labels as chosen', () => {
+    const labels = pitchGridLabels(style('zones20Plain', { kind: 'letters', size: 'large' }))
+    expect(labels[0].text).toBe('A')
+    expect(labels[19].text).toBe('T')
+    expect(labels[0].size).toBeGreaterThan(pitchGridLabels(style('zones20Plain', { kind: 'letters', size: 'small' }))[0].size!)
+    expect(pitchGridLabels(style('lettersLong', { kind: 'none' }))).toEqual([])
+  })
+
+  it('puts labels of strips outside the pitch and falls back to the corner otherwise', () => {
+    const strips = pitchGridLabels(style('lettersLong', { position: 'outside' }))
+    expect(strips.every((l) => l.x < 0 && !l.cell)).toBe(true)
+    const across = pitchGridLabels(style('lettersLong', { position: 'outside' }), 90)
+    // In portrait the long strips stand side by side: labels above the pitch (beyond its right end).
+    expect(across.every((l) => l.x > PITCH.length)).toBe(true)
+    expect(pitchGridLabels(style('squares15', { position: 'outside' })).every((l) => l.cell)).toBe(true)
+  })
+
+  it('names zones beyond Z with two letters', () => {
+    expect([1, 26, 27, 52].map(letterName)).toEqual(['A', 'Z', 'AA', 'AZ'])
+  })
+
+  it('finds the zones of the own grid', () => {
+    expect(gridCells('custom', { columns: [10, 20], rows: [5, 5, 5] }).cells).toHaveLength(6)
   })
 })

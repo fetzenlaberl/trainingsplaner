@@ -6,11 +6,12 @@ import { PITCH, type FieldType, type Rect as ViewRect } from '../field/dimension
 import { getGoals, getPitchMarkings } from '../field/markings'
 import { grassTextureTile, TEXTURE_TILE_METERS, TEXTURE_TILE_PX } from '../field/grassTexture'
 import {
-  gridLabels,
+  pitchGridLabels,
   gridLines,
   LIGHT_SOURCES,
   lightingStops,
   screenToField,
+  type GridLabel,
   type Lighting,
   type LightKind,
   type LightSource,
@@ -28,6 +29,8 @@ import { ViewRotationContext } from './viewRotationContext'
 /** Zone numbers in the corner of their cell (meters) */
 const CORNER_LABEL_SIZE = 2.2
 const CORNER_LABEL_PADDING = 0.8
+/** Bigger corner labels keep a little more distance to the lines. */
+const cornerPadding = (label: GridLabel) => CORNER_LABEL_PADDING * Math.sqrt((label.size ?? CORNER_LABEL_SIZE) / CORNER_LABEL_SIZE)
 
 const MARKINGS = getPitchMarkings()
 const GOALS = getGoals()
@@ -135,16 +138,16 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           dash={pitch.grid === 'custom' ? undefined : [gridWidth * 6, gridWidth * 4]}
         />
       ))}
-      {gridLabels(pitch.grid).map((label) =>
+      {pitchGridLabels(pitch, upright).map((label) =>
         label.cell ? (
           // Small number in the top left corner of the cell as seen on screen (portrait turns the pitch).
           <MeterText
             key={`zone-${label.text}`}
             text={label.text}
-            x={portrait ? label.cell.x2 - CORNER_LABEL_PADDING : label.cell.x1 + CORNER_LABEL_PADDING}
-            y={label.cell.y1 + CORNER_LABEL_PADDING}
+            x={portrait ? label.cell.x2 - cornerPadding(label) : label.cell.x1 + cornerPadding(label)}
+            y={label.cell.y1 + cornerPadding(label)}
             rotation={upright}
-            fontSize={CORNER_LABEL_SIZE}
+            fontSize={label.size ?? CORNER_LABEL_SIZE}
             fontStyle="bold"
             fill={colors.grid}
           />
@@ -155,13 +158,13 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           x={label.x}
           y={label.y}
           rotation={upright}
-          width={labelSize * 2}
-          height={labelSize}
-          offsetX={labelSize}
-          offsetY={labelSize / 2}
+          width={(label.size ?? labelSize) * 2}
+          height={label.size ?? labelSize}
+          offsetX={label.size ?? labelSize}
+          offsetY={(label.size ?? labelSize) / 2}
           align="center"
           verticalAlign="middle"
-          fontSize={labelSize}
+          fontSize={label.size ?? labelSize}
           fontStyle="bold"
           fill={colors.grid}
         />

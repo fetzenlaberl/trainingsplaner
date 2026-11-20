@@ -9,6 +9,10 @@ import {
   LIGHTING_OPTIONS,
   MOWING_OPTIONS,
   type Lighting,
+  type GridLabelStyle,
+  GRID_LABEL_KINDS,
+  GRID_LABEL_POSITIONS,
+  GRID_LABEL_SIZES,
   type LightSource,
   type PitchGradient,
   GRADIENT_DIRECTIONS,
@@ -71,7 +75,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 15: shirt-shaped players and coach items.
 // Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
 // Version 17: mowing patterns, lighting, extra line weights.
-// Version 20: reshaped circle zones, light source/kind, own pitch gradient.
+// Version 20: reshaped circle zones, light source/kind, own pitch gradient, own grid labels.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
 // Version 19: imported pictures (picture items, background picture).
 export const FILE_VERSION = 20
@@ -249,7 +253,8 @@ function parsePitchStyle(value: unknown): PitchStyle {
     // Light source, light kind and own gradient: version 20.
     !(value.lightSource === undefined || LIGHT_SOURCES.some((o) => o.value === value.lightSource)) ||
     !(value.lightKind === undefined || LIGHT_KINDS.some((o) => o.value === value.lightKind)) ||
-    !(value.gradient === undefined || isGradient(value.gradient))
+    !(value.gradient === undefined || isGradient(value.gradient)) ||
+    !(value.gridLabelStyle === undefined || isGridLabelStyle(value.gridLabelStyle))
   ) {
     throw corrupt()
   }
@@ -268,9 +273,27 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(isGradient(value.gradient)
       ? { gradient: { from: value.gradient.from, to: value.gradient.to, direction: value.gradient.direction } }
       : {}),
+    ...(isGridLabelStyle(value.gridLabelStyle)
+      ? {
+          gridLabelStyle: {
+            kind: value.gridLabelStyle.kind,
+            position: value.gridLabelStyle.position,
+            size: value.gridLabelStyle.size,
+          },
+        }
+      : {}),
     ...(typeof value.background === 'string' ? { background: value.background } : {}),
     ...(isNumber(value.backgroundOpacity) ? { backgroundOpacity: value.backgroundOpacity } : {}),
   }
+}
+
+function isGridLabelStyle(value: unknown): value is GridLabelStyle {
+  return (
+    isRecord(value) &&
+    GRID_LABEL_KINDS.some((k) => k.value !== null && k.value === value.kind) &&
+    GRID_LABEL_POSITIONS.some((p) => p.value === value.position) &&
+    GRID_LABEL_SIZES.some((z) => z.value === value.size)
+  )
 }
 
 function isGradient(value: unknown): value is PitchGradient {

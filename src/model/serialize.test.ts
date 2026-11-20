@@ -285,6 +285,12 @@ describe('serializeDrill / parseDrill', () => {
     expect(plain.lightKind).toBeUndefined()
   })
 
+  it('round-trips own grid labels', () => {
+    const own = { kind: 'letters', position: 'center', size: 'large' }
+    expect(parseDrill(tamper((d) => (d.pitch.gridLabelStyle = own))).pitch.gridLabelStyle).toEqual(own)
+    expect(() => parseDrill(tamper((d) => (d.pitch.gridLabelStyle = { ...own, kind: 'roman' })))).toThrow()
+  })
+
   it('round-trips players without arrow and perspective dummies', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].facing = false

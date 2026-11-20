@@ -2,6 +2,10 @@ import { useState } from 'react'
 import type { Orientation } from '../field/orientation'
 import {
   GRID_LABELS,
+  GRID_LABEL_KINDS,
+  GRID_LABEL_POSITIONS,
+  GRID_LABEL_SIZES,
+  type GridLabelStyle,
   GRID_ORDER,
   ORIENTATION_LABELS,
   PITCH_COLOR_ORDER,
@@ -39,6 +43,15 @@ export function PitchStyleMenu() {
   const [gradientOpen, setGradientOpen] = useState(false)
   // Choosing where the light comes from turns the light on if it is off.
   const lightingOff = resolveLighting(pitch) === 'none'
+  // Own zone labels; position and size start from the grid's usual kind of label.
+  const usualKind = pitch.grid.startsWith('letters') ? 'letters' : 'numbers'
+  const labelStyle: GridLabelStyle = pitch.gridLabelStyle ?? {
+    kind: usualKind,
+    position: pitch.grid.startsWith('letters') ? 'outside' : 'corner',
+    size: 'medium',
+  }
+  const setLabels = (change: Partial<GridLabelStyle>) =>
+    setPitchLines({ gridLabelStyle: { ...labelStyle, ...change } })
 
   return (
     <>
@@ -140,6 +153,25 @@ export function PitchStyleMenu() {
             checked: pitch.grid === grid,
             // The own grid asks for its sizes first.
             onSelect: () => (grid === 'custom' ? setCustomOpen(true) : setGrid(grid)),
+          })),
+          ...GRID_LABEL_KINDS.map((k) => ({
+            section: 'Beschriftung',
+            label: k.label,
+            checked: (pitch.gridLabelStyle?.kind ?? null) === k.value,
+            onSelect: () =>
+              k.value === null ? setPitchLines({ gridLabelStyle: undefined }) : setLabels({ kind: k.value }),
+          })),
+          ...GRID_LABEL_POSITIONS.map((o) => ({
+            section: 'Position der Beschriftung',
+            label: o.label,
+            checked: pitch.gridLabelStyle !== undefined && labelStyle.position === o.value,
+            onSelect: () => setLabels({ position: o.value, ...(labelStyle.kind === 'none' ? { kind: usualKind } : {}) }),
+          })),
+          ...GRID_LABEL_SIZES.map((o) => ({
+            section: 'Größe der Beschriftung',
+            label: o.label,
+            checked: pitch.gridLabelStyle !== undefined && labelStyle.size === o.value,
+            onSelect: () => setLabels({ size: o.value, ...(labelStyle.kind === 'none' ? { kind: usualKind } : {}) }),
           })),
         ]}
       />

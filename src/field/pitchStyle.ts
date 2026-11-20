@@ -253,11 +253,43 @@ export interface PitchStyle {
   lightKind?: LightKind
   /** Own two-color surface instead of the design's base color */
   gradient?: PitchGradient
+  /** Own labels for the grid zones (missing = as the grid comes) */
+  gridLabelStyle?: GridLabelStyle
   /** Picture (id in Drill.images) shown instead of the grass */
   background?: string
   /** Opacity of the background picture, 0.1–1 (missing = 1) */
   backgroundOpacity?: number
 }
+
+/** Zone labels chosen by the user: kind, place in the zone and size */
+export type GridLabelKind = 'none' | 'numbers' | 'letters'
+export type GridLabelPosition = 'corner' | 'center' | 'outside'
+export type GridLabelSize = 'small' | 'medium' | 'large'
+
+export interface GridLabelStyle {
+  kind: GridLabelKind
+  position: GridLabelPosition
+  size: GridLabelSize
+}
+
+export const GRID_LABEL_KINDS: { value: GridLabelKind | null; label: string }[] = [
+  { value: null, label: 'Wie Raster' },
+  { value: 'none', label: 'Keine' },
+  { value: 'numbers', label: 'Zahlen 1, 2, 3 …' },
+  { value: 'letters', label: 'Buchstaben A, B, C …' },
+]
+
+export const GRID_LABEL_POSITIONS: { value: GridLabelPosition; label: string }[] = [
+  { value: 'corner', label: 'Ecke oben links' },
+  { value: 'center', label: 'Mitte der Zone' },
+  { value: 'outside', label: 'Außen am Feldrand (bei Streifen)' },
+]
+
+export const GRID_LABEL_SIZES: { value: GridLabelSize; label: string }[] = [
+  { value: 'small', label: 'Klein' },
+  { value: 'medium', label: 'Mittel' },
+  { value: 'large', label: 'Groß' },
+]
 
 export interface CustomGrid {
   columns: number[]
@@ -580,6 +612,8 @@ export interface GridLabel {
   text: string
   x: number
   y: number
+  /** Font size in meters (missing = usual size) */
+  size?: number
   /** Grid cell of the label: then it is drawn small in the cell's top left corner (as seen on screen) */
   cell?: { x1: number; y1: number; x2: number; y2: number }
 }
@@ -659,6 +693,97 @@ export function gridLabels(grid: GridType): GridLabel[] {
     return zones20Layout().labels.map((l) => ({ text: String(l.number), x: l.x, y: l.y, cell: l.cell }))
   if (grid === 'lettersLong' || grid === 'lettersAcross' || grid === 'letters3x2') return letterLayout(grid).labels
   return []
+}
+
+type Cell = { x1: number; y1: number; x2: number; y2: number }
+
+/**
+ * Zones of a grid as rectangles. Grids made of lines across the whole pitch (or the own grid's
+ * area) give every crossing cell; the club grid has its own zones in its own order.
+ */
+export function gridCells(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID): { cells: Cell[]; fixedOrder: boolean } {
+  if (grid === 'none') return { cells: [], fixedOrder: false }
+  if (grid === 'zones20' || grid === 'zones20Plain') return { cells: zones20Layout().labels.map((l) => l.cell), fixedOrder: true }
+  const bounds =
+    grid === 'custom' ? customGridLayout(custom).bounds : { x: 0, y: 0, width: PITCH.length, height: PITCH.width }
+  const x0 = bounds.x
+  const x1 = bounds.x + bounds.width
+  const y0 = bounds.y
+  const y1 = bounds.y + bounds.height
+  const inside = (v: number, a: number, b: number) => v > a + 1e-6 && v < b - 1e-6
+  const lines = gridLines(grid, custom)
+  const xs = [...new Set(lines.filter((l) => l[0] === l[2] && inside(l[0], x0, x1)).map((l) => l[0]))]
+  const ys = [...new Set(lines.filter((l) => l[1] === l[3] && inside(l[1], y0, y1)).map((l) => l[1]))]
+  const columns = [x0, ...xs.sort((a, b) => a - b), x1]
+  const rows = [y0, ...ys.sort((a, b) => a - b), y1]
+  const cells: Cell[] = []
+  for (let r = 0; r < rows.length - 1; r++) {
+    for (let c = 0; c < columns.length - 1; c++) {
+      cells.push({ x1: columns[c], y1: rows[r], x2: columns[c + 1], y2: rows[r + 1] })
+    }
+  }
+  return { cells, fixedOrder: false }
+}
+
+/** 1 → A, 26 → Z, 27 → AA … */
+export function letterName(n: number): string {
+  let name = ''
+  let rest = n
+  while (rest > 0) {
+    const digit = (rest - 1) % 26
+    name = String.fromCharCode(65 + digit) + name
+    rest = Math.floor((rest - 1) / 26)
+  }
+  return name
+}
+
+const LABEL_SIZES: Record<GridLabelSize, { corner: number; center: number }> = {
+  small: { corner: 1.6, center: 2.2 },
+  medium: { corner: 2.2, center: 3.2 },
+  large: { corner: 3.2, center: 4.6 },
+}
+
+/**
+ * Zone labels for the pitch. Without own settings the grid's usual labels; with them every zone
+ * gets a number or letter, counted row by row from the top left as seen on screen
+ * (`upright` = 90 in portrait); the club grid keeps its own numbering.
+ */
+export function pitchGridLabels(style: PitchStyle, upright = 0): GridLabel[] {
+  const own = style.gridLabelStyle
+  if (!own) return gridLabels(style.grid)
+  if (own.kind === 'none') return []
+  const { cells, fixedOrder } = gridCells(style.grid, style.customGrid)
+  if (cells.length === 0) return []
+  // Screen frame: in portrait the screen's x runs along the pitch width and its y against the length.
+  const portrait = upright % 180 !== 0
+  const toScreen = (x: number, y: number) => (portrait ? { x: y, y: -x } : { x, y })
+  const fromScreen = (x: number, y: number) => (portrait ? { x: -y, y: x } : { x, y })
+  const screenCells = cells.map((cell) => {
+    const a = toScreen(cell.x1, cell.y1)
+    const b = toScreen(cell.x2, cell.y2)
+    return { cell, left: Math.min(a.x, b.x), right: Math.max(a.x, b.x), top: Math.min(a.y, b.y), bottom: Math.max(a.y, b.y) }
+  })
+  const ordered = fixedOrder
+    ? screenCells
+    : [...screenCells].sort((p, q) => (Math.abs(p.top - q.top) > 1e-6 ? p.top - q.top : p.left - q.left))
+  const sizes = LABEL_SIZES[own.size]
+  const text = (n: number) => (own.kind === 'letters' ? letterName(n) : String(n))
+  // Outside only for strips: one row (labels above) or one column (labels to the left) on screen.
+  const oneRow = new Set(ordered.map((c) => c.top.toFixed(3))).size === 1
+  const oneColumn = new Set(ordered.map((c) => c.left.toFixed(3))).size === 1
+  const position = own.position === 'outside' && !oneRow && !oneColumn ? 'corner' : own.position
+  return ordered.map((c, i) => {
+    const label = text(i + 1)
+    const centerX = (c.cell.x1 + c.cell.x2) / 2
+    const centerY = (c.cell.y1 + c.cell.y2) / 2
+    if (position === 'corner') return { text: label, x: centerX, y: centerY, cell: c.cell, size: sizes.corner }
+    if (position === 'center') return { text: label, x: centerX, y: centerY, size: sizes.center }
+    const distance = OUTSIDE_LABEL_DISTANCE + (sizes.center - LABEL_SIZES.medium.center) / 2
+    const at = oneColumn
+      ? fromScreen(c.left - distance, (c.top + c.bottom) / 2)
+      : fromScreen((c.left + c.right) / 2, c.top - distance)
+    return { text: label, x: at.x, y: at.y, size: sizes.center }
+  })
 }
 
 /**
