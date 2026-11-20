@@ -14,6 +14,9 @@ import {
   type TeamPlayer,
 } from '../teams/team'
 import { CSV_TEMPLATE, decodeCsv, parsePlayersCsv, type CsvPlayer } from '../teams/teamCsv'
+import { ImportError, readPdfText } from '../import/fileImport'
+import { parseMatchReport, type ReportTeam } from '../teams/matchReport'
+import { MatchReportDialog } from './MatchReportDialog'
 import { deleteTeam, listTeams, putTeam } from '../teams/teamDb'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -134,6 +137,9 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
   const csvInputRef = useRef<HTMLInputElement>(null)
   const [pendingImport, setPendingImport] = useState<CsvPlayer[] | null>(null)
   const [importMessage, setImportMessage] = useState<string | null>(null)
+  const reportInputRef = useRef<HTMLInputElement>(null)
+  const [reportTeams, setReportTeams] = useState<ReportTeam[] | null>(null)
+  const [readingReport, setReadingReport] = useState(false)
 
   function applyImport(players: CsvPlayer[], mode: ImportMode) {
     onChange({ players: importPlayers(team, players, mode).players })
@@ -153,11 +159,42 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
         return
       }
       if (skipped > 0) setImportMessage(`${skipped} leere Zeile(n) übersprungen.`)
-      if (team.players.length === 0) applyImport(players, 'replace')
-      else setPendingImport(players)
+      offerImport(players)
     } catch (err) {
       console.error(err)
       setImportMessage('Die Datei konnte nicht gelesen werden.')
+    }
+  }
+
+  /** Players taken from a file: straight in for an empty squad, otherwise ask replace/append. */
+  function offerImport(players: CsvPlayer[]) {
+    if (team.players.length === 0) applyImport(players, 'replace')
+    else setPendingImport(players)
+  }
+
+  async function handleReportFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImportMessage(null)
+    setReadingReport(true)
+    try {
+      const pages = await readPdfText(file)
+      if (!pages.some((items) => items.some((i) => i.str.trim() !== ''))) {
+        setImportMessage('Im PDF ist kein Text, nur ein Bild (z. B. ein Scan). Solche Spielberichte kann die App nicht lesen.')
+        return
+      }
+      const teams = parseMatchReport(pages)
+      if (teams.length === 0) {
+        setImportMessage('Im Spielbericht wurden keine Zeilen mit Nummer und Name gefunden.')
+        return
+      }
+      setReportTeams(teams)
+    } catch (err) {
+      console.error(err)
+      setImportMessage(err instanceof ImportError ? err.message : 'Das PDF konnte nicht gelesen werden.')
+    } finally {
+      setReadingReport(false)
     }
   }
 
@@ -210,6 +247,22 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
           >
             CSV importieren
           </button>
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={readingReport}
+            title="Nummern und Namen aus einem Spielbericht (PDF) übernehmen; das PDF wird nur auf diesem Gerät gelesen"
+            onClick={() => reportInputRef.current?.click()}
+          >
+            {readingReport ? 'PDF wird gelesen …' : 'Aus PDF-Spielbericht …'}
+          </button>
+          <input
+            ref={reportInputRef}
+            type="file"
+            accept=".pdf,application/pdf"
+            className="hidden"
+            onChange={(e) => void handleReportFile(e)}
+          />
           <button type="button" className={buttonClass} onClick={handleTemplate}>
             Vorlage herunterladen
           </button>
@@ -229,7 +282,7 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
       {pendingImport && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-600/60 bg-emerald-600/10 px-4 py-3 text-sm text-emerald-50">
           <span className="mr-auto">
-            {pendingImport.length} Spieler in der Datei gefunden. Die Mannschaft hat schon {team.players.length} Spieler.
+            {pendingImport.length} Spieler gefunden. Die Mannschaft hat schon {team.players.length} Spieler.
           </span>
           <button type="button" className={buttonClass} onClick={() => applyImport(pendingImport, 'replace')}>
             Kader ersetzen
@@ -243,6 +296,16 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
         </div>
       )}
       {importMessage && <p className="text-sm text-slate-300">{importMessage}</p>}
+      {reportTeams && (
+        <MatchReportDialog
+          teams={reportTeams}
+          onClose={() => setReportTeams(null)}
+          onTake={(players) => {
+            setReportTeams(null)
+            offerImport(players)
+          }}
+        />
+      )}
 
       {team.players.length === 0 && (
         <p className="text-sm text-slate-400">Noch keine Spieler. Füge sie mit „+ Spieler“ hinzu.</p>

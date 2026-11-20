@@ -1,6 +1,8 @@
 // Turns imported files into what the drill stores: pictures as (scaled-down) data URLs,
 // the first page of a PDF as a picture, and plain text.
 
+import type { PdfTextItem } from '../teams/matchReport'
+
 /** Longest side of an imported picture in pixels; bigger photos are scaled down. */
 export const MAX_IMAGE_SIDE = 1600
 /** Longest text taken from a text file */
@@ -82,6 +84,32 @@ export async function importPdfFile(file: File): Promise<ImportedImage> {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     await page.render({ canvasContext: ctx, viewport, canvas }).promise
     return canvasToImage(canvas, canvas.width, canvas.height, false)
+  } finally {
+    void task.destroy()
+  }
+}
+
+/** Text pieces with their position on every page of a PDF (for reading match reports). */
+export async function readPdfText(file: File): Promise<PdfTextItem[][]> {
+  const [pdfjs, worker] = await Promise.all([import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url')])
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default
+  const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) })
+  try {
+    const pdf = await task.promise
+    const pages: PdfTextItem[][] = []
+    for (let n = 1; n <= Math.min(pdf.numPages, 10); n++) {
+      const content = await (await pdf.getPage(n)).getTextContent()
+      const items: PdfTextItem[] = []
+      for (const item of content.items) {
+        if (!('str' in item)) continue
+        items.push({ str: item.str, x: item.transform[4], y: item.transform[5], width: item.width, height: item.height })
+      }
+      pages.push(items)
+    }
+    return pages
+  } catch (err) {
+    console.error(err)
+    throw new ImportError('Das PDF konnte nicht gelesen werden.')
   } finally {
     void task.destroy()
   }
