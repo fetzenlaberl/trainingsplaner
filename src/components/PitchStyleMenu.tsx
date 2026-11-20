@@ -109,6 +109,13 @@ export function PitchStyleMenu() {
             label: `Lichtverlauf: ${lightingSummary} …`,
             onSelect: () => setLightingOpen(true),
           },
+          {
+            section: 'Notizen',
+            label: 'Notizen unter dem Feld',
+            hint: 'Kommen beim Export (PNG, PDF) mit',
+            checked: pitch.showNotes === true,
+            onSelect: () => setPitchLines({ showNotes: !pitch.showNotes }),
+          },
         ]}
       />
       <Dropdown
@@ -132,6 +139,13 @@ export function PitchStyleMenu() {
             label: 'Abgerundete Außenlinien',
             checked: pitch.roundedCorners === true,
             onSelect: () => setPitchLines({ roundedCorners: !pitch.roundedCorners }),
+          },
+          {
+            section: 'Zusätzliche Linien',
+            label: 'Rückzugslinien 22 m',
+            hint: 'Nur auf dem Großfeld (Ganzfeld, Halbfeld, Strafraum, Ecken)',
+            checked: pitch.retreatLines === true,
+            onSelect: () => setPitchLines({ retreatLines: !pitch.retreatLines }),
           },
         ]}
       />

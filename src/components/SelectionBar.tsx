@@ -291,6 +291,16 @@ function ItemControls({ item }: { item: Item }) {
         </>
       )}
 
+      {item.type === 'crest' && (
+        <button
+          type="button"
+          className={buttonClass}
+          onClick={() => useToolStore.getState().setEditingContentId(item.id)}
+        >
+          {item.label ? 'Wappen ändern' : 'Wappen einfügen'}
+        </button>
+      )}
+
       {item.type === 'textbox' && (
         <>
           <ColorSwatches
@@ -302,7 +312,7 @@ function ItemControls({ item }: { item: Item }) {
           <button
             type="button"
             className={buttonClass}
-            onClick={() => useToolStore.getState().setEditingTextId(item.id)}
+            onClick={() => useToolStore.getState().setEditingContentId(item.id)}
           >
             Text bearbeiten
           </button>

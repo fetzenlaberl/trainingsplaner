@@ -65,7 +65,7 @@ export interface DrillState extends DrillContent {
   /** Lines, mowing and lighting of the pitch (undefined = default), as one undo step. */
   setPitchLines: (
     change: Partial<
-      Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient' | 'gridLabelStyle'>
+      Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'retreatLines' | 'showNotes' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient' | 'gridLabelStyle'>
     >,
   ) => void
   setOrientation: (orientation: Orientation) => void
@@ -149,6 +149,8 @@ export interface DrillState extends DrillContent {
   setItemName: (id: string, name: string) => void
   /** Live change of a zone (label typing, opacity slider). */
   setZoneLive: (id: string, change: Partial<Omit<Zone, 'id'>>) => void
+  /** Notes below the pitch while typing (one undo step via snapshot/pushHistory) */
+  setPitchNotesLive: (notes: string) => void
   setLinePoint: (id: string, index: number, point: Point) => void
   /** Inserts a bend before waypoint `index` (live edit). */
   insertLinePoint: (id: string, index: number, point: Point) => void
@@ -252,7 +254,7 @@ export function usedImages(
 ): Record<string, string> | undefined {
   const ids = new Set<string>()
   if (pitch.background) ids.add(pitch.background)
-  for (const scene of scenes) for (const item of scene.items) if (item.type === 'image') ids.add(item.label)
+  for (const scene of scenes) for (const item of scene.items) if ((item.type === 'image' || item.type === 'crest') && item.label) ids.add(item.label)
   const used = Object.fromEntries(Object.entries(images).filter(([id]) => ids.has(id)))
   return Object.keys(used).length > 0 ? used : undefined
 }
@@ -385,6 +387,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (pitch.lineWidth === 'normal') delete pitch.lineWidth
       if (pitch.lineColor === undefined) delete pitch.lineColor
       if (!pitch.roundedCorners) delete pitch.roundedCorners
+      if (!pitch.retreatLines) delete pitch.retreatLines
+      if (!pitch.showNotes) delete pitch.showNotes
       if (pitch.mowing === undefined) delete pitch.mowing
       if (pitch.lighting === undefined) delete pitch.lighting
       if (pitch.lightSource === undefined || pitch.lightSource === 'center') delete pitch.lightSource
@@ -699,6 +703,12 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     })),
   setItemName: (id, name) =>
     set((s) => ({ scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { name }) })) })),
+  setPitchNotesLive: (notes) =>
+    set((s) => {
+      const pitch: PitchStyle = { ...s.pitch, notes }
+      if (!notes) delete pitch.notes
+      return { pitch }
+    }),
   setZoneLive: (id, change) =>
     set((s) => {
       const clamped = { ...change }

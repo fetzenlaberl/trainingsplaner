@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { CollapseButton, CollapsedStrip, MaximizeButton } from './components/CollapseControls'
 import { FieldTypeSwitcher } from './components/FieldTypeSwitcher'
+import { NotesPanel } from './components/NotesPanel'
 import { FileBar } from './components/FileBar'
 import { ItemSidebar } from './components/ItemSidebar'
 import { LibraryView } from './components/LibraryView'
@@ -111,6 +112,7 @@ function DesktopApp() {
               <PitchStage dropTargetRef={dropTargetRef} />
               <MaximizeButton />
             </div>
+            <NotesPanel />
             {collapsed.timeline ? (
               <CollapsedStrip bar="timeline" label="Zeitleiste" edge="bottom">
                 <button type="button" className={`${buttonClass} ml-auto`} onClick={togglePlayback}>

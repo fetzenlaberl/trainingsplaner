@@ -7,6 +7,7 @@ import type { PdfLayout } from './layout'
 import { pdfLayout } from './layout'
 import { warpCanvas } from '../perspective/warpCanvas'
 import { exportTilt } from '../store/perspectiveStore'
+import { appendNotes } from './notesImage'
 import { renderDrillToCanvas } from './renderDrill'
 
 /** The drill as shown in the editor: flat, or in perspective when the 3D view is on. */
@@ -26,9 +27,17 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number)
   })
 }
 
+/** Notes below the pitch, if shown and not empty */
+function exportNotes(): string {
+  const { pitch } = useDrillStore.getState()
+  return pitch.showNotes ? (pitch.notes ?? '').trim() : ''
+}
+
 export async function exportPng(): Promise<void> {
   // PNG keeps the area around the tilted pitch transparent.
-  const canvas = await renderForExport(null)
+  const notes = exportNotes()
+  const rendered = await renderForExport(null)
+  const canvas = notes ? appendNotes(rendered, notes) : rendered
   const blob = await canvasToBlob(canvas, 'image/png')
   downloadBlob(blob, `${fileNameFromTitle(useDrillStore.getState().title)}.png`)
 }
@@ -76,7 +85,10 @@ export async function exportPdf(): Promise<void> {
   // White around the tilted pitch, so the printed page has no black corners.
   const [{ jsPDF }, canvas] = await Promise.all([import('jspdf'), renderForExport('#ffffff')])
   const { title, description: text, info } = useDrillStore.getState()
-  const description = [drillInfoLine(info), text.trim()].filter(Boolean).join('\n\n')
+  const notes = exportNotes()
+  const description = [drillInfoLine(info), text.trim(), notes ? `Notizen:\n${notes}` : '']
+    .filter(Boolean)
+    .join('\n\n')
   const layout = pdfLayout(canvas.width, canvas.height, description !== '')
 
   const doc = new jsPDF({ orientation: layout.orientation, unit: 'mm', format: 'a4' })

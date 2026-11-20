@@ -24,6 +24,7 @@ export type ItemType =
   | 'agility'
   | 'coach'
   | 'image'
+  | 'crest'
   | 'text'
   | 'textbox'
 

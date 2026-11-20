@@ -245,6 +245,12 @@ export interface PitchStyle {
   lineColor?: string
   /** Rounded outer corners instead of corner arcs */
   roundedCorners?: boolean
+  /** Dashed retreat lines 22 m in front of both goal lines (big pitch only) */
+  retreatLines?: boolean
+  /** Notes area below the pitch is shown */
+  showNotes?: boolean
+  /** Text of the notes below the pitch */
+  notes?: string
   mowing?: Mowing
   lighting?: Lighting
   /** Where the light comes from (missing = centre) */
@@ -875,3 +881,9 @@ export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GR
     }
   }
 }
+
+/** Distance of the retreat lines from the goal lines (meters) */
+export const RETREAT_LINE_DISTANCE = 22
+
+/** Longest notes text below the pitch */
+export const MAX_NOTES_LENGTH = 2000

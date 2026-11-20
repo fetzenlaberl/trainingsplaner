@@ -181,8 +181,8 @@ function RotationHandle({ item, scale }: { item: Item; scale: number }) {
   )
 }
 
-/** Double click or double tap on a text opens its input window. */
+/** Double click or double tap on a text or crest opens its input window. */
 function openTextEditor(item: { id: string; type: string }) {
-  if (item.type !== 'text' && item.type !== 'textbox') return
-  useToolStore.getState().setEditingTextId(item.id)
+  if (item.type !== 'text' && item.type !== 'textbox' && item.type !== 'crest') return
+  useToolStore.getState().setEditingContentId(item.id)
 }

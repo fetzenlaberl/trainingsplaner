@@ -32,8 +32,8 @@ interface ToolState {
   draggingId: string | null
   /** Zone whose corners are being edited (instead of resize/rotate handles) */
   editingCornersId: string | null
-  /** Text or text box whose input window is open */
-  editingTextId: string | null
+  /** Text, text box or crest whose input window is open */
+  editingContentId: string | null
   setTool: (tool: Tool) => void
   setLineColor: (color: string) => void
   setLinePattern: (pattern: LinePattern | 'auto') => void
@@ -44,7 +44,7 @@ interface ToolState {
   setQuickMenu: (menu: { itemId: string; x: number; y: number } | null) => void
   setDraggingId: (id: string | null) => void
   setEditingCornersId: (id: string | null) => void
-  setEditingTextId: (id: string | null) => void
+  setEditingContentId: (id: string | null) => void
 }
 
 export const useToolStore = create<ToolState>((set) => ({
@@ -58,7 +58,7 @@ export const useToolStore = create<ToolState>((set) => ({
   quickMenu: null,
   draggingId: null,
   editingCornersId: null,
-  editingTextId: null,
+  editingContentId: null,
   setTool: (tool) => set({ tool }),
   setLineColor: (lineColor) => set({ lineColor }),
   setLinePattern: (linePattern) => set({ linePattern }),
@@ -76,5 +76,5 @@ export const useToolStore = create<ToolState>((set) => ({
   setQuickMenu: (quickMenu) => set({ quickMenu }),
   setDraggingId: (draggingId) => set({ draggingId }),
   setEditingCornersId: (editingCornersId) => set({ editingCornersId }),
-  setEditingTextId: (editingTextId) => set({ editingTextId }),
+  setEditingContentId: (editingContentId) => set({ editingContentId }),
 }))

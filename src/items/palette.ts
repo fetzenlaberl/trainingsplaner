@@ -147,6 +147,8 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'rebounder', name: 'Rebounder', item: { type: 'rebounder', color: '#111827' } },
   { key: 'text', name: 'Text', item: { type: 'text', color: '#ffffff', label: 'Text' } },
   { key: 'textbox', name: 'Textfeld', item: { type: 'textbox', color: '#fde047', label: 'Anweisung' } },
+  // Empty crest: the picture is chosen right after dropping it (picture id in the label).
+  { key: 'crest', name: 'Wappen', item: { type: 'crest', color: '#ffffff', label: '' } },
 ]
 
 /** Approximate size of each item type in meters (used for previews and hit areas). */
@@ -171,6 +173,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   agility: 5.2,
   coach: 3,
   image: 20,
+  crest: 8,
   text: 6,
   textbox: 12,
 }
@@ -209,6 +212,7 @@ export const ROTATABLE_TYPES: ItemType[] = [
   'rebounder',
   'agility',
   'image',
+  'crest',
   'text',
   'textbox',
 ]
@@ -222,3 +226,6 @@ export const TEXTBOX_COLORS: { value: string; name: string }[] = [
   { value: '#16a34a', name: 'Grün' },
   { value: '#f97316', name: 'Orange' },
 ]
+
+/** Crest pictures fit into a square of this size (meters) at size 1 */
+export const CREST_SIZE = 8

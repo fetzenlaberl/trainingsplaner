@@ -4,6 +4,7 @@ import {
   DEFAULT_PITCH_STYLE,
   GRID_ORDER,
   MAX_CUSTOM_PARTS,
+  MAX_NOTES_LENGTH,
   MAX_CUSTOM_SIZE,
   type CustomGrid,
   LIGHTING_OPTIONS,
@@ -78,7 +79,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 20: reshaped circle zones, light source/kind, own pitch gradient, own grid labels.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
 // Version 19: imported pictures (picture items, background picture).
-export const FILE_VERSION = 21
+export const FILE_VERSION = 22
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -103,6 +104,7 @@ const ITEM_TYPES: ItemType[] = [
   'agility',
   'coach',
   'image',
+  'crest',
   'text',
   'textbox',
 ]
@@ -247,6 +249,10 @@ function parsePitchStyle(value: unknown): PitchStyle {
     !(value.lineWidth === undefined || PITCH_LINE_WIDTHS.some((w) => w.value === value.lineWidth)) ||
     !(value.lineColor === undefined || typeof value.lineColor === 'string') ||
     !(value.roundedCorners === undefined || typeof value.roundedCorners === 'boolean') ||
+    // Retreat lines and notes below the pitch: version 22.
+    !(value.retreatLines === undefined || typeof value.retreatLines === 'boolean') ||
+    !(value.showNotes === undefined || typeof value.showNotes === 'boolean') ||
+    !(value.notes === undefined || (typeof value.notes === 'string' && value.notes.length <= MAX_NOTES_LENGTH)) ||
     // Mowing and lighting were added in version 17.
     !(value.mowing === undefined || MOWING_OPTIONS.some((o) => o.value === value.mowing)) ||
     !(value.lighting === undefined || LIGHTING_OPTIONS.some((o) => o.value === value.lighting)) ||
@@ -266,6 +272,9 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(value.lineWidth && value.lineWidth !== 'normal' ? { lineWidth: value.lineWidth as PitchLineWidth } : {}),
     ...(typeof value.lineColor === 'string' ? { lineColor: value.lineColor } : {}),
     ...(value.roundedCorners === true ? { roundedCorners: true } : {}),
+    ...(value.retreatLines === true ? { retreatLines: true } : {}),
+    ...(value.showNotes === true ? { showNotes: true } : {}),
+    ...(typeof value.notes === 'string' && value.notes !== '' ? { notes: value.notes } : {}),
     ...(typeof value.mowing === 'string' ? { mowing: value.mowing as Mowing } : {}),
     ...(typeof value.lighting === 'string' ? { lighting: value.lighting as Lighting } : {}),
     ...(value.lightSource && value.lightSource !== 'center' ? { lightSource: value.lightSource as LightSource } : {}),

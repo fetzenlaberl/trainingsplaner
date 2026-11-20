@@ -22,6 +22,7 @@ import {
   PITCH_LINE_WIDTHS,
   resolveLighting,
   resolveMowing,
+  RETREAT_LINE_DISTANCE,
   ROUNDED_CORNER_RADIUS,
   stripeColor,
   type PitchStyle,
@@ -76,6 +77,8 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const size = fieldSize(fieldType)
   const { markings, goals } = fieldLayout(fieldType)
   const boards = getFieldBoards(fieldType)
+  // Retreat lines belong to the big pitch (the small fields are too short for them).
+  const retreat = pitch.retreatLines === true && size.length === PITCH.length && fieldType !== 'empty'
   const fit = fitGridToField(pitch.grid, size)
   const fitPoints = (points: number[]) => {
     const a = fit.point(points[0], points[1])
@@ -156,6 +159,16 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
                 return <Circle key={i} x={m.x} y={m.y} radius={spotRadius} fill={lineColor} />
             }
           })}
+          {retreat &&
+            [RETREAT_LINE_DISTANCE, PITCH.length - RETREAT_LINE_DISTANCE].map((x) => (
+              <Line
+                key={`retreat-${x}`}
+                points={[x, 0, x, PITCH.width]}
+                {...stroke}
+                dash={[lineWidth * 8, lineWidth * 6]}
+                lineCap="butt"
+              />
+            ))}
           {goals.map((g, i) => (
             <Rect key={`goal-${i}`} {...g} fill={colors.goalFill} stroke={lineColor} strokeWidth={lineWidth * 1.5} />
           ))}

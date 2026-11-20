@@ -1,8 +1,8 @@
 import { useContext } from 'react'
-import { Group, Image as KonvaImage, Rect } from 'react-konva'
+import { Group, Image as KonvaImage, Path, Rect } from 'react-konva'
 import type { Rect as ViewRect } from '../field/dimensions'
 import { useLoadedImage } from '../import/imageCache'
-import { IMAGE_BASE_WIDTH } from '../items/palette'
+import { CREST_SIZE, IMAGE_BASE_WIDTH } from '../items/palette'
 import { MeterText } from './MeterText'
 import { ImagesContext } from './imagesContext'
 
@@ -32,6 +32,30 @@ export function PictureItem({ id }: { id: string }) {
   }
   const height = (width * (img.naturalHeight || 1)) / (img.naturalWidth || 1)
   return <KonvaImage image={img} x={-width / 2} y={-height / 2} width={width} height={height} />
+}
+
+/** Plain shield outline (own drawing), CREST_SIZE high, centered at (0, 0) */
+const SHIELD_PATH = 'M -3.2 -4 L 3.2 -4 L 3.2 0 Q 3.2 2.9 0 4 Q -3.2 2.9 -3.2 0 Z'
+
+/**
+ * Crest: the chosen picture fitted into a CREST_SIZE square (never distorted);
+ * without a picture an empty shield that invites to choose one.
+ */
+export function CrestItem({ id }: { id: string }) {
+  const images = useContext(ImagesContext)
+  const img = useLoadedImage(id ? images[id] : undefined)
+  if (!img) {
+    return (
+      <Group>
+        <Path data={SHIELD_PATH} fill="rgba(255,255,255,0.18)" stroke="#ffffff" strokeWidth={0.15} dash={[0.5, 0.35]} />
+        <MeterText text="Wappen" width={6} offsetX={3} offsetY={0.9} align="center" fontSize={1.3} fontStyle="bold" fill="#ffffff" />
+      </Group>
+    )
+  }
+  const w = img.naturalWidth || 1
+  const h = img.naturalHeight || 1
+  const scale = CREST_SIZE / Math.max(w, h)
+  return <KonvaImage image={img} x={(-w * scale) / 2} y={(-h * scale) / 2} width={w * scale} height={h * scale} />
 }
 
 /**

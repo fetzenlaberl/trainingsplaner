@@ -114,9 +114,9 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           ? addItem(dragged.template.item, pos.x, pos.y)
           : addZone(dragged.template, pos.x, pos.y)
       select(id)
-      // A new text asks for its words right away.
-      if (dragged.kind === 'item' && (dragged.template.item.type === 'text' || dragged.template.item.type === 'textbox')) {
-        useToolStore.getState().setEditingTextId(id)
+      // A new text asks for its words, a crest for its picture, right away.
+      if (dragged.kind === 'item' && ['text', 'textbox', 'crest'].includes(dragged.template.item.type)) {
+        useToolStore.getState().setEditingContentId(id)
       }
     }
     // While an object is carried, a finger must not scroll the page or the list.

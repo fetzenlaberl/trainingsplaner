@@ -521,3 +521,31 @@ describe('fileNameFromTitle', () => {
     expect(fileNameFromTitle('???')).toBe('uebung')
   })
 })
+
+describe('version 22: retreat lines, notes and crests', () => {
+  it('keeps retreat lines and notes below the pitch', () => {
+    const withNotes: Drill = { ...drill, pitch: { ...drill.pitch, retreatLines: true, showNotes: true, notes: 'Pressing ab der Linie' } }
+    const parsed = parseDrill(serializeDrill(withNotes))
+    expect(parsed.pitch.retreatLines).toBe(true)
+    expect(parsed.pitch.showNotes).toBe(true)
+    expect(parsed.pitch.notes).toBe('Pressing ab der Linie')
+  })
+
+  it('keeps a crest item with its picture', () => {
+    const crest = { id: 'c1', type: 'crest' as const, x: 10, y: 10, rotation: 0, size: 1, shape: 'circle' as const, color: '#ffffff', label: 'img1', name: '', highlight: false }
+    const withCrest: Drill = {
+      ...drill,
+      images: { img1: 'data:image/png;base64,AAAA' },
+      scenes: [{ ...drill.scenes[0], items: [...drill.scenes[0].items, crest] }],
+    }
+    const parsed = parseDrill(serializeDrill(withCrest))
+    expect(parsed.scenes[0].items[2]).toEqual(crest)
+    expect(parsed.images).toEqual({ img1: 'data:image/png;base64,AAAA' })
+  })
+
+  it('rejects notes that are not text', () => {
+    const data = JSON.parse(serializeDrill(drill))
+    data.pitch.notes = 5
+    expect(() => parseDrill(JSON.stringify(data))).toThrow(DrillFileError)
+  })
+})
