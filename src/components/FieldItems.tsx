@@ -1,3 +1,4 @@
+import { dropOnTrash } from './trashDrop'
 import { useRef } from 'react'
 import { Circle, Group, Line } from 'react-konva'
 import type { Rect as ViewRect } from '../field/dimensions'
@@ -85,6 +86,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             onDragMove={(e) => updateGroupDrag(e.target)}
             onDragEnd={(e) => {
               setDraggingId(null)
+              if (dropOnTrash(e.target, item.id)) return
               if (endGroupDrag(e.target)) return
               const pos = clampToRect(viewport, e.target.x(), e.target.y())
               e.target.position(pos)

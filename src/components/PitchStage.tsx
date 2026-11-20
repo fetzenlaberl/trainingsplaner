@@ -28,6 +28,7 @@ import { LineShape } from './LineShape'
 import { QuickMenu } from './QuickMenu'
 import { CrestDialog } from './CrestDialog'
 import { TextBoxDialog } from './TextBoxDialog'
+import { TrashBin } from './TrashBin'
 import { ZoomControls } from './ZoomControls'
 import { addStrokePoint, isFreehand, simplifyPath, strokeLength } from '../lines/freehand'
 
@@ -49,6 +50,8 @@ export interface DropTarget {
 
 interface PitchStageProps {
   dropTargetRef: RefObject<DropTarget | null>
+  /** Trash bin in the corner (off in the phone view, which has no editing tools) */
+  showTrash?: boolean
 }
 
 /** CSS transform that shows the stage tilted like a TV camera view (same model as the export warp). */
@@ -62,7 +65,7 @@ function perspectiveStyle(width: number, height: number, tilt: number | null): C
 }
 
 /** Konva stage that fills its container and scales the pitch to fit. */
-export function PitchStage({ dropTargetRef }: PitchStageProps) {
+export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps) {
   const fieldType = useDrillStore((s) => s.fieldType)
   const pitch = useDrillStore((s) => s.pitch)
   const addLine = useDrillStore((s) => s.addLine)
@@ -514,6 +517,7 @@ export function PitchStage({ dropTargetRef }: PitchStageProps) {
           {resizeInfo.width.toFixed(1).replace('.', ',')} × {resizeInfo.height.toFixed(1).replace('.', ',')} m
         </div>
       )}
+      {showTrash && layout.scale > 0 && !locked && <TrashBin />}
       {layout.scale > 0 && perspective === null && (
         <ZoomControls
           zoom={view.zoom}

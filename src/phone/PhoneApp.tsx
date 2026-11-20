@@ -122,7 +122,7 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
   if (immersive) {
     return (
       <div className="relative h-full bg-slate-950">
-        <PitchStage dropTargetRef={dropTargetRef} />
+        <PitchStage dropTargetRef={dropTargetRef} showTrash={false} />
         <button
           type="button"
           aria-label="Vollbild beenden"
@@ -174,7 +174,7 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
         </button>
       </header>
       <div className="min-h-0 flex-1">
-        <PitchStage dropTargetRef={dropTargetRef} />
+        <PitchStage dropTargetRef={dropTargetRef} showTrash={false} />
       </div>
       <div className="flex items-center gap-2 border-t border-slate-700 bg-slate-900 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <button

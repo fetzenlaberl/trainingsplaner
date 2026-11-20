@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } 
 import { contrastTextColor } from '../items/colors'
 import type { ItemTemplate } from '../items/palette'
 import { currentScene, useDrillStore } from '../store/drillStore'
-import { FORMATIONS, type Side } from '../teams/formations'
+import { FORMATION_GROUPS, FORMATIONS, type Side } from '../teams/formations'
 import { itemForPlayer, placeLineup, realignTeam } from '../teams/lineupActions'
 import { NAME_STYLES, playerLabel, SQUAD_LOOKS, type NameStyle, type SquadLook, type Team } from '../teams/team'
 import { listTeams } from '../teams/teamDb'
@@ -119,10 +119,14 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
               value={formationKey}
               onChange={(e) => setFormationKey(e.target.value)}
             >
-              {FORMATIONS.map((f) => (
-                <option key={f.key} value={f.key}>
-                  {f.name}
-                </option>
+              {FORMATION_GROUPS.map((group) => (
+                <optgroup key={group.key} label={group.label}>
+                  {FORMATIONS.filter((f) => f.group === group.key).map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.name}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
             <select className={inputClass} aria-label="Eigenes Tor" value={side} onChange={(e) => setSide(e.target.value as Side)}>

@@ -6,6 +6,10 @@ import {
   createTeam,
   importPlayers,
   movePlayer,
+  playerLabel,
+  purgeTrash,
+  restorePlayer,
+  trashPlayer,
   POSITIONS,
   positionText,
   sortTeams,
@@ -19,6 +23,7 @@ import { ImportError, readPdfText } from '../import/fileImport'
 import { parseMatchReport, type ReportTeam } from '../teams/matchReport'
 import { MatchReportDialog } from './MatchReportDialog'
 import { deleteTeam, listTeams, putTeam } from '../teams/teamDb'
+import { TrashIcon } from './TrashIcon'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const LOAD_ERROR =
@@ -375,14 +380,53 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
             <button
               type="button"
               className={dangerButtonClass}
-              aria-label="Spieler entfernen"
-              onClick={() => setPlayers(team.players.filter((p) => p.id !== player.id))}
+              aria-label="Spieler in den Papierkorb"
+              title="In den Papierkorb"
+              onClick={() => onChange(trashPlayer(team, player.id))}
             >
-              ✕
+              <TrashIcon />
             </button>
           </li>
         ))}
       </ol>
+      {(team.trash?.length ?? 0) > 0 && (
+        <details className="rounded-lg border border-slate-700 bg-slate-900/60 p-2">
+          <summary className="flex min-h-10 cursor-pointer items-center gap-2 px-1 text-sm text-slate-300">
+            <TrashIcon />
+            Papierkorb ({team.trash?.length})
+          </summary>
+          <ul className="mt-1 flex flex-col gap-1">
+            {team.trash?.map((player) => (
+              <li key={player.id} className="flex flex-wrap items-center gap-1.5 rounded-md bg-slate-800/60 px-2 py-1">
+                <span className="mr-auto text-sm text-slate-300">{playerLabel(player)}</span>
+                <button type="button" className={buttonClass} onClick={() => onChange(restorePlayer(team, player.id))}>
+                  Wiederherstellen
+                </button>
+                <button
+                  type="button"
+                  className={dangerButtonClass}
+                  onClick={() => {
+                    if (window.confirm(`${playerLabel(player)} endgültig löschen?`)) onChange(purgeTrash(team, player.id))
+                  }}
+                >
+                  Endgültig löschen
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-1 flex justify-end">
+            <button
+              type="button"
+              className={dangerButtonClass}
+              onClick={() => {
+                if (window.confirm('Papierkorb leeren? Die Spieler sind dann endgültig gelöscht.')) onChange(purgeTrash(team))
+              }}
+            >
+              Papierkorb leeren
+            </button>
+          </div>
+        </details>
+      )}
       <p className="text-xs text-slate-500">
         Die Daten bleiben nur in diesem Browser. Für die Aufstellung genügen Name, Nummer und Position – bitte keine
         weiteren persönlichen Daten eintragen.

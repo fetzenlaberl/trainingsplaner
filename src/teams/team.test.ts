@@ -1,8 +1,43 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { resetDbConnection } from '../storage/db'
-import { addPlayer, basePosition, createTeam, isKeeper, movePlayer, nameForStyle, nameInitials, playerLabel, POSITIONS, teamFromData } from './team'
+import { addPlayer, basePosition, createTeam, isKeeper, movePlayer, nameForStyle, nameInitials, playerLabel, POSITIONS, purgeTrash, restorePlayer, teamFromData, trashPlayer } from './team'
 import { deleteTeam, listTeams, putTeam } from './teamDb'
+
+describe('player trash', () => {
+  const full = () => {
+    let team = createTeam(0, '#dc2626')
+    for (let i = 0; i < 3; i++) team = addPlayer(team)
+    return team
+  }
+
+  it('moves players into the trash and back', () => {
+    const team = full()
+    const [a, b] = team.players
+    const trashed = trashPlayer(trashPlayer(team, a.id), b.id)
+    expect(trashed.players).toHaveLength(1)
+    expect(trashed.trash?.map((p) => p.id)).toEqual([b.id, a.id])
+    const restored = restorePlayer(trashed, a.id)
+    expect(restored.players.map((p) => p.id)).toEqual([team.players[2].id, a.id])
+    expect(restored.trash?.map((p) => p.id)).toEqual([b.id])
+  })
+
+  it('deletes single players or the whole trash for good', () => {
+    const team = full()
+    const trashed = trashPlayer(trashPlayer(team, team.players[0].id), team.players[1].id)
+    expect(purgeTrash(trashed, team.players[0].id).trash).toHaveLength(1)
+    expect(purgeTrash(trashed).trash).toEqual([])
+  })
+
+  it('keeps the trash when loading and accepts teams without one', () => {
+    const team = trashPlayer(full(), full().players[0].id)
+    const withTrash = trashPlayer(team, team.players[0].id)
+    expect(teamFromData(JSON.parse(JSON.stringify(withTrash)))).toEqual(withTrash)
+    expect(teamFromData({ ...withTrash, trash: [{ id: 1 }] })).toBeNull()
+    const { trash: _trash, ...plain } = withTrash
+    expect(teamFromData(plain)?.trash).toBeUndefined()
+  })
+})
 
 describe('team helpers', () => {
   it('adds players with the next free number and fills the starting eleven first', () => {

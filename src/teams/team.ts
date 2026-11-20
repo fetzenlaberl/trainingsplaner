@@ -107,6 +107,8 @@ export interface Team {
   name: string
   color: string
   players: TeamPlayer[]
+  /** Removed players that can still be restored (newest first) */
+  trash?: TeamPlayer[]
   createdAt: number
   updatedAt: number
 }
@@ -166,6 +168,32 @@ export function movePlayer(players: TeamPlayer[], index: number, direction: -1 |
   const result = [...players]
   ;[result[index], result[target]] = [result[target], result[index]]
   return result
+}
+
+/** How many removed players the trash keeps; older ones are dropped. */
+export const MAX_TRASH = 50
+
+/** Moves a player from the squad into the trash. */
+export function trashPlayer(team: Team, id: string): Team {
+  const player = team.players.find((p) => p.id === id)
+  if (!player) return team
+  return {
+    ...team,
+    players: team.players.filter((p) => p.id !== id),
+    trash: [player, ...(team.trash ?? [])].slice(0, MAX_TRASH),
+  }
+}
+
+/** Puts a player from the trash back at the end of the squad. */
+export function restorePlayer(team: Team, id: string): Team {
+  const player = team.trash?.find((p) => p.id === id)
+  if (!player) return team
+  return { ...team, players: [...team.players, player], trash: (team.trash ?? []).filter((p) => p.id !== id) }
+}
+
+/** Deletes a player from the trash for good (or the whole trash without id). */
+export function purgeTrash(team: Team, id?: string): Team {
+  return { ...team, trash: id === undefined ? [] : (team.trash ?? []).filter((p) => p.id !== id) }
 }
 
 /** Name for display: "7 Müller", or just the number / name. */
@@ -231,8 +259,23 @@ export function teamFromData(value: unknown): Team | null {
   ) {
     return null
   }
+  const players = playersFromData(value.players)
+  const trash = value.trash === undefined ? [] : Array.isArray(value.trash) ? playersFromData(value.trash) : null
+  if (!players || !trash) return null
+  return {
+    id: value.id,
+    name: value.name,
+    color: value.color,
+    players,
+    ...(trash.length > 0 ? { trash: trash.slice(0, MAX_TRASH) } : {}),
+    createdAt: value.createdAt,
+    updatedAt: value.updatedAt,
+  }
+}
+
+function playersFromData(list: unknown[]): TeamPlayer[] | null {
   const players: TeamPlayer[] = []
-  for (const p of value.players) {
+  for (const p of list) {
     if (
       !isRecord(p) ||
       typeof p.id !== 'string' ||
@@ -251,12 +294,5 @@ export function teamFromData(value: unknown): Team | null {
       starter: p.starter,
     })
   }
-  return {
-    id: value.id,
-    name: value.name,
-    color: value.color,
-    players,
-    createdAt: value.createdAt,
-    updatedAt: value.updatedAt,
-  }
+  return players
 }

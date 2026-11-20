@@ -15,9 +15,50 @@ describe('FORMATIONS', () => {
 
   it('names match the number of outfield players per line', () => {
     for (const formation of FORMATIONS) {
-      const total = formation.name.split('-').reduce((sum, n) => sum + Number(n), 0)
+      const total = formation.name.split('-').reduce((sum, n) => sum + Number.parseInt(n, 10), 0)
       expect(total).toBe(10)
     }
+  })
+
+  it('has unique keys', () => {
+    expect(new Set(FORMATIONS.map((f) => f.key)).size).toBe(FORMATIONS.length)
+  })
+
+  it('offers the defensive and offensive systems in their groups', () => {
+    const names = (group: string) => FORMATIONS.filter((f) => f.group === group).map((f) => f.name)
+    expect(names('defensive')).toEqual([
+      '4-4-2', '4-4-1-1', '4-1-4-1', '4-5-1', '4-3-3', '4-2-3-1', '4-2-2-2', '4-3-2-1', '4-4-2 Raute', '5-4-1',
+      '5-3-2', '5-2-3', '5-2-1-2', '5-1-3-1', '3-4-3', '3-5-2', '3-4-1-2', '3-3-3-1', '6-3-1', '6-2-2',
+    ])
+    expect(names('offensive')).toEqual([
+      '2-3-5', '3-2-5', '3-1-6', '2-4-4', '3-3-4', '3-4-3', '2-3-2-3', '3-2-2-3', '2-2-6', '2-1-7', '4-2-4',
+      '4-1-5', '3-1-4-2', '3-2-4-1', '2-4-1-3',
+    ])
+  })
+
+  it('puts the lines in the order of the name (from the own goal forward)', () => {
+    for (const formation of FORMATIONS) {
+      const counts = formation.name.split('-').map((n) => Number.parseInt(n, 10))
+      const field = formation.slots.filter((s) => s.position !== 'TW').map((s) => s.depth).sort((a, b) => a - b)
+      let at = 0
+      const lineDepths = counts.map((count) => {
+        const line = field.slice(at, at + count)
+        at += count
+        return line
+      })
+      // Every player of a line stands behind every player of the next line.
+      for (let i = 0; i + 1 < lineDepths.length; i++) {
+        expect(Math.max(...lineDepths[i]), formation.name).toBeLessThanOrEqual(Math.min(...lineDepths[i + 1]))
+      }
+    }
+  })
+
+  it('places offensive systems higher than defensive ones on average', () => {
+    const average = (group: string) => {
+      const depths = FORMATIONS.filter((f) => f.group === group).flatMap((f) => f.slots.map((s) => s.depth))
+      return depths.reduce((a, b) => a + b, 0) / depths.length
+    }
+    expect(average('offensive')).toBeGreaterThan(average('defensive'))
   })
 })
 

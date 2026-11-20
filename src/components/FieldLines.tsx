@@ -1,3 +1,4 @@
+import { dropOnTrash } from './trashDrop'
 import type { KonvaEventObject } from 'konva/lib/Node'
 import { isFreehand } from '../lines/freehand'
 import { useRef, useState } from 'react'
@@ -52,6 +53,7 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
             onDragMove={(e) => updateGroupDrag(e.target)}
             onDragEnd={(e) => {
               setDraggingId(null)
+              if (dropOnTrash(e.target, line.id)) return
               if (endGroupDrag(e.target)) return
               const { x, y } = e.target.position()
               e.target.position({ x: 0, y: 0 })

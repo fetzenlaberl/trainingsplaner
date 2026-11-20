@@ -40,6 +40,13 @@ export function updateGroupDrag(leader: Konva.Node): void {
   for (const { node, start } of session.others) node.position({ x: start.x + dx, y: start.y + dy })
 }
 
+/** Ends a group drag without moving anything in the store (e.g. dropped on the trash bin). */
+export function cancelGroupDrag(): void {
+  if (!session) return
+  for (const { node, start } of session.others) node.position(node.name() === 'line-group' ? { x: 0, y: 0 } : start)
+  session = null
+}
+
 /** Ends a group drag and stores the move; returns false if no group drag was running. */
 export function endGroupDrag(leader: Konva.Node): boolean {
   if (!session) return false
