@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { resetDbConnection } from '../storage/db'
-import { addPlayer, createTeam, movePlayer, nameForStyle, nameInitials, playerLabel, teamFromData } from './team'
+import { addPlayer, basePosition, createTeam, isKeeper, movePlayer, nameForStyle, nameInitials, playerLabel, POSITIONS, teamFromData } from './team'
 import { deleteTeam, listTeams, putTeam } from './teamDb'
 
 describe('team helpers', () => {
@@ -72,5 +72,19 @@ describe('name styles', () => {
     expect(nameForStyle('Max Müller', 'full')).toBe('Max Müller')
     expect(nameForStyle('Max Müller', 'initials')).toBe('MM')
     expect(nameForStyle('Max Müller', 'none')).toBe('')
+  })
+})
+
+describe('positions', () => {
+  it('has unique stored codes and maps roles to basic positions', () => {
+    const codes = POSITIONS.map((p) => p.code)
+    expect(new Set(codes).size).toBe(codes.length)
+    expect(basePosition('RIV')).toBe('IV')
+    expect(basePosition('ZOM10S')).toBe('ZOM')
+    expect(basePosition('MS9')).toBe('ST')
+    expect(isKeeper('TSP')).toBe(true)
+    expect(isKeeper('ET')).toBe(true)
+    expect(isKeeper('LOV')).toBe(false)
+    expect(isKeeper(null)).toBe(false)
   })
 })

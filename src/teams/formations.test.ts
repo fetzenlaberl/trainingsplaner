@@ -81,3 +81,21 @@ describe('assignLineup', () => {
     expect(new Set(ids).size).toBe(11)
   })
 })
+
+describe('roles of a position', () => {
+  it('puts a 6er on the ZDM slot and never a substitute keeper in the field', () => {
+    const formation = FORMATIONS[0]
+    const players = [
+      player('et', 'ET'),
+      player('six', 'ZDM6'),
+      ...Array.from({ length: 12 }, (_, i) => player(`f${i}`, null)),
+      player('tw', 'TW'),
+    ]
+    const lineup = assignLineup(players, formation)
+    const keeperSlot = formation.slots.findIndex((s) => s.position === 'TW')
+    expect(lineup[keeperSlot]?.id).toBe('tw')
+    const zdm = formation.slots.findIndex((s) => s.position === 'ZDM')
+    if (zdm >= 0) expect(lineup[zdm]?.id).toBe('six')
+    expect(lineup.some((p) => p?.id === 'et')).toBe(false)
+  })
+})

@@ -102,7 +102,7 @@ export function MatchReportDialog({
                 onChange={(e) => update(i, { name: e.target.value })}
               />
               <span className="w-16 shrink-0 text-xs text-slate-400">
-                {[row.position === 'TW' ? 'TW' : '', row.starter === false ? 'Ersatz' : ''].filter(Boolean).join(' · ')}
+                {[row.position ?? '', row.starter === false ? 'Ersatz' : ''].filter(Boolean).join(' · ')}
               </span>
             </li>
           ))}

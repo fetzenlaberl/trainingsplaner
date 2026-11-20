@@ -7,6 +7,7 @@ import {
   importPlayers,
   movePlayer,
   POSITIONS,
+  positionText,
   sortTeams,
   type ImportMode,
   type Position,
@@ -340,7 +341,7 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
               <option value="">Position –</option>
               {POSITIONS.map((p) => (
                 <option key={p.code} value={p.code}>
-                  {p.code} · {p.name}
+                  {positionText(p)}
                 </option>
               ))}
             </select>

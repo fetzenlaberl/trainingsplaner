@@ -1,5 +1,5 @@
 import { PITCH } from '../field/dimensions'
-import type { Position, TeamPlayer } from './team'
+import { basePosition, isKeeper, type Position, type TeamPlayer } from './team'
 
 /**
  * One position of a formation: depth 0 = own goal line, 1 = halfway line;
@@ -90,15 +90,21 @@ export function assignLineup(players: TeamPlayer[], formation: Formation): (Team
   const remaining = [...ordered]
   const result: (TeamPlayer | null)[] = formation.slots.map(() => null)
 
-  // First pass: exact position matches.
-  formation.slots.forEach((slot, i) => {
-    const index = remaining.findIndex((p) => p.position === slot.position)
-    if (index >= 0) result[i] = remaining.splice(index, 1)[0]
-  })
+  // First pass: exact position matches, then roles of that position (a "6er" for ZDM).
+  for (const matches of [
+    (p: TeamPlayer, slot: FormationSlot) => p.position === slot.position,
+    (p: TeamPlayer, slot: FormationSlot) => basePosition(p.position) === slot.position,
+  ]) {
+    formation.slots.forEach((slot, i) => {
+      if (result[i]) return
+      const index = remaining.findIndex((p) => matches(p, slot))
+      if (index >= 0) result[i] = remaining.splice(index, 1)[0]
+    })
+  }
   // Second pass: fill remaining slots in list order, but never put a goalkeeper in the field.
   formation.slots.forEach((slot, i) => {
     if (result[i]) return
-    const index = remaining.findIndex((p) => (slot.position === 'TW') === (p.position === 'TW') || p.position === null)
+    const index = remaining.findIndex((p) => (slot.position === 'TW') === isKeeper(p.position) || p.position === null)
     if (index >= 0) result[i] = remaining.splice(index, 1)[0]
   })
   return result

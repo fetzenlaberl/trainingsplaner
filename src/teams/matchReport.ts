@@ -85,7 +85,8 @@ function cleanName(text: string): string | null {
 interface Entry {
   number: string
   name: string
-  keeper: boolean
+  /** Keeper code from the number column ("T", "ET"), or null */
+  keeper: string | null
   x: number
   y: number
   page: number
@@ -107,7 +108,7 @@ function playerEntries(cells: Cell[]): Entry[] {
           entries.push({
             number: isNumber ? String(Number(cell.text)) : '',
             name,
-            keeper: !isNumber,
+            keeper: isNumber ? null : code,
             x: cell.x,
             y: cell.y,
             page: cell.page,
@@ -119,7 +120,7 @@ function playerEntries(cells: Cell[]): Entry[] {
       const joined = /^(\d{1,2})\s+(.+)$/.exec(cell.text)
       if (joined) {
         const name = cleanName(joined[2])
-        if (name) entries.push({ number: String(Number(joined[1])), name, keeper: false, x: cell.x, y: cell.y, page: cell.page })
+        if (name) entries.push({ number: String(Number(joined[1])), name, keeper: null, x: cell.x, y: cell.y, page: cell.page })
       }
     })
   }
@@ -181,7 +182,8 @@ export function parseMatchReport(pages: PdfTextItem[][]): ReportTeam[] {
     const players: CsvPlayer[] = own.map((e) => ({
       number: e.number,
       name: e.name,
-      position: e.keeper ? 'TW' : null,
+      // "ET" marks the substitute keeper.
+      position: e.keeper === 'ET' ? 'ET' : e.keeper ? 'TW' : null,
       starter: heading ? !below(e, heading) : null,
     }))
     return players

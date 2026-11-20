@@ -111,7 +111,13 @@ const POSITION_ALIASES: Record<string, Position> = {
 export function parsePosition(value: string): Position | null {
   const v = normalize(value)
   if (v === '') return null
-  const found = POSITIONS.find((p) => p.code.toLowerCase() === v || p.name.toLowerCase() === v)
+  // Code ("ST"), name ("Stürmer", "6er") or both as shown in the app ("ZDM · 6er", "ZDM - 6er")
+  const found = POSITIONS.find(
+    (p) =>
+      p.code.toLowerCase() === v ||
+      p.name.toLowerCase() === v ||
+      [' · ', ' - ', ' ', '-'].some((sep) => `${p.label}${sep}${p.name}`.toLowerCase() === v),
+  )
   return found?.code ?? POSITION_ALIASES[v] ?? null
 }
 

@@ -93,3 +93,14 @@ describe('importPlayers', () => {
     expect(team.players[2].starter).toBe(false)
   })
 })
+
+describe('new positions', () => {
+  it('reads roles by code, name or both', () => {
+    expect(parsePosition('ET')).toBe('ET')
+    expect(parsePosition('6er')).toBe('ZDM6')
+    expect(parsePosition('ZDM - 6er abkippend')).toBe('ZDM6A')
+    expect(parsePosition('falscher 9er')).toBe('MSF9')
+    expect(parsePosition('LOV')).toBe('LOV')
+    expect(parsePosition('ZDM')).toBe('ZDM')
+  })
+})

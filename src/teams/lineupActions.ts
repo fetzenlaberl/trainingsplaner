@@ -4,11 +4,11 @@ import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
 import { assignLineup, slotPosition, type Formation, type Side } from './formations'
-import { nameForStyle, type NameStyle, type Team, type TeamPlayer } from './team'
+import { isKeeper, nameForStyle, type NameStyle, type Team, type TeamPlayer } from './team'
 
 /** Player item for a squad member (number, name tag and team color). */
 export function itemForPlayer(team: Team, player: TeamPlayer, nameStyle: NameStyle = 'full'): NewItem {
-  const keeper = player.position === 'TW'
+  const keeper = isKeeper(player.position)
   return {
     type: 'player',
     color: keeper ? TEAM_COLORS.keeper : team.color,

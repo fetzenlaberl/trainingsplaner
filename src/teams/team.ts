@@ -2,32 +2,95 @@
 
 export type Position =
   | 'TW'
+  | 'ET'
+  | 'TSP'
   | 'IV'
+  | 'RIV'
+  | 'LIV'
+  | 'ZIV'
   | 'LV'
+  | 'LOV'
   | 'RV'
+  | 'ROV'
   | 'ZDM'
+  | 'ZDM6'
+  | 'ZDM6A'
+  | 'ZDM6S'
   | 'ZM'
+  | 'ZOM8'
   | 'LM'
   | 'RM'
   | 'ZOM'
+  | 'ZOM10'
+  | 'ZOM10S'
   | 'LA'
   | 'RA'
   | 'ST'
+  | 'MS9'
+  | 'MSF9'
 
-export const POSITIONS: { code: Position; name: string }[] = [
-  { code: 'TW', name: 'Torwart' },
-  { code: 'IV', name: 'Innenverteidiger' },
-  { code: 'LV', name: 'Linker Verteidiger' },
-  { code: 'RV', name: 'Rechter Verteidiger' },
-  { code: 'ZDM', name: 'Defensives Mittelfeld' },
-  { code: 'ZM', name: 'Zentrales Mittelfeld' },
-  { code: 'LM', name: 'Linkes Mittelfeld' },
-  { code: 'RM', name: 'Rechtes Mittelfeld' },
-  { code: 'ZOM', name: 'Offensives Mittelfeld' },
-  { code: 'LA', name: 'Linksaußen' },
-  { code: 'RA', name: 'Rechtsaußen' },
-  { code: 'ST', name: 'Stürmer' },
+export interface PositionInfo {
+  /** Stored value (unique) */
+  code: Position
+  /** Short code shown to the user (several roles can share one, e.g. ZDM) */
+  label: string
+  name: string
+  /** Basic position used by the formations (e.g. a "6er" plays as ZDM) */
+  base: Position
+}
+
+const pos = (code: Position, name: string, label: string = code, base: Position = code): PositionInfo => ({
+  code,
+  label,
+  name,
+  base,
+})
+
+export const POSITIONS: PositionInfo[] = [
+  pos('TW', 'Torwart'),
+  pos('ET', 'Ersatztorwart', 'ET', 'TW'),
+  pos('TSP', 'Torwart als Torspieler', 'TSP', 'TW'),
+  pos('IV', 'Innenverteidiger'),
+  pos('RIV', 'Rechter Innenverteidiger', 'RIV', 'IV'),
+  pos('LIV', 'Linker Innenverteidiger', 'LIV', 'IV'),
+  pos('ZIV', 'Zentraler Innenverteidiger', 'ZIV', 'IV'),
+  pos('LV', 'Linker Verteidiger'),
+  pos('LOV', 'Linker Offensivverteidiger', 'LOV', 'LV'),
+  pos('RV', 'Rechter Verteidiger'),
+  pos('ROV', 'Rechter Offensivverteidiger', 'ROV', 'RV'),
+  pos('ZDM', 'Defensives Mittelfeld'),
+  pos('ZDM6', '6er', 'ZDM', 'ZDM'),
+  pos('ZDM6A', '6er abkippend', 'ZDM', 'ZDM'),
+  pos('ZDM6S', '6er defensiver Schwimmer', 'ZDM', 'ZDM'),
+  pos('ZM', 'Zentrales Mittelfeld'),
+  pos('ZOM8', '8er', 'ZOM', 'ZM'),
+  pos('LM', 'Linkes Mittelfeld'),
+  pos('RM', 'Rechtes Mittelfeld'),
+  pos('ZOM', 'Offensives Mittelfeld'),
+  pos('ZOM10', '10er', 'ZOM', 'ZOM'),
+  pos('ZOM10S', '10er offensiver Schwimmer', 'ZOM', 'ZOM'),
+  pos('LA', 'Linksaußen'),
+  pos('RA', 'Rechtsaußen'),
+  pos('ST', 'Stürmer'),
+  pos('MS9', '9er', 'MS', 'ST'),
+  pos('MSF9', 'falscher 9er', 'MS', 'ST'),
 ]
+
+/** Basic position of a role (the formations know only these). */
+export function basePosition(position: Position | null): Position | null {
+  if (position === null) return null
+  return POSITIONS.find((p) => p.code === position)?.base ?? position
+}
+
+/** Goalkeeper, substitute keeper or keeper playing as an extra field player. */
+export function isKeeper(position: Position | null): boolean {
+  return basePosition(position) === 'TW'
+}
+
+/** Text for menus: "ZDM · 6er". */
+export function positionText(info: PositionInfo): string {
+  return `${info.label} · ${info.name}`
+}
 
 export interface TeamPlayer {
   id: string

@@ -81,7 +81,7 @@ describe('parseMatchReport', () => {
     const [home] = teams
     expect(home.players[0]).toMatchObject({ position: 'TW', starter: true })
     expect(home.players[1]).toMatchObject({ position: null, starter: true })
-    expect(home.players[3]).toMatchObject({ position: 'TW', starter: false })
+    expect(home.players[3]).toMatchObject({ position: 'ET', starter: false })
     expect(home.players[4]).toMatchObject({ starter: false })
   })
 
