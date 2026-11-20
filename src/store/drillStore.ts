@@ -64,7 +64,9 @@ export interface DrillState extends DrillContent {
   /** Thickness, color and corners of the pitch markings, as one undo step. */
   /** Lines, mowing and lighting of the pitch (undefined = default), as one undo step. */
   setPitchLines: (
-    change: Partial<Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting'>>,
+    change: Partial<
+      Pick<PitchStyle, 'lineWidth' | 'lineColor' | 'roundedCorners' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient'>
+    >,
   ) => void
   setOrientation: (orientation: Orientation) => void
   select: (id: string | null) => void
@@ -348,7 +350,13 @@ export const useDrillStore = create<DrillState>((set, get) => ({
   setFieldType: (fieldType) =>
     set((s) => (s.fieldType === fieldType ? {} : { ...recorded(s), fieldType })),
   setPitchColor: (color) =>
-    set((s) => (s.pitch.color === color ? {} : { ...recorded(s), pitch: { ...s.pitch, color } })),
+    set((s) => {
+      if (s.pitch.color === color && !s.pitch.gradient) return {}
+      // Choosing a design ends an own color gradient.
+      const pitch = { ...s.pitch, color }
+      delete pitch.gradient
+      return { ...recorded(s), pitch }
+    }),
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
   setCustomGrid: (customGrid) => set((s) => ({ ...recorded(s), pitch: { ...s.pitch, grid: 'custom', customGrid } })),
@@ -379,6 +387,9 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (!pitch.roundedCorners) delete pitch.roundedCorners
       if (pitch.mowing === undefined) delete pitch.mowing
       if (pitch.lighting === undefined) delete pitch.lighting
+      if (pitch.lightSource === undefined || pitch.lightSource === 'center') delete pitch.lightSource
+      if (pitch.lightKind === undefined || pitch.lightKind === 'spot') delete pitch.lightKind
+      if (pitch.gradient === undefined) delete pitch.gradient
       return { ...recorded(s), pitch }
     }),
   setOrientation: (orientation) =>

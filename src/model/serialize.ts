@@ -9,6 +9,12 @@ import {
   LIGHTING_OPTIONS,
   MOWING_OPTIONS,
   type Lighting,
+  type LightSource,
+  type PitchGradient,
+  GRADIENT_DIRECTIONS,
+  isHexColor,
+  LIGHT_KINDS,
+  LIGHT_SOURCES,
   type Mowing,
   PITCH_LINE_WIDTHS,
   type PitchLineWidth,
@@ -65,6 +71,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 15: shirt-shaped players and coach items.
 // Version 16: grass designs, pitch line width/color/rounded corners, ball designs, coordination grid.
 // Version 17: mowing patterns, lighting, extra line weights.
+// Version 20: reshaped circle zones, light source/kind, own pitch gradient.
 // Version 18: players without facing arrow, polygon zone, perspective dummies.
 // Version 19: imported pictures (picture items, background picture).
 export const FILE_VERSION = 20
@@ -238,7 +245,11 @@ function parsePitchStyle(value: unknown): PitchStyle {
     !(value.roundedCorners === undefined || typeof value.roundedCorners === 'boolean') ||
     // Mowing and lighting were added in version 17.
     !(value.mowing === undefined || MOWING_OPTIONS.some((o) => o.value === value.mowing)) ||
-    !(value.lighting === undefined || LIGHTING_OPTIONS.some((o) => o.value === value.lighting))
+    !(value.lighting === undefined || LIGHTING_OPTIONS.some((o) => o.value === value.lighting)) ||
+    // Light source, light kind and own gradient: version 20.
+    !(value.lightSource === undefined || LIGHT_SOURCES.some((o) => o.value === value.lightSource)) ||
+    !(value.lightKind === undefined || LIGHT_KINDS.some((o) => o.value === value.lightKind)) ||
+    !(value.gradient === undefined || isGradient(value.gradient))
   ) {
     throw corrupt()
   }
@@ -252,9 +263,23 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(value.roundedCorners === true ? { roundedCorners: true } : {}),
     ...(typeof value.mowing === 'string' ? { mowing: value.mowing as Mowing } : {}),
     ...(typeof value.lighting === 'string' ? { lighting: value.lighting as Lighting } : {}),
+    ...(value.lightSource && value.lightSource !== 'center' ? { lightSource: value.lightSource as LightSource } : {}),
+    ...(value.lightKind === 'vignette' ? { lightKind: 'vignette' as const } : {}),
+    ...(isGradient(value.gradient)
+      ? { gradient: { from: value.gradient.from, to: value.gradient.to, direction: value.gradient.direction } }
+      : {}),
     ...(typeof value.background === 'string' ? { background: value.background } : {}),
     ...(isNumber(value.backgroundOpacity) ? { backgroundOpacity: value.backgroundOpacity } : {}),
   }
+}
+
+function isGradient(value: unknown): value is PitchGradient {
+  return (
+    isRecord(value) &&
+    isHexColor(value.from) &&
+    isHexColor(value.to) &&
+    GRADIENT_DIRECTIONS.some((d) => d.value === value.direction)
+  )
 }
 
 function parseCustomGrid(value: unknown): CustomGrid {

@@ -12,6 +12,12 @@ export type PitchColor =
   | 'blue'
   | 'grey'
   | 'white'
+  | 'black'
+  | 'anthracite'
+  | 'navy'
+  | 'purple'
+  | 'tartan'
+  | 'sand'
 
 /** Thickness of the pitch markings */
 export type PitchLineWidth = 'extraThin' | 'thin' | 'normal' | 'thick' | 'extraThick'
@@ -60,15 +66,101 @@ export const MOWING_OPTIONS: { value: Mowing | null; label: string }[] = [
   { value: 'none', label: 'Keine Streifen' },
 ]
 
-/** "Sun in the middle": lighter centre, darker edges; missing = as the grass design */
-export type Lighting = 'none' | 'soft' | 'strong'
+/** Strength of the light ("sun"): lighter near the light, darker far away; missing = as the grass design */
+export type Lighting = 'none' | 'soft' | 'medium' | 'strong'
 
 export const LIGHTING_OPTIONS: { value: Lighting | null; label: string }[] = [
   { value: null, label: 'Wie Design' },
   { value: 'none', label: 'Kein Lichtverlauf' },
-  { value: 'soft', label: 'Sonne in der Mitte – leicht' },
-  { value: 'strong', label: 'Sonne in der Mitte – stark' },
+  { value: 'soft', label: 'Leicht' },
+  { value: 'medium', label: 'Mittel' },
+  { value: 'strong', label: 'Stark' },
 ]
+
+/** Where the light comes from, as seen on screen (also in portrait); missing = centre */
+export type LightSource =
+  | 'center'
+  | 'left'
+  | 'right'
+  | 'top'
+  | 'bottom'
+  | 'topLeft'
+  | 'topRight'
+  | 'bottomLeft'
+  | 'bottomRight'
+
+export const LIGHT_SOURCES: { value: LightSource; label: string; x: number; y: number }[] = [
+  { value: 'center', label: 'Mitte', x: 0, y: 0 },
+  { value: 'left', label: 'Links', x: -1, y: 0 },
+  { value: 'right', label: 'Rechts', x: 1, y: 0 },
+  { value: 'top', label: 'Oben', x: 0, y: -1 },
+  { value: 'bottom', label: 'Unten', x: 0, y: 1 },
+  { value: 'topLeft', label: 'Ecke oben links', x: -1, y: -1 },
+  { value: 'topRight', label: 'Ecke oben rechts', x: 1, y: -1 },
+  { value: 'bottomLeft', label: 'Ecke unten links', x: -1, y: 1 },
+  { value: 'bottomRight', label: 'Ecke unten rechts', x: 1, y: 1 },
+]
+
+/** Bright spot at the light, or only darker edges away from it (vignette); missing = spot */
+export type LightKind = 'spot' | 'vignette'
+
+export const LIGHT_KINDS: { value: LightKind; label: string }[] = [
+  { value: 'spot', label: 'Heller Lichtfleck' },
+  { value: 'vignette', label: 'Nur dunkler Rand' },
+]
+
+/** Own surface: two colors running into each other (replaces the design's base color) */
+export type GradientDirection = 'leftRight' | 'topBottom' | 'diagonal' | 'radial'
+
+export interface PitchGradient {
+  from: string
+  to: string
+  direction: GradientDirection
+}
+
+export const GRADIENT_DIRECTIONS: { value: GradientDirection; label: string }[] = [
+  { value: 'leftRight', label: 'Von links nach rechts' },
+  { value: 'topBottom', label: 'Von oben nach unten' },
+  { value: 'diagonal', label: 'Schräg (oben links → unten rechts)' },
+  { value: 'radial', label: 'Von der Mitte nach außen' },
+]
+
+/** Color stops of the light overlay (transparent white → transparent black). */
+export function lightingStops(lighting: Lighting, kind: LightKind): (number | string)[] {
+  const strength = { none: 0, soft: 1, medium: 1.5, strong: 2 }[lighting]
+  const glow = kind === 'spot' ? 0.12 * strength : 0
+  const shade = 0.11 + 0.11 * strength
+  return [0, `rgba(255,255,235,${glow.toFixed(3)})`, 0.5, 'rgba(255,255,255,0)', 1, `rgba(0,0,0,${shade.toFixed(3)})`]
+}
+
+/**
+ * Turns a point given in screen terms (x, y from -1 to 1 across the visible area) into meters
+ * on the pitch; `upright` is the rotation that turns the view back upright (90 in portrait).
+ */
+export function screenToField(
+  viewport: { x: number; y: number; width: number; height: number },
+  upright: number,
+  sx: number,
+  sy: number,
+): { x: number; y: number } {
+  const turned = upright % 180 !== 0
+  const halfW = (turned ? viewport.height : viewport.width) / 2
+  const halfH = (turned ? viewport.width : viewport.height) / 2
+  const a = (upright * Math.PI) / 180
+  const dx = sx * halfW
+  const dy = sy * halfH
+  const cos = Math.round(Math.cos(a) * 1e9) / 1e9
+  const sin = Math.round(Math.sin(a) * 1e9) / 1e9
+  return {
+    x: viewport.x + viewport.width / 2 + dx * cos - dy * sin,
+    y: viewport.y + viewport.height / 2 + dx * sin + dy * cos,
+  }
+}
+
+/** Valid color like #1a2b3c */
+export function isHexColor(value: unknown): value is string {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+}
 
 /** Resolved mowing: stripe direction and how many stripes over the pitch length (across) or width (along). */
 export function resolveMowing(style: PitchStyle): { kind: 'across' | 'along' | 'check' | 'none'; count: number } {
@@ -155,6 +247,12 @@ export interface PitchStyle {
   roundedCorners?: boolean
   mowing?: Mowing
   lighting?: Lighting
+  /** Where the light comes from (missing = centre) */
+  lightSource?: LightSource
+  /** Bright spot or only dark edges (missing = spot) */
+  lightKind?: LightKind
+  /** Own two-color surface instead of the design's base color */
+  gradient?: PitchGradient
   /** Picture (id in Drill.images) shown instead of the grass */
   background?: string
   /** Opacity of the background picture, 0.1–1 (missing = 1) */
@@ -272,6 +370,54 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     grid: 'rgba(255,255,255,0.55)',
     goalFill: 'rgba(255,255,255,0.25)',
   },
+  black: {
+    label: 'Schwarz',
+    base: '#111214',
+    stripe: '#1a1c1f',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.5)',
+    goalFill: 'rgba(255,255,255,0.2)',
+  },
+  anthracite: {
+    label: 'Anthrazit',
+    base: '#30353c',
+    stripe: '#373d45',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.55)',
+    goalFill: 'rgba(255,255,255,0.22)',
+  },
+  navy: {
+    label: 'Dunkelblau',
+    base: '#152a4d',
+    stripe: '#1a3360',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.55)',
+    goalFill: 'rgba(255,255,255,0.22)',
+  },
+  purple: {
+    label: 'Violett',
+    base: '#47286f',
+    stripe: '#51307e',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.55)',
+    goalFill: 'rgba(255,255,255,0.22)',
+  },
+  tartan: {
+    label: 'Rot (Tartan)',
+    base: '#a23b2f',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  sand: {
+    label: 'Sand',
+    base: '#cdb27e',
+    stripe: '#d4ba88',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.75)',
+    goalFill: 'rgba(255,255,255,0.3)',
+  },
   white: {
     label: 'Weiß (druckfreundlich)',
     base: '#ffffff',
@@ -291,7 +437,13 @@ export const PITCH_COLOR_ORDER: PitchColor[] = [
   'darkGreen',
   'lightGreen',
   'blue',
+  'navy',
+  'purple',
+  'tartan',
+  'sand',
   'grey',
+  'anthracite',
+  'black',
   'white',
 ]
 

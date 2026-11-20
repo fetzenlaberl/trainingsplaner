@@ -8,6 +8,13 @@ import { grassTextureTile, TEXTURE_TILE_METERS, TEXTURE_TILE_PX } from '../field
 import {
   gridLabels,
   gridLines,
+  LIGHT_SOURCES,
+  lightingStops,
+  screenToField,
+  type Lighting,
+  type LightKind,
+  type LightSource,
+  type PitchGradient,
   PITCH_COLORS,
   PITCH_LINE_WIDTHS,
   resolveLighting,
@@ -53,9 +60,19 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
 
   return (
     <Group listening={false}>
-      <Rect {...viewport} fill={colors.base} />
+      {pitch.gradient ? (
+        <GradientSurface viewport={viewport} upright={upright} gradient={pitch.gradient} />
+      ) : (
+        <Rect {...viewport} fill={colors.base} />
+      )}
       {mowing.kind !== 'none' && (
-        <MowingPattern viewport={viewport} color={stripeColor(pitch.color)} kind={mowing.kind} count={mowing.count} />
+        <MowingPattern
+          viewport={viewport}
+          // On an own two-color surface the stripes are a light shade, so both colors stay visible.
+          color={pitch.gradient ? 'rgba(255,255,255,0.06)' : stripeColor(pitch.color)}
+          kind={mowing.kind}
+          count={mowing.count}
+        />
       )}
       {texture && (
         <Rect
@@ -71,18 +88,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         <PitchBackground id={pitch.background} opacity={pitch.backgroundOpacity ?? 1} viewport={viewport} upright={upright} />
       )}
       {lighting !== 'none' && (
-        <Rect
-          {...viewport}
-          fillRadialGradientStartPoint={{ x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 }}
-          fillRadialGradientEndPoint={{ x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 }}
-          fillRadialGradientStartRadius={0}
-          fillRadialGradientEndRadius={Math.max(viewport.width, viewport.height) * 0.75}
-          fillRadialGradientColorStops={
-            lighting === 'strong'
-              ? [0, 'rgba(255,255,225,0.24)', 0.5, 'rgba(255,255,255,0.03)', 1, 'rgba(0,0,0,0.38)']
-              : [0, 'rgba(255,255,240,0.12)', 0.55, 'rgba(255,255,255,0)', 1, 'rgba(0,0,0,0.22)']
-          }
-        />
+        <LightOverlay viewport={viewport} upright={upright} lighting={lighting} source={pitch.lightSource} kind={pitch.lightKind} />
       )}
 
       {fieldType !== 'empty' && (
@@ -208,5 +214,81 @@ function MowingPattern({
         <Rect key={`${cell.x}-${cell.y}`} x={cell.x} y={cell.y} width={cell.w} height={cell.h} fill={color} />
       ))}
     </Group>
+  )
+}
+
+type Viewport = ViewRect
+
+/** Konva gradient points are relative to the shape's own position. */
+const local = (viewport: Viewport, p: { x: number; y: number }) => ({ x: p.x - viewport.x, y: p.y - viewport.y })
+
+const distanceToFarthestCorner = (viewport: Viewport, p: { x: number; y: number }) =>
+  Math.max(
+    ...[
+      [viewport.x, viewport.y],
+      [viewport.x + viewport.width, viewport.y],
+      [viewport.x, viewport.y + viewport.height],
+      [viewport.x + viewport.width, viewport.y + viewport.height],
+    ].map(([x, y]) => Math.hypot(x - p.x, y - p.y)),
+  )
+
+/** Light over the surface: from the centre, a side or a corner as seen on screen. */
+function LightOverlay({
+  viewport,
+  upright,
+  lighting,
+  source = 'center',
+  kind = 'spot',
+}: {
+  viewport: Viewport
+  upright: number
+  lighting: Lighting
+  source?: LightSource
+  kind?: LightKind
+}) {
+  const at = LIGHT_SOURCES.find((s) => s.value === source) ?? LIGHT_SOURCES[0]
+  const center = screenToField(viewport, upright, at.x, at.y)
+  // From the centre the light keeps its former size; from an edge it reaches across the area.
+  const radius =
+    source === 'center'
+      ? Math.max(viewport.width, viewport.height) * 0.75
+      : distanceToFarthestCorner(viewport, center) * 1.02
+  return (
+    <Rect
+      {...viewport}
+      fillRadialGradientStartPoint={local(viewport, center)}
+      fillRadialGradientEndPoint={local(viewport, center)}
+      fillRadialGradientStartRadius={0}
+      fillRadialGradientEndRadius={radius}
+      fillRadialGradientColorStops={lightingStops(lighting, kind)}
+    />
+  )
+}
+
+/** Own surface: two colors running into each other, directions as seen on screen. */
+function GradientSurface({ viewport, upright, gradient }: { viewport: Viewport; upright: number; gradient: PitchGradient }) {
+  const stops = [0, gradient.from, 1, gradient.to]
+  if (gradient.direction === 'radial') {
+    const center = screenToField(viewport, upright, 0, 0)
+    return (
+      <Rect
+        {...viewport}
+        fillRadialGradientStartPoint={local(viewport, center)}
+        fillRadialGradientEndPoint={local(viewport, center)}
+        fillRadialGradientStartRadius={0}
+        fillRadialGradientEndRadius={distanceToFarthestCorner(viewport, center)}
+        fillRadialGradientColorStops={stops}
+      />
+    )
+  }
+  const [sx, sy, ex, ey] =
+    gradient.direction === 'leftRight' ? [-1, 0, 1, 0] : gradient.direction === 'topBottom' ? [0, -1, 0, 1] : [-1, -1, 1, 1]
+  return (
+    <Rect
+      {...viewport}
+      fillLinearGradientStartPoint={local(viewport, screenToField(viewport, upright, sx, sy))}
+      fillLinearGradientEndPoint={local(viewport, screenToField(viewport, upright, ex, ey))}
+      fillLinearGradientColorStops={stops}
+    />
   )
 }

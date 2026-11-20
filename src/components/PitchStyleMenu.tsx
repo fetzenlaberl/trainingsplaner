@@ -7,12 +7,16 @@ import {
   PITCH_COLOR_ORDER,
   PITCH_COLORS,
   LIGHTING_OPTIONS,
+  LIGHT_KINDS,
+  LIGHT_SOURCES,
+  resolveLighting,
   MOWING_OPTIONS,
   PITCH_LINE_COLORS,
   PITCH_LINE_WIDTHS,
 } from '../field/pitchStyle'
 import { useDrillStore } from '../store/drillStore'
 import { CustomGridDialog } from './CustomGridDialog'
+import { GradientDialog } from './GradientDialog'
 import { Dropdown } from './Dropdown'
 
 const ORIENTATIONS: Orientation[] = ['landscape', 'portrait']
@@ -32,6 +36,9 @@ export function PitchStyleMenu() {
   const setPitchLines = useDrillStore((s) => s.setPitchLines)
   const setPitchBackground = useDrillStore((s) => s.setPitchBackground)
   const [customOpen, setCustomOpen] = useState(false)
+  const [gradientOpen, setGradientOpen] = useState(false)
+  // Choosing where the light comes from turns the light on if it is off.
+  const lightingOff = resolveLighting(pitch) === 'none'
 
   return (
     <>
@@ -48,9 +55,15 @@ export function PitchStyleMenu() {
           ...PITCH_COLOR_ORDER.map((color) => ({
             section: 'Farbe',
             label: PITCH_COLORS[color].label,
-            checked: pitch.color === color,
+            checked: !pitch.gradient && pitch.color === color,
             onSelect: () => setPitchColor(color),
           })),
+          {
+            section: 'Farbe',
+            label: pitch.gradient ? 'Farbverlauf ändern …' : 'Farbverlauf (zwei Farben) …',
+            checked: Boolean(pitch.gradient),
+            onSelect: () => setGradientOpen(true),
+          },
           ...MOWING_OPTIONS.map((o) => ({
             section: 'Mähmuster',
             label: o.label,
@@ -77,6 +90,19 @@ export function PitchStyleMenu() {
             label: o.label,
             checked: (pitch.lighting ?? null) === o.value,
             onSelect: () => setPitchLines({ lighting: o.value ?? undefined }),
+          })),
+          ...LIGHT_SOURCES.map((o) => ({
+            section: 'Licht von',
+            label: o.label,
+            checked: (pitch.lightSource ?? 'center') === o.value,
+            onSelect: () =>
+              setPitchLines({ lightSource: o.value, ...(lightingOff ? { lighting: 'medium' as const } : {}) }),
+          })),
+          ...LIGHT_KINDS.map((o) => ({
+            section: 'Lichtart',
+            label: o.label,
+            checked: (pitch.lightKind ?? 'spot') === o.value,
+            onSelect: () => setPitchLines({ lightKind: o.value, ...(lightingOff ? { lighting: 'medium' as const } : {}) }),
           })),
         ]}
       />
@@ -118,6 +144,7 @@ export function PitchStyleMenu() {
         ]}
       />
       {customOpen && <CustomGridDialog onClose={() => setCustomOpen(false)} />}
+      {gradientOpen && <GradientDialog onClose={() => setGradientOpen(false)} />}
     </>
   )
 }

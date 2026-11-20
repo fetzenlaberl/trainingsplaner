@@ -262,6 +262,29 @@ describe('serializeDrill / parseDrill', () => {
     expect(pitch.roundedCorners).toBeUndefined()
   })
 
+  it('round-trips light source, light kind, own gradient and new pitch colors', () => {
+    const text = tamper((d) => {
+      d.pitch.color = 'black'
+      d.pitch.lighting = 'medium'
+      d.pitch.lightSource = 'topLeft'
+      d.pitch.lightKind = 'vignette'
+      d.pitch.gradient = { from: '#2f7d32', to: '#111214', direction: 'diagonal' }
+    })
+    expect(parseDrill(text).pitch).toMatchObject({
+      color: 'black',
+      lighting: 'medium',
+      lightSource: 'topLeft',
+      lightKind: 'vignette',
+      gradient: { from: '#2f7d32', to: '#111214', direction: 'diagonal' },
+    })
+    expect(() => parseDrill(tamper((d) => (d.pitch.lightSource = 'moon')))).toThrow()
+    expect(() => parseDrill(tamper((d) => (d.pitch.gradient = { from: 'green', to: '#000000', direction: 'radial' })))).toThrow()
+    // Default values are not kept.
+    const plain = parseDrill(tamper((d) => ((d.pitch.lightSource = 'center'), (d.pitch.lightKind = 'spot')))).pitch
+    expect(plain.lightSource).toBeUndefined()
+    expect(plain.lightKind).toBeUndefined()
+  })
+
   it('round-trips players without arrow and perspective dummies', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].facing = false

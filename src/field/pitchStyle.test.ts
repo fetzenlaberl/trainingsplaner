@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -159,5 +159,28 @@ describe('displayColor', () => {
 
   it('uses dark field lines on the white pitch', () => {
     expect(PITCH_COLORS.white.line).not.toBe('#ffffff')
+  })
+})
+
+describe('screenToField', () => {
+  const viewport = { x: -5, y: -5, width: 115, height: 78 }
+  it('maps screen sides directly in landscape', () => {
+    expect(screenToField(viewport, 0, 0, 0)).toEqual({ x: 52.5, y: 34 })
+    expect(screenToField(viewport, 0, -1, 0)).toEqual({ x: -5, y: 34 })
+    expect(screenToField(viewport, 0, 1, 1)).toEqual({ x: 110, y: 73 })
+  })
+  it('follows the turned view in portrait (screen top = far end of the pitch)', () => {
+    // Portrait turns the view by -90°, so the screen's top shows the pitch's right end.
+    expect(screenToField(viewport, 90, 0, -1)).toEqual({ x: 110, y: 34 })
+    expect(screenToField(viewport, 90, -1, 0)).toEqual({ x: 52.5, y: -5 })
+  })
+})
+
+describe('lightingStops', () => {
+  it('gets darker with more strength and has no glow as vignette', () => {
+    const soft = lightingStops('soft', 'spot')
+    const strong = lightingStops('strong', 'spot')
+    expect(soft[5]).not.toBe(strong[5])
+    expect(lightingStops('strong', 'vignette')[1]).toBe('rgba(255,255,235,0.000)')
   })
 })
