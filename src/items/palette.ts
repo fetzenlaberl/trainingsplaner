@@ -13,6 +13,31 @@ export const KEEPER_LABEL = 'TM'
 
 /** Placeholder label: the new player gets the next free letter (A, B, C …) instead of a number. */
 export const NEXT_LETTER_LABEL = '#next-letter#'
+/** Label of the number marker template: replaced by the next free number when dropped. */
+export const NEXT_NUMBER_LABEL = '#next-number#'
+
+/** Values of the markers: numbers 1–30 and letters A–Z. */
+export const MARKER_NUMBERS = Array.from({ length: 30 }, (_, i) => String(i + 1))
+export const MARKER_LETTERS = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))
+
+/** The value list a marker label belongs to (letters for A–Z, otherwise numbers). */
+export function markerValues(label: string): string[] {
+  return MARKER_LETTERS.includes(label) ? MARKER_LETTERS : MARKER_NUMBERS
+}
+
+/** Next (or previous) marker value, wrapping around (30 → 1, Z → A). */
+export function stepMarker(label: string, step: 1 | -1): string {
+  const values = markerValues(label)
+  const index = values.indexOf(label)
+  return values[(index < 0 ? 0 : index + step + values.length) % values.length]
+}
+
+/** Text shown in previews for the "next value" templates. */
+export function previewLabel(label: string | undefined): string | undefined {
+  if (label === NEXT_LETTER_LABEL) return 'A'
+  if (label === NEXT_NUMBER_LABEL) return '1'
+  return label
+}
 
 /** Coaches: Trainer, Co-Trainer, Konditionstrainer, Tormanntrainer. */
 export const COACH_ROLES: { label: string; name: string }[] = [
@@ -146,6 +171,8 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'pole-dummy', name: 'Stangendummy', item: { type: 'poleDummy', color: '#f97316', size: 1.6 } },
   { key: 'figure-dummy', name: 'Figurendummy', item: { type: 'figureDummy', color: '#2563eb', size: 1.6 } },
   ...FIGURE_TEMPLATES,
+  { key: 'marker-number', name: 'Nummer 1–30', item: { type: 'marker', color: '#ffffff', label: NEXT_NUMBER_LABEL } },
+  { key: 'marker-letter', name: 'Buchstabe A–Z', item: { type: 'marker', color: '#facc15', label: NEXT_LETTER_LABEL } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
   { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
   { key: 'agility-3', name: 'Koordinationsraster 3×3', item: { type: 'agility', color: '#facc15', label: '3' } },
@@ -174,6 +201,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   poleDummy: 2.8,
   figureDummy: 2.8,
   figure: 2.8,
+  marker: 1.6,
   wall: 2.6,
   ladder: 4.2,
   hurdle: 1.2,
@@ -199,6 +227,7 @@ export const COLORABLE_TYPES: ItemType[] = [
   'poleDummy',
   'figureDummy',
   'figure',
+  'marker',
   'wall',
   'ladder',
   'hurdle',

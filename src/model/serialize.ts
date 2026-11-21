@@ -82,7 +82,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 19: imported pictures (picture items, background picture).
 // Version 23: grid "lanes with cross lines".
 // Version 24: player figures with poses.
-export const FILE_VERSION = 24
+// Version 25: number and letter markers.
+export const FILE_VERSION = 25
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -99,6 +100,7 @@ const ITEM_TYPES: ItemType[] = [
   'poleDummy',
   'figureDummy',
   'figure',
+  'marker',
   'wall',
   'ladder',
   'hurdle',

@@ -124,6 +124,27 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
           {name && <NameTag name={name} />}
         </Group>
       )
+    case 'marker':
+      // Round marker with a number or letter; the text always reads upright.
+      return (
+        <Group rotation={upright}>
+          {glow > 0 && <HighlightRing strength={glow * 0.6} />}
+          <Circle radius={0.78} fill={color} stroke="rgba(15,23,42,0.75)" strokeWidth={0.09} shadowColor="#000" shadowOpacity={0.3} shadowBlur={0.15} shadowOffsetY={0.06} />
+          <MeterText
+            text={label}
+            x={-0.78}
+            y={-0.78}
+            width={1.56}
+            height={1.56}
+            align="center"
+            verticalAlign="middle"
+            fontSize={label.length > 1 ? 0.78 : 0.95}
+            fontStyle="bold"
+            fill={contrastTextColor(color)}
+            wrap="none"
+          />
+        </Group>
+      )
     case 'figureDummy':
       return (
         <Group rotation={upright}>

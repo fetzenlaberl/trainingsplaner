@@ -10,6 +10,10 @@ import { BALL_STYLES,
   PLAYER_SHAPES,
   ROTATABLE_TYPES,
   TEXTBOX_COLORS,
+  MARKER_LETTERS,
+  MARKER_NUMBERS,
+  markerValues,
+  stepMarker,
 } from '../items/palette'
 import {
   MAX_POLYGON_CORNERS,
@@ -34,7 +38,7 @@ import { useToolStore } from '../store/toolStore'
 import { nextStep } from '../lines/steps'
 import { LineStylePicker } from './LineStylePicker'
 import { ColorSwatches, LabelInput } from './controls'
-import { buttonClass, dangerButtonClass } from './ui'
+import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
 
@@ -269,6 +273,48 @@ function ItemControls({ item }: { item: Item }) {
             ⟳ 15°
           </button>
         </>
+      )}
+
+      {item.type === 'marker' && (
+        <div role="group" aria-label="Wert der Marke" className="flex items-center gap-1">
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label="Vorheriger Wert"
+            onClick={() => setItemLabel(item.id, stepMarker(item.label, -1))}
+          >
+            −
+          </button>
+          <select
+            className={inputClass}
+            aria-label="Wert"
+            value={markerValues(item.label).includes(item.label) ? item.label : ''}
+            onChange={(e) => setItemLabel(item.id, e.target.value)}
+          >
+            <optgroup label="Nummern">
+              {MARKER_NUMBERS.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Buchstaben">
+              {MARKER_LETTERS.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label="Nächster Wert"
+            onClick={() => setItemLabel(item.id, stepMarker(item.label, 1))}
+          >
+            +
+          </button>
+        </div>
       )}
 
       {(item.type === 'player' || item.type === 'figure' || item.type === 'text' || item.type === 'coach') && (

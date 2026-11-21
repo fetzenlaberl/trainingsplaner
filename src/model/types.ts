@@ -15,6 +15,7 @@ export type ItemType =
   | 'poleDummy'
   | 'figureDummy'
   | 'figure'
+  | 'marker'
   | 'wall'
   | 'ladder'
   | 'hurdle'

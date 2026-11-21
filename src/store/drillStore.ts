@@ -5,7 +5,16 @@ import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps } from '../lines/steps'
 import type { CustomGrid, GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
-import { clampItemSize, COLORABLE_TYPES, DEFAULT_PLAYER_SIZE, NEXT_LETTER_LABEL, type NewItem } from '../items/palette'
+import {
+  clampItemSize,
+  COLORABLE_TYPES,
+  DEFAULT_PLAYER_SIZE,
+  MARKER_LETTERS,
+  MARKER_NUMBERS,
+  NEXT_LETTER_LABEL,
+  NEXT_NUMBER_LABEL,
+  type NewItem,
+} from '../items/palette'
 import {
   clampFillOpacity,
   clampZoneSize,
@@ -192,6 +201,15 @@ export function nextPlayerNumber(items: Item[], color: string, shape: PlayerShap
 }
 
 /** Next free letter (A–Z) for players of the given color and shape; after Z it starts again. */
+/**
+ * First marker value of the list not yet on the pitch (any color); when all are used,
+ * counting starts again from the beginning.
+ */
+export function nextMarkerValue(items: Item[], values: string[]): string {
+  const used = items.filter((i) => i.type === 'marker' && values.includes(i.label)).map((i) => i.label)
+  return values.find((v) => !used.includes(v)) ?? values[used.length % values.length]
+}
+
 export function nextPlayerLetter(items: Item[], color: string, shape: PlayerShape = 'circle'): string {
   const used = new Set(
     items.filter((i) => i.type === 'player' && i.color === color && i.shape === shape).map((i) => i.label),
@@ -507,7 +525,9 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     const items = [...currentScene(s).items]
     const created = entries.map(({ item, x, y }) => {
       const label =
-        item.label === NEXT_LETTER_LABEL
+        item.type === 'marker' && (item.label === NEXT_LETTER_LABEL || item.label === NEXT_NUMBER_LABEL)
+          ? nextMarkerValue(items, item.label === NEXT_LETTER_LABEL ? MARKER_LETTERS : MARKER_NUMBERS)
+          : item.label === NEXT_LETTER_LABEL
           ? nextPlayerLetter(items, item.color, item.shape ?? 'circle')
           : (item.label ??
             (item.type === 'player' ? String(nextPlayerNumber(items, item.color, item.shape ?? 'circle')) : ''))

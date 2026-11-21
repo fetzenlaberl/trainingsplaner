@@ -20,6 +20,7 @@ export const STANDING_TYPES: readonly ItemType[] = [
   'poleDummy',
   'figureDummy',
   'figure',
+  'marker',
   'text',
   'textbox',
   'crest',
