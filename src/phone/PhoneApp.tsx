@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { LibraryView } from '../components/LibraryView'
 import { PitchStage, type DropTarget } from '../components/PitchStage'
 import { SessionsView } from '../components/SessionsView'
+import { JournalView } from '../components/JournalView'
 import { buttonClass } from '../components/ui'
 import { useFullscreen } from '../hooks/useFullscreen'
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop'
@@ -12,12 +13,13 @@ import { SPEEDS, usePlaybackStore } from '../store/playbackStore'
 import { useViewStore } from '../store/viewStore'
 import { UpdateBanner } from '../pwa/AppBanners'
 
-type Tab = 'library' | 'sessions' | 'week'
+type Tab = 'library' | 'sessions' | 'week' | 'journal'
 
 const TABS: { tab: Tab; label: string; icon: string }[] = [
   { tab: 'library', label: 'Bibliothek', icon: '▦' },
   { tab: 'sessions', label: 'Einheiten', icon: '☰' },
   { tab: 'week', label: 'Woche', icon: '▤' },
+  { tab: 'journal', label: 'Journal', icon: '✎' },
 ]
 
 /**
@@ -35,7 +37,7 @@ export function PhoneApp() {
     usePlaybackStore.getState().stop()
     useDrillStore.getState().select(null)
     setTab(next)
-    setView(next === 'library' ? 'library' : 'sessions')
+    setView(next === 'library' ? 'library' : next === 'journal' ? 'journal' : 'sessions')
   }
 
   return (
@@ -45,6 +47,8 @@ export function PhoneApp() {
           <DrillViewer onBack={() => openTab(tab)} backLabel={TABS.find((t) => t.tab === tab)?.label ?? 'Zurück'} />
         ) : tab === 'library' ? (
           <LibraryView />
+        ) : tab === 'journal' ? (
+          <JournalView />
         ) : (
           // The week tab is the sessions screen opened in its week mode.
           <SessionsView key={tab} initialMode={tab === 'week' ? 'week' : 'list'} hideModeTabs />

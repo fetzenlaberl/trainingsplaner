@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createJournalEntry } from '../journal/journal'
 import { DrillFileError, emptyDrill } from '../model/serialize'
 import type { Category, Drill } from '../model/types'
 import {
@@ -102,7 +103,7 @@ describe('backup', () => {
   ]
 
   it('round-trips the library', () => {
-    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [], days: [] }))).toEqual({ entries, sessions: [], teams: [], days: [], matches: [] })
+    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [], days: [] }))).toEqual({ entries, sessions: [], teams: [], days: [], matches: [], journal: [] })
   })
 
   it('round-trips training sessions', () => {
@@ -176,5 +177,13 @@ describe('planImport', () => {
     const { toStore, skipped } = planImport(existing, imported)
     expect(toStore.map((e) => e.id)).toEqual(['old', 'fresh'])
     expect(skipped).toBe(1)
+  })
+})
+
+describe('backup with journal', () => {
+  it('keeps journal entries', () => {
+    const journal = [createJournalEntry(5, { title: 'Idee', text: 'Text', tags: ['Idee'] })]
+    const back = parseBackup(serializeBackup({ entries: [], sessions: [], teams: [], days: [], journal }))
+    expect(back.journal).toEqual(journal)
   })
 })

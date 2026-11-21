@@ -1,4 +1,5 @@
 import { listMatches, putMatches } from '../teams/matchDb'
+import { listJournal, putJournalEntries } from '../journal/journalDb'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
 import { FIELD_TYPE_LABELS } from '../field/dimensions'
@@ -122,6 +123,7 @@ export function LibraryView() {
         teams: await listTeams(),
         days: await listDayIntensities(),
         matches: await listMatches(),
+        journal: await listJournal(),
       }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
@@ -144,15 +146,17 @@ export function LibraryView() {
       const sessions = planImport(await listSessions(), backup.sessions)
       const teams = planImport(await listTeams(), backup.teams)
       const matches = planImport(await listMatches(), backup.matches ?? [])
+      const journal = planImport(await listJournal(), backup.journal ?? [])
       await putEntries(drills.toStore)
       await putSessions(sessions.toStore)
       await putTeams(teams.toStore)
       await putMatches(matches.toStore)
+      await putJournalEntries(journal.toStore)
       // Day intensities simply take the value from the backup.
       await putDayIntensities(backup.days)
-      const skipped = drills.skipped + sessions.skipped + teams.skipped + matches.skipped
+      const skipped = drills.skipped + sessions.skipped + teams.skipped + matches.skipped + journal.skipped
       window.alert(
-        `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en), ${teams.toStore.length} Mannschaft(en) und ${matches.toStore.length} Spielbericht(e) importiert.` +
+        `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en), ${teams.toStore.length} Mannschaft(en), ${matches.toStore.length} Spielbericht(e) und ${journal.toStore.length} Journal-Eintrag/-Einträge importiert.` +
           (skipped > 0 ? ` ${skipped} übersprungen, weil schon eine neuere Fassung vorhanden ist.` : ''),
       )
     } catch (err) {

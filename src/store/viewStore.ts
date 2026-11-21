@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type View = 'editor' | 'library' | 'sessions' | 'teams'
+export type View = 'editor' | 'library' | 'sessions' | 'teams' | 'journal'
 
 interface ViewState {
   view: View

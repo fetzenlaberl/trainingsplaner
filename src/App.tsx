@@ -10,6 +10,7 @@ import { PitchStage, type DropTarget } from './components/PitchStage'
 import { PitchStyleMenu } from './components/PitchStyleMenu'
 import { SessionsView } from './components/SessionsView'
 import { TeamsView } from './components/TeamsView'
+import { JournalView } from './components/JournalView'
 import { Timeline } from './components/Timeline'
 import { buttonClass } from './components/ui'
 import { useFullscreen } from './hooks/useFullscreen'
@@ -27,6 +28,7 @@ const VIEWS: { view: View; label: string }[] = [
   { view: 'library', label: 'Bibliothek' },
   { view: 'sessions', label: 'Einheiten' },
   { view: 'teams', label: 'Mannschaft' },
+  { view: 'journal', label: 'Journal' },
 ]
 
 export default function App() {
@@ -129,7 +131,15 @@ function DesktopApp() {
         </div>
       ) : (
         <main className="min-h-0 flex-1">
-          {view === 'library' ? <LibraryView /> : view === 'sessions' ? <SessionsView /> : <TeamsView />}
+          {view === 'library' ? (
+            <LibraryView />
+          ) : view === 'sessions' ? (
+            <SessionsView />
+          ) : view === 'journal' ? (
+            <JournalView />
+          ) : (
+            <TeamsView />
+          )}
         </main>
       )}
       <UpdateBanner />
