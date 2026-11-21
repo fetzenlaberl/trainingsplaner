@@ -1,20 +1,20 @@
 import type { jsPDF as JsPDF } from 'jspdf'
 import { drillInfoLine } from '../model/drillInfo'
 import { fileNameFromTitle } from '../model/serialize'
-import { useDrillStore } from '../store/drillStore'
+import { currentScene, useDrillStore } from '../store/drillStore'
 import { downloadBlob } from './download'
 import type { PdfLayout } from './layout'
 import { pdfLayout } from './layout'
-import { warpCanvas } from '../perspective/warpCanvas'
 import { exportTilt } from '../store/perspectiveStore'
 import { appendNotes } from './notesImage'
-import { renderDrillToCanvas } from './renderDrill'
+import { renderDrillToCanvas, renderScenePerspective } from './renderDrill'
 
 /** The drill as shown in the editor: flat, or in perspective when the 3D view is on. */
 async function renderForExport(background: string | null): Promise<HTMLCanvasElement> {
-  const canvas = await renderDrillToCanvas()
   const tilt = exportTilt()
-  return tilt === null ? canvas : warpCanvas(canvas, tilt, background)
+  if (tilt === null) return renderDrillToCanvas()
+  const state = useDrillStore.getState()
+  return renderScenePerspective(state.fieldType, state.pitch, currentScene(state), tilt, background, undefined, state.images)
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {

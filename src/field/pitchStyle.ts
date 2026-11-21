@@ -218,6 +218,7 @@ export type GridType =
   | 'none'
   | 'thirds'
   | 'lanes'
+  | 'lanesCross'
   | 'positional'
   | 'zones20'
   | 'zones20Plain'
@@ -489,6 +490,7 @@ export const GRID_LABELS: Record<GridType, string> = {
   none: 'Kein Raster',
   thirds: 'Drittel',
   lanes: 'Korridore (5 Längsstreifen)',
+  lanesCross: 'Korridore mit Querlinien',
   positional: 'Positionsspiel-Raster (20 Zonen)',
   zones20: 'Zonenraster 1–20 (nummeriert)',
   zones20Plain: 'Zonenraster 20 Zonen (ohne Nummern)',
@@ -507,6 +509,7 @@ export const GRID_ORDER: GridType[] = [
   'none',
   'thirds',
   'lanes',
+  'lanesCross',
   'positional',
   'zones20',
   'zones20Plain',
@@ -828,7 +831,8 @@ export function fitGridLabel(label: GridLabel, fit: ReturnType<typeof fitGridToF
 /**
  * Grid lines in meters ([x1, y1, x2, y2] each), relative to the full pitch.
  * Lanes follow the sides of the penalty and goal areas (wings, half-spaces, centre);
- * the positional grid adds cross lines at the penalty areas and the halfway line.
+ * the positional grid adds cross lines at the penalty areas and the halfway line;
+ * lanes with cross lines add one cross line in the middle of each half.
  */
 export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID): number[][] {
   const { length, width, penaltyAreaDepth, penaltyAreaWidth, goalAreaWidth } = PITCH
@@ -849,6 +853,9 @@ export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GR
       return [length / 3, (2 * length) / 3].map(vertical)
     case 'lanes':
       return lanes
+    case 'lanesCross':
+      // Cross lines halfway between the penalty areas and the halfway line.
+      return [...lanes, ...[(penaltyAreaDepth + length / 2) / 2, length - (penaltyAreaDepth + length / 2) / 2].map(vertical)]
     case 'positional':
       return [...lanes, ...[penaltyAreaDepth, length / 2, length - penaltyAreaDepth].map(vertical)]
     case 'zones20':

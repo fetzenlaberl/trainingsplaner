@@ -29,6 +29,8 @@ import { QuickMenu } from './QuickMenu'
 import { CrestDialog } from './CrestDialog'
 import { TextBoxDialog } from './TextBoxDialog'
 import { TrashBin } from './TrashBin'
+import { groundItems, UprightItems } from './UprightItems'
+import { makeProjector } from '../perspective/upright'
 import { ZoomControls } from './ZoomControls'
 import { addStrokePoint, isFreehand, simplifyPath, strokeLength } from '../lines/freehand'
 
@@ -398,7 +400,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
               <FieldView
                 fieldType={fieldType}
                 pitch={pitch}
-                items={items}
+                items={perspective !== null ? groundItems(items) : items}
                 lines={lines}
                 zones={zones}
                 viewport={viewport}
@@ -480,6 +482,34 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
                   node.scale({ x: 1, y: 1 })
                   updateZone(selectedZone.id, change)
                 }}
+              />
+            </Layer>
+          </Stage>
+        </div>
+      )}
+      {perspective !== null && size.width > 0 && size.height > 0 && layout.scale > 0 && (
+        // Standing items on top of the tilted field: untilted, smaller towards the back.
+        <div className="pointer-events-none absolute inset-0">
+          <Stage width={size.width} height={size.height} listening={false}>
+            <Layer listening={false}>
+              <UprightItems
+                items={items}
+                pitchColor={pitch.color}
+                images={images}
+                project={makeProjector(
+                  {
+                    viewport,
+                    orientation: pitch.orientation,
+                    scale: layout.scale,
+                    offsetX: layout.offsetX,
+                    offsetY: layout.offsetY,
+                    width: size.width,
+                    height: size.height,
+                  },
+                  perspective,
+                  size.width,
+                  size.height,
+                )}
               />
             </Layer>
           </Stage>

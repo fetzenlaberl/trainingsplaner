@@ -23,6 +23,18 @@ export function cameraDistance(width: number, height: number): number {
  * \`perspective(d) rotateX(tilt)\` with transform-origin at the center.
  */
 export function projectPoint(x: number, y: number, width: number, height: number, tiltDeg: number): Point2 {
+  const { x: px, y: py } = projectPointScaled(x, y, width, height, tiltDeg)
+  return { x: px, y: py }
+}
+
+/** Like projectPoint, plus the size factor at that point (far = smaller, near = larger). */
+export function projectPointScaled(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  tiltDeg: number,
+): Point2 & { scale: number } {
   const tilt = (tiltDeg * Math.PI) / 180
   const d = cameraDistance(width, height)
   const cx = x - width / 2
@@ -31,7 +43,7 @@ export function projectPoint(x: number, y: number, width: number, height: number
   const ry = cy * Math.cos(tilt)
   const rz = cy * Math.sin(tilt)
   const s = d / (d - rz)
-  return { x: cx * s, y: ry * s }
+  return { x: cx * s, y: ry * s, scale: s }
 }
 
 export interface Bounds {

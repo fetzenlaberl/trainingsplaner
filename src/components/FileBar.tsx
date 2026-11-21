@@ -6,6 +6,8 @@ import { useLibraryLink } from '../library/libraryStore'
 import { DrillFileError, fileNameFromTitle, parseDrill, serializeDrill } from '../model/serialize'
 import { currentDrill, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
+import { usePerspectiveStore } from '../store/perspectiveStore'
+import { templateDrill, type DrillTemplate } from '../model/templates'
 import { DetailsDialog } from './DetailsDialog'
 import { Dropdown } from './Dropdown'
 import { ExportMenu } from './ExportMenu'
@@ -37,6 +39,14 @@ export function FileBar() {
     usePlaybackStore.getState().stop()
     useDrillStore.getState().newDrill()
     unlinkEditor(serializeDrill(currentDrill(useDrillStore.getState())))
+  }
+
+  function handleTemplate(template: DrillTemplate) {
+    if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
+    usePlaybackStore.getState().stop()
+    useDrillStore.getState().loadDrill(templateDrill(template))
+    usePerspectiveStore.getState().setEnabled(true)
+    unlinkEditor(null)
   }
 
   function handleSaveFile() {
@@ -102,6 +112,18 @@ export function FileBar() {
         label="Datei"
         items={[
           { label: 'Neue Übung', onSelect: handleNew },
+          {
+            section: 'Neu aus Vorlage',
+            label: 'Perspektive leer',
+            hint: 'Ganzfeld hochkant mit Korridoren, 3D-Ansicht an',
+            onSelect: () => handleTemplate('perspective'),
+          },
+          {
+            section: 'Neu aus Vorlage',
+            label: 'Perspektive mit Dummys',
+            hint: 'Dazu gelbe Dummys als Gegner',
+            onSelect: () => handleTemplate('perspectiveDummies'),
+          },
           { label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
           { label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
           {

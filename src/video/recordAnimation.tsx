@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client'
 import { Layer, Stage } from 'react-konva'
 import { frameAt, totalDuration } from '../animation/interpolate'
 import { FieldView } from '../components/FieldView'
+import { groundItems, UprightItems } from '../components/UprightItems'
+import { makeProjector } from '../perspective/upright'
 import { getViewport, type FieldType } from '../field/dimensions'
 import { viewRect } from '../field/orientation'
 import { warpedSize } from '../perspective/perspective'
@@ -77,11 +79,23 @@ export async function recordAnimation({
   document.body.appendChild(container)
   const root = createRoot(container)
   let stage: Konva.Stage | null = null
+  let uprightStage: Konva.Stage | null = null
+  // In perspective, standing items are drawn upright on top of the tilted ground.
+  const project =
+    tilt === null
+      ? null
+      : makeProjector(
+          { viewport, orientation: pitch.orientation, scale: pxPerMeter, offsetX: 0, offsetY: 0, width, height },
+          tilt,
+          outputSize.width,
+          outputSize.height,
+        )
 
   const drawFrame = (time: number) => {
     const frame = frameAt(scenes, time)
     flushSync(() =>
       root.render(
+        <>
         <Stage
           width={width}
           height={height}
@@ -94,7 +108,7 @@ export async function recordAnimation({
             <FieldView
               fieldType={fieldType}
               pitch={pitch}
-              items={frame.items}
+              items={project ? groundItems(frame.items) : frame.items}
               lines={frame.lines}
               zones={frame.zones}
               viewport={viewport}
@@ -105,7 +119,22 @@ export async function recordAnimation({
               images={images}
             />
           </Layer>
-        </Stage>,
+        </Stage>
+        {project && (
+          <Stage
+            width={outputSize.width}
+            height={outputSize.height}
+            listening={false}
+            ref={(node) => {
+              uprightStage = node
+            }}
+          >
+            <Layer>
+              <UprightItems items={frame.items} project={project} pitchColor={pitch.color} images={images} />
+            </Layer>
+          </Stage>
+        )}
+        </>,
       ),
     )
     const layer = stage?.getLayers()[0]
@@ -117,6 +146,11 @@ export async function recordAnimation({
       ctx.fillStyle = '#0f172a'
       ctx.fillRect(0, 0, output.width, output.height)
       drawWarped(ctx, layer.getNativeCanvasElement(), tilt, output.width, output.height)
+      const upright = (uprightStage as Konva.Stage | null)?.getLayers()[0]
+      if (upright) {
+        upright.draw()
+        ctx.drawImage(upright.getNativeCanvasElement(), 0, 0, output.width, output.height)
+      }
     }
   }
 
