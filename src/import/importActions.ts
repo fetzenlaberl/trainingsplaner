@@ -8,7 +8,8 @@ export type ImportTarget = 'item' | 'background' | 'text'
 
 /** Middle of the visible field (meters), where imported objects are placed. */
 function fieldCenter(): { x: number; y: number } {
-  const viewport = getViewport(useDrillStore.getState().fieldType)
+  const { fieldType, pitch } = useDrillStore.getState()
+  const viewport = getViewport(fieldType, pitch.area)
   return { x: viewport.x + viewport.width / 2, y: viewport.y + viewport.height / 2 }
 }
 

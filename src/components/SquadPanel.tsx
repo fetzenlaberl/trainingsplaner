@@ -117,7 +117,18 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
               className={inputClass}
               aria-label="Formation"
               value={formationKey}
-              onChange={(e) => setFormationKey(e.target.value)}
+              title="Stehen schon Spieler dieser Mannschaft auf dem Feld, rücken sie sofort auf die Plätze des neuen Systems"
+              onChange={(e) => {
+                const key = e.target.value
+                setFormationKey(key)
+                // A new system moves the players already on the pitch instead of adding a second line-up
+                // (with "als neue Szene" the button does it, for the animation).
+                const next = FORMATIONS.find((f) => f.key === key)
+                if (team && next && !asNewScene) {
+                  realignTeam(team, next, side, false)
+                  setRealignMessage(null)
+                }
+              }}
             >
               {FORMATION_GROUPS.map((group) => (
                 <optgroup key={group.key} label={group.label}>

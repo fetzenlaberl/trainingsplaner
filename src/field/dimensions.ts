@@ -78,8 +78,26 @@ export const SMALL_FIELDS = {
 /** Room around a small field for goals, boards and labels (meters). */
 export const SMALL_FIELD_RUNOFF = 3
 
-/** Playing area (length along x, width along y) the lines and grids of a field type refer to. */
-export function fieldSize(type: FieldType): { length: number; width: number } {
+/** Own size of the empty field (e.g. a small-sided training field), in meters. */
+export interface FieldArea {
+  length: number
+  width: number
+}
+
+export const MIN_AREA = 5
+export const MAX_AREA = 120
+
+/** Room around an own-size empty field for goals, cones and size labels (meters). */
+export function areaRunoff(area: FieldArea): number {
+  return Math.max(4, Math.round(Math.max(area.length, area.width) * 0.15))
+}
+
+/**
+ * Playing area (length along x, width along y) the lines and grids of a field type refer to.
+ * The empty field can have an own size (`area`); otherwise it is as big as the big pitch.
+ */
+export function fieldSize(type: FieldType, area?: FieldArea): { length: number; width: number } {
+  if (type === 'empty' && area) return { length: area.length, width: area.width }
   return type in SMALL_FIELDS ? SMALL_FIELDS[type as keyof typeof SMALL_FIELDS] : { length: PITCH.length, width: PITCH.width }
 }
 
@@ -87,9 +105,13 @@ export function fieldSize(type: FieldType): { length: number; width: number } {
 export const CORNER_VIEW_DEPTH = 30
 export const CORNER_VIEW_BEYOND_BOX = 6
 
-/** Visible area (in meters) for each field type. */
-export function getViewport(type: FieldType): Rect {
+/** Visible area (in meters) for each field type (`area` = own size of the empty field). */
+export function getViewport(type: FieldType, area?: FieldArea): Rect {
   const { length, width } = PITCH
+  if (type === 'empty' && area) {
+    const runoff = areaRunoff(area)
+    return { x: -runoff, y: -runoff, width: area.length + 2 * runoff, height: area.width + 2 * runoff }
+  }
   switch (type) {
     case 'futsal':
     case 'hall':

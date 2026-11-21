@@ -74,7 +74,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const upright = -useContext(ViewRotationContext)
   const portrait = upright !== 0
   const labelSize = 3.2
-  const size = fieldSize(fieldType)
+  const size = fieldSize(fieldType, pitch.area)
   const { markings, goals } = fieldLayout(fieldType)
   const boards = getFieldBoards(fieldType)
   // Retreat lines belong to the big pitch (the small fields are too short for them).

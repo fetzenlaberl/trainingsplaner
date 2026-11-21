@@ -111,31 +111,96 @@ export function slotPosition(
 }
 
 /**
- * Assigns players to the slots of a formation. Starters are preferred over substitutes;
- * a player whose position matches a slot gets that slot first, the rest fill up in list order.
+ * Usual place of each position on the pitch (same scale as the formation slots), used to
+ * put a player on the nearest free place when no slot of his own position is left
+ * (e.g. a LM on a LA place, a 10er on a ZM place) and to keep left and right roles on their side.
+ */
+const POSITION_SPOTS: Record<Position, { depth: number; width: number }> = {
+  TW: { depth: 0.06, width: 0.5 },
+  ET: { depth: 0.06, width: 0.5 },
+  TSP: { depth: 0.1, width: 0.5 },
+  IV: { depth: 0.27, width: 0.5 },
+  LIV: { depth: 0.27, width: 0.3 },
+  RIV: { depth: 0.27, width: 0.7 },
+  ZIV: { depth: 0.25, width: 0.5 },
+  LV: { depth: 0.32, width: 0.1 },
+  LOV: { depth: 0.42, width: 0.1 },
+  RV: { depth: 0.32, width: 0.9 },
+  ROV: { depth: 0.42, width: 0.9 },
+  ZDM: { depth: 0.5, width: 0.5 },
+  ZDM6: { depth: 0.5, width: 0.5 },
+  ZDM6A: { depth: 0.44, width: 0.5 },
+  ZDM6S: { depth: 0.5, width: 0.5 },
+  ZM: { depth: 0.58, width: 0.5 },
+  ZOM8: { depth: 0.62, width: 0.5 },
+  LM: { depth: 0.6, width: 0.1 },
+  RM: { depth: 0.6, width: 0.9 },
+  ZOM: { depth: 0.72, width: 0.5 },
+  ZOM10: { depth: 0.72, width: 0.5 },
+  ZOM10S: { depth: 0.74, width: 0.5 },
+  LA: { depth: 0.88, width: 0.12 },
+  RA: { depth: 0.88, width: 0.88 },
+  ST: { depth: 0.93, width: 0.5 },
+  MS9: { depth: 0.93, width: 0.5 },
+  MSF9: { depth: 0.84, width: 0.5 },
+}
+
+/**
+ * How far a player's usual place is from a slot. Changing the side of the pitch counts more
+ * than moving up or down (a LM rather plays LA than ZM), and moving back more than moving up.
+ */
+function spotDistance(position: Position, slot: FormationSlot): number {
+  const spot = POSITION_SPOTS[position]
+  const up = slot.depth - spot.depth
+  return Math.hypot(up < 0 ? -up * 1.5 : up, (spot.width - slot.width) * 1.5)
+}
+
+/**
+ * Assigns players to the slots of a formation. Starters are preferred over substitutes.
+ * Each player gets a slot of his own position first (a "6er" counts as ZDM; left and right
+ * roles go to their side), then the nearest free slot to his usual place; players without
+ * position fill the rest in list order. A goalkeeper is never put in the field.
  * Slots without a player get null (they are shown as numbered generic players).
  */
 export function assignLineup(players: TeamPlayer[], formation: Formation): (TeamPlayer | null)[] {
-  const ordered = [...players.filter((p) => p.starter), ...players.filter((p) => !p.starter)]
-  const remaining = [...ordered]
   const result: (TeamPlayer | null)[] = formation.slots.map(() => null)
+  const used = new Set<string>()
 
-  // First pass: exact position matches, then roles of that position (a "6er" for ZDM).
-  for (const matches of [
-    (p: TeamPlayer, slot: FormationSlot) => p.position === slot.position,
-    (p: TeamPlayer, slot: FormationSlot) => basePosition(p.position) === slot.position,
-  ]) {
+  /** Greedy matching: the closest allowed (slot, player) pairs first. */
+  const matchClosest = (group: TeamPlayer[], allowed: (p: TeamPlayer, slot: FormationSlot) => boolean) => {
+    const pairs: { slot: number; player: TeamPlayer; distance: number; order: number }[] = []
     formation.slots.forEach((slot, i) => {
       if (result[i]) return
-      const index = remaining.findIndex((p) => matches(p, slot))
-      if (index >= 0) result[i] = remaining.splice(index, 1)[0]
+      group.forEach((p, order) => {
+        if (used.has(p.id) || p.position === null || !allowed(p, slot)) return
+        pairs.push({ slot: i, player: p, distance: spotDistance(p.position, slot), order })
+      })
     })
+    pairs.sort((a, b) => a.distance - b.distance || a.order - b.order || a.slot - b.slot)
+    for (const pair of pairs) {
+      if (result[pair.slot] || used.has(pair.player.id)) continue
+      result[pair.slot] = pair.player
+      used.add(pair.player.id)
+    }
   }
-  // Second pass: fill remaining slots in list order, but never put a goalkeeper in the field.
+
+  const starters = players.filter((p) => p.starter)
+  const substitutes = players.filter((p) => !p.starter)
+  for (const group of [starters, substitutes]) {
+    matchClosest(group, (p, slot) => p.position === slot.position)
+    matchClosest(group, (p, slot) => basePosition(p.position) === slot.position)
+    // Nearest place for the rest; keepers only in goal, field players only in the field.
+    matchClosest(group, (p, slot) => (slot.position === 'TW') === isKeeper(p.position))
+  }
+  // Players without position fill the remaining slots in list order (not in goal).
+  const rest = [...starters, ...substitutes].filter((p) => !used.has(p.id))
   formation.slots.forEach((slot, i) => {
     if (result[i]) return
-    const index = remaining.findIndex((p) => (slot.position === 'TW') === isKeeper(p.position) || p.position === null)
-    if (index >= 0) result[i] = remaining.splice(index, 1)[0]
+    const index = rest.findIndex((p) => (slot.position === 'TW') === isKeeper(p.position) || p.position === null)
+    if (index >= 0) {
+      result[i] = rest.splice(index, 1)[0]
+      used.add(result[i]!.id)
+    }
   })
   return result
 }

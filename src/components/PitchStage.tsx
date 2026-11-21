@@ -122,13 +122,13 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
 
   useEffect(() => () => cleanupRef.current?.(), [])
 
-  const viewport = getViewport(fieldType)
+  const viewport = getViewport(fieldType, pitch.area)
   // Fitting and zooming work on the (possibly rotated) view of the field.
   const vr = viewRect(viewport, pitch.orientation)
   const baseLayout = fitViewport(vr, size.width, size.height, PADDING)
   const zoomCtx: ZoomContext = { viewport: vr, container: size, baseScale: baseLayout.scale }
   // Zoom belongs to one field type and orientation; switching shows the whole field again.
-  const zoomKey = `${fieldType}-${pitch.orientation}`
+  const zoomKey = `${fieldType}-${pitch.orientation}-${pitch.area?.length ?? 0}x${pitch.area?.width ?? 0}`
   const view = zoomState?.key === zoomKey ? zoomState.view : defaultView(vr)
   const layout = baseLayout.scale > 0 ? zoomedLayout(view, zoomCtx) : baseLayout
   const setView = (next: ViewState) => setZoomState({ key: zoomKey, view: next })

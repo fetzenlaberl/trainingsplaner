@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest'
+import { getViewport } from '../field/dimensions'
+import { FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
+import { parseDrill, serializeDrill } from './serialize'
+import type { Drill } from './types'
+
+const all: Drill[] = [
+  ...SIZE_FORMATS.map(sizeFormatDrill),
+  ...FIELD_VARIANTS.map((v) => fieldVariantDrill(v.key)),
+  ...Y_PASS_VARIANTS.map((v) => yPassDrill(v.key)),
+]
+
+describe('field templates', () => {
+  it('are valid drills that survive saving and loading', () => {
+    for (const drill of all) expect(parseDrill(serializeDrill(drill))).toEqual(drill)
+  })
+
+  it('keep everything inside the visible area', () => {
+    for (const drill of all) {
+      const view = getViewport(drill.fieldType, drill.pitch.area)
+      const scene = drill.scenes[0]
+      const points = [...scene.items, ...scene.lines.flatMap((l) => l.points)]
+      for (const p of points) {
+        expect(p.x, drill.title).toBeGreaterThanOrEqual(view.x)
+        expect(p.x, drill.title).toBeLessThanOrEqual(view.x + view.width)
+        expect(p.y, drill.title).toBeGreaterThanOrEqual(view.y)
+        expect(p.y, drill.title).toBeLessThanOrEqual(view.y + view.height)
+      }
+    }
+  })
+
+  it('draws the field sizes 1:1 to 9:9 with the right players and size', () => {
+    expect(SIZE_FORMATS.map((f) => f.players)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
+    const drill = sizeFormatDrill(SIZE_FORMATS[1])
+    expect(drill.pitch.area).toEqual({ length: 14, width: 18 })
+    expect(drill.info.fieldSize).toBe('12–16 × 16–20 m')
+    expect(drill.scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(4)
+    expect(drill.scenes[0].items.filter((i) => i.type === 'minigoal')).toHaveLength(2)
+    expect(drill.scenes[0].items.some((i) => i.type === 'text' && i.label === '16–20 m')).toBe(true)
+    const nine = sizeFormatDrill(SIZE_FORMATS[8])
+    expect(nine.scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(18)
+  })
+
+  it('builds the goal variants', () => {
+    const goals = (key: Parameters<typeof fieldVariantDrill>[0]) =>
+      fieldVariantDrill(key).scenes[0].items.filter((i) => i.type === 'minigoal' || i.type === 'goal').length
+    expect(goals('standard')).toBe(2)
+    expect(goals('fourGoals')).toBe(8)
+    expect(goals('counterGoals')).toBe(6)
+    expect(goals('cornerGoals')).toBe(4)
+    expect(goals('cross')).toBe(4)
+    expect(goals('open')).toBe(0)
+    expect(fieldVariantDrill('open').scenes[0].zones[0].dashed).toBe(true)
+  })
+
+  it('numbers the Y-pass steps 1–3 between A, B and C', () => {
+    for (const v of Y_PASS_VARIANTS) {
+      const scene = yPassDrill(v.key).scenes[0]
+      expect(scene.lines.map((l) => l.step).filter(Boolean)).toEqual([1, 2, 3])
+      expect(scene.items.filter((i) => ['A', 'B', 'C'].includes(i.label))).toHaveLength(3)
+    }
+  })
+})

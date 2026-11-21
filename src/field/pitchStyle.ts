@@ -1,4 +1,4 @@
-import { PITCH } from './dimensions'
+import { PITCH, type FieldArea } from './dimensions'
 import type { Orientation } from './orientation'
 
 export type PitchColor =
@@ -266,6 +266,8 @@ export interface PitchStyle {
   background?: string
   /** Opacity of the background picture, 0.1–1 (missing = 1) */
   backgroundOpacity?: number
+  /** Own size of the empty field in meters (missing = as big as the big pitch) */
+  area?: FieldArea
 }
 
 /** Zone labels chosen by the user: kind, place in the zone and size */

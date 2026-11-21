@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
-import type { FieldType } from '../field/dimensions'
+import { MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps } from '../lines/steps'
@@ -64,6 +64,8 @@ export interface DrillState extends DrillContent {
   setFieldType: (fieldType: FieldType) => void
   setPitchColor: (color: PitchColor) => void
   setGrid: (grid: GridType) => void
+  /** Own size of the empty field (null = as big as the big pitch) */
+  setFieldArea: (area: FieldArea | null) => void
   /** Shows the own grid with these column and row sizes (meters), as one undo step. */
   setCustomGrid: (grid: CustomGrid) => void
   /** Stores an imported picture (data URL) and returns its id; not part of the undo history. */
@@ -102,7 +104,8 @@ export interface DrillState extends DrillContent {
   /** Adds an item at the given position (meters) and returns its id. */
   addItem: (item: NewItem, x: number, y: number) => string
   /** Adds several items at once (e.g. a line-up) as one undo step; returns their ids. */
-  addItems: (entries: { item: NewItem; x: number; y: number }[]) => string[]
+  /** Adds items in one undo step; items with the ids in `replaceIds` are removed first. */
+  addItems: (entries: { item: NewItem; x: number; y: number }[], replaceIds?: string[]) => string[]
   moveItem: (id: string, x: number, y: number) => void
   /**
    * Puts several items on new places and turns them (one undo step). With newScene the
@@ -386,6 +389,18 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     }),
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
+  setFieldArea: (area) =>
+    set((s) => {
+      const pitch = { ...s.pitch }
+      if (area) {
+        const clamp = (v: number) => Math.round(Math.min(Math.max(v, MIN_AREA), MAX_AREA))
+        pitch.area = { length: clamp(area.length), width: clamp(area.width) }
+      } else {
+        if (!pitch.area) return {}
+        delete pitch.area
+      }
+      return { ...recorded(s), pitch }
+    }),
   setCustomGrid: (customGrid) => set((s) => ({ ...recorded(s), pitch: { ...s.pitch, grid: 'custom', customGrid } })),
   addImage: (src) => {
     // The same picture imported twice is stored once.
@@ -520,9 +535,10 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     }),
 
   addItem: (item, x, y) => get().addItems([{ item, x, y }])[0],
-  addItems: (entries) => {
+  addItems: (entries, replaceIds = []) => {
     const s = get()
-    const items = [...currentScene(s).items]
+    const gone = new Set(replaceIds)
+    const items = currentScene(s).items.filter((i) => !gone.has(i.id))
     const created = entries.map(({ item, x, y }) => {
       const label =
         item.type === 'marker' && (item.label === NEXT_LETTER_LABEL || item.label === NEXT_NUMBER_LABEL)
@@ -550,7 +566,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       items.push(newItem)
       return newItem
     })
-    set({ ...recorded(s), scenes: editScene(s, (scene) => ({ items: [...scene.items, ...created] })) })
+    set({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: [...scene.items.filter((i) => !gone.has(i.id)), ...created] })),
+      ...(gone.size > 0 ? selection(s.selectedIds.filter((id) => !gone.has(id))) : {}),
+    })
     return created.map((i) => i.id)
   },
   placeItems: (moves, newScene) =>

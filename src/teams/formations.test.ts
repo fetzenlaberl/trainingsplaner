@@ -140,3 +140,18 @@ describe('roles of a position', () => {
     expect(lineup.some((p) => p?.id === 'et')).toBe(false)
   })
 })
+
+describe('nearest places by position', () => {
+  it('puts left and right roles on their side and a winger on the nearest free place', () => {
+    const formation = FORMATIONS.find((f) => f.key === '4-3-3')!
+    const lineup = assignLineup(
+      [player('tw', 'TW'), player('riv', 'RIV'), player('liv', 'LIV'), player('lm', 'LM'), player('rm', 'RM')],
+      formation,
+    )
+    const slotOf = (id: string) => formation.slots[lineup.findIndex((p) => p?.id === id)]
+    expect(slotOf('liv').width).toBeLessThan(slotOf('riv').width)
+    // 4-3-3 has no LM/RM: they go to the wingers on their side.
+    expect(slotOf('lm').position).toBe('LA')
+    expect(slotOf('rm').position).toBe('RA')
+  })
+})

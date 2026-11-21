@@ -35,7 +35,7 @@ export async function renderSceneToCanvas(
 ): Promise<HTMLCanvasElement> {
   // Pictures must be loaded before drawing, or they would be missing in the export.
   await preloadImages(Object.values(images))
-  const viewport = getViewport(fieldType)
+  const viewport = getViewport(fieldType, pitch.area)
   const { width, height } = exportSize(viewRect(viewport, pitch.orientation), pxPerMeter)
 
   const container = document.createElement('div')
@@ -99,7 +99,7 @@ export async function renderScenePerspective(
 ): Promise<HTMLCanvasElement> {
   const flat = await renderSceneToCanvas(fieldType, pitch, scene, pxPerMeter, images, true)
   const out = warpCanvas(flat, tilt, background, turn)
-  const viewport = getViewport(fieldType)
+  const viewport = getViewport(fieldType, pitch.area)
   const project = makeProjector(
     { viewport, orientation: pitch.orientation, scale: pxPerMeter, offsetX: 0, offsetY: 0, width: flat.width, height: flat.height },
     tilt,

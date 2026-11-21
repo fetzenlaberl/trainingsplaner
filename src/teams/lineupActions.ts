@@ -3,7 +3,7 @@ import { KEEPER_LABEL, TEAM_COLORS, type NewItem } from '../items/palette'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
-import { realignLineup } from './realign'
+import { realignLineup, teamItemIds } from './realign'
 import { assignLineup, slotPosition, type Formation, type Side } from './formations'
 import { isKeeper, nameForStyle, type NameStyle, type SquadLook, type Team, type TeamPlayer } from './team'
 
@@ -24,7 +24,10 @@ export function itemForPlayer(team: Team, player: TeamPlayer, nameStyle: NameSty
   }
 }
 
-/** Puts a team in a formation onto the current scene (one undo step). */
+/**
+ * Puts a team in a formation onto the current scene (one undo step). Players of this team
+ * already on the pitch are replaced, so a new formation never lies on top of the old one.
+ */
 export function placeLineup(
   team: Team,
   formation: Formation,
@@ -32,9 +35,11 @@ export function placeLineup(
   nameStyle: NameStyle = 'full',
   look: SquadLook = 'arrow',
 ): void {
+  const state = useDrillStore.getState()
+  const size = fieldSize(state.fieldType, state.pitch.area)
   const lineup = assignLineup(team.players, formation)
   const entries = formation.slots.map((slot, i) => {
-    const { x, y, rotation } = slotPosition(slot, side, fieldSize(useDrillStore.getState().fieldType))
+    const { x, y, rotation } = slotPosition(slot, side, size)
     const player = lineup[i]
     const item: NewItem = player
       ? itemForPlayer(team, player, nameStyle, look)
@@ -45,8 +50,8 @@ export function placeLineup(
   })
   usePlaybackStore.getState().stop()
   useToolStore.getState().setTool('select')
-  useDrillStore.getState().select(null)
-  useDrillStore.getState().addItems(entries)
+  state.select(null)
+  state.addItems(entries, teamItemIds(team, side, size, currentScene(state).items))
 }
 
 /**
@@ -55,7 +60,7 @@ export function placeLineup(
  */
 export function realignTeam(team: Team, formation: Formation, side: Side, newScene: boolean): number {
   const state = useDrillStore.getState()
-  const moves = realignLineup(team, formation, side, fieldSize(state.fieldType), currentScene(state).items)
+  const moves = realignLineup(team, formation, side, fieldSize(state.fieldType, state.pitch.area), currentScene(state).items)
   if (moves.length === 0) return 0
   usePlaybackStore.getState().stop()
   useToolStore.getState().setTool('select')

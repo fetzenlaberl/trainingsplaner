@@ -63,7 +63,7 @@ export async function recordAnimation({
 
   const animationMs = totalDuration(scenes)
   const lengthMs = recordingLength(animationMs, speed)
-  const viewport = getViewport(fieldType)
+  const viewport = getViewport(fieldType, pitch.area)
   const { width, height, pxPerMeter } = videoSize(viewRect(viewport, pitch.orientation))
 
   // Recording canvas: the Konva layer is copied into it, independent of the screen's pixel ratio.

@@ -84,3 +84,24 @@ export function realignLineup(
     return [{ id: item.id, x, y, rotation }]
   })
 }
+
+/**
+ * Items of the team that are already on the pitch (removed before a new line-up is placed):
+ * squad members, other players in the team color and the keeper in the own half
+ * (the other team's keeper looks the same but stands in the other half).
+ */
+export function teamItemIds(team: Team, side: Side, size: { length: number; width: number }, items: Item[]): string[] {
+  const keeperColor = TEAM_COLORS.keeper.toLowerCase()
+  const teamColor = team.color.toLowerCase()
+  const ownHalf = (x: number) => (side === 'left' ? x <= size.length / 2 : x >= size.length / 2)
+  return items
+    .filter((i) => {
+      if (i.type !== 'player') return false
+      // Keepers look alike in both teams: only the one in the own half belongs to this team.
+      if (i.color.toLowerCase() === keeperColor) {
+        return ownHalf(i.x) && (i.label === KEEPER_LABEL || team.players.some((p) => showsPlayer(i, team, p)))
+      }
+      return i.color.toLowerCase() === teamColor || team.players.some((p) => showsPlayer(i, team, p))
+    })
+    .map((i) => i.id)
+}

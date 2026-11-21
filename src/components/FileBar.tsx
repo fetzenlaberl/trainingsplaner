@@ -9,6 +9,8 @@ import { usePlaybackStore } from '../store/playbackStore'
 import { usePerspectiveStore } from '../store/perspectiveStore'
 import { templateDrill, type DrillTemplate } from '../model/templates'
 import { DetailsDialog } from './DetailsDialog'
+import { FieldTemplateDialog } from './FieldTemplateDialog'
+import type { Drill } from '../model/types'
 import { Dropdown } from './Dropdown'
 import { ExportMenu } from './ExportMenu'
 import { buttonClass, inputClass } from './ui'
@@ -31,6 +33,7 @@ export function FileBar() {
   const importInputRef = useRef<HTMLInputElement>(null)
   const importTargetRef = useRef<ImportTarget>('item')
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const dirty = drillJson !== savedJson
 
@@ -46,6 +49,15 @@ export function FileBar() {
     usePlaybackStore.getState().stop()
     useDrillStore.getState().loadDrill(templateDrill(template))
     usePerspectiveStore.getState().setEnabled(true)
+    unlinkEditor(null)
+  }
+
+  function handleFieldTemplate(drill: Drill) {
+    if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
+    setFieldTemplatesOpen(false)
+    usePlaybackStore.getState().stop()
+    useDrillStore.getState().loadDrill(drill)
+    usePerspectiveStore.getState().setEnabled(false)
     unlinkEditor(null)
   }
 
@@ -124,6 +136,12 @@ export function FileBar() {
             hint: 'Dazu gelbe Dummys als Gegner',
             onSelect: () => handleTemplate('perspectiveDummies'),
           },
+          {
+            section: 'Neu aus Vorlage',
+            label: 'Trainingsfelder …',
+            hint: 'Feldgrößen 1:1–9:9, Torvarianten, Y-Pass',
+            onSelect: () => setFieldTemplatesOpen(true),
+          },
           { label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
           { label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
           {
@@ -187,6 +205,9 @@ export function FileBar() {
         ↷ Wiederholen
       </button>
       {detailsOpen && <DetailsDialog onClose={() => setDetailsOpen(false)} />}
+      {fieldTemplatesOpen && (
+        <FieldTemplateDialog onChoose={handleFieldTemplate} onClose={() => setFieldTemplatesOpen(false)} />
+      )}
     </div>
   )
 }

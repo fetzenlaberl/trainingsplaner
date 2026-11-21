@@ -1,4 +1,4 @@
-import { FIELD_TYPES, type FieldType } from '../field/dimensions'
+import { FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import {
   DEFAULT_PITCH_STYLE,
@@ -83,7 +83,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 23: grid "lanes with cross lines".
 // Version 24: player figures with poses.
 // Version 25: number and letter markers.
-export const FILE_VERSION = 25
+// Version 26: own size of the empty field (small-sided training fields).
+export const FILE_VERSION = 26
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -229,6 +230,18 @@ function isNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+function isFieldArea(value: unknown): value is FieldArea {
+  return (
+    isRecord(value) &&
+    isNumber(value.length) &&
+    isNumber(value.width) &&
+    value.length >= MIN_AREA &&
+    value.length <= MAX_AREA &&
+    value.width >= MIN_AREA &&
+    value.width <= MAX_AREA
+  )
+}
+
 /** Pitch style was added later; older files get the default green pitch without grid. */
 function parsePitchStyle(value: unknown): PitchStyle {
   if (value === undefined) return { ...DEFAULT_PITCH_STYLE }
@@ -267,7 +280,9 @@ function parsePitchStyle(value: unknown): PitchStyle {
     !(value.lightSource === undefined || LIGHT_SOURCES.some((o) => o.value === value.lightSource)) ||
     !(value.lightKind === undefined || LIGHT_KINDS.some((o) => o.value === value.lightKind)) ||
     !(value.gradient === undefined || isGradient(value.gradient)) ||
-    !(value.gridLabelStyle === undefined || isGridLabelStyle(value.gridLabelStyle))
+    !(value.gridLabelStyle === undefined || isGridLabelStyle(value.gridLabelStyle)) ||
+    // Own size of the empty field: version 26.
+    !(value.area === undefined || isFieldArea(value.area))
   ) {
     throw corrupt()
   }
@@ -289,6 +304,7 @@ function parsePitchStyle(value: unknown): PitchStyle {
     ...(isGradient(value.gradient)
       ? { gradient: { from: value.gradient.from, to: value.gradient.to, direction: value.gradient.direction } }
       : {}),
+    ...(isFieldArea(value.area) ? { area: { length: value.area.length, width: value.area.width } } : {}),
     ...(isGridLabelStyle(value.gridLabelStyle)
       ? {
           gridLabelStyle: {

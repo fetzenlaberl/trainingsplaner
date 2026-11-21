@@ -3,7 +3,7 @@ import { PITCH } from '../field/dimensions'
 import { KEEPER_LABEL, TEAM_COLORS } from '../items/palette'
 import type { Item } from '../model/types'
 import { FORMATIONS, slotPosition } from './formations'
-import { realignLineup } from './realign'
+import { realignLineup, teamItemIds } from './realign'
 import type { Position, Team } from './team'
 
 const RED = '#dc2626'
@@ -84,5 +84,18 @@ describe('realignLineup', () => {
 
   it('finds nothing without the team on the pitch', () => {
     expect(realignLineup(team, formation('4-4-2'), 'left', size, [item('opp', BLUE, '9')])).toEqual([])
+  })
+})
+
+describe('teamItemIds', () => {
+  it('finds the team on the pitch but not the other team or its keeper', () => {
+    const items: Item[] = [
+      item('k', TEAM_COLORS.keeper, KEEPER_LABEL, '', 5, 34),
+      item('a', RED, '7', 'Spieler H', 40, 30),
+      item('generic', RED, '20', '', 30, 20),
+      item('opp', BLUE, '9', '', 60, 30),
+      item('oppKeeper', TEAM_COLORS.keeper, KEEPER_LABEL, '', 100, 34),
+    ]
+    expect(teamItemIds(team, 'left', size, items)).toEqual(['k', 'a', 'generic'])
   })
 })
