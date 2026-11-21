@@ -27,12 +27,13 @@ export function drawWarped(
   tiltDeg: number,
   outWidth: number,
   outHeight: number,
+  turnDeg = 0,
 ): void {
   const w = source.width
   const h = source.height
-  const fit = fitProjected(w, h, tiltDeg, outWidth, outHeight)
+  const fit = fitProjected(w, h, tiltDeg, outWidth, outHeight, turnDeg)
   const toOutput = (x: number, y: number): Point2 => {
-    const p = projectPoint(x, y, w, h, tiltDeg)
+    const p = projectPoint(x, y, w, h, tiltDeg, turnDeg)
     return { x: outWidth / 2 + fit.offsetX + p.x * fit.scale, y: outHeight / 2 + fit.offsetY + p.y * fit.scale }
   }
 
@@ -84,8 +85,13 @@ export function drawWarped(
 }
 
 /** Returns a new canvas with the image in perspective; background null = transparent. */
-export function warpCanvas(source: HTMLCanvasElement, tiltDeg: number, background: string | null): HTMLCanvasElement {
-  const { width, height } = warpedSize(source.width, source.height, tiltDeg)
+export function warpCanvas(
+  source: HTMLCanvasElement,
+  tiltDeg: number,
+  background: string | null,
+  turnDeg = 0,
+): HTMLCanvasElement {
+  const { width, height } = warpedSize(source.width, source.height, tiltDeg, turnDeg)
   const out = document.createElement('canvas')
   out.width = width
   out.height = height
@@ -95,6 +101,6 @@ export function warpCanvas(source: HTMLCanvasElement, tiltDeg: number, backgroun
     ctx.fillStyle = background
     ctx.fillRect(0, 0, width, height)
   }
-  drawWarped(ctx, source, tiltDeg, width, height)
+  drawWarped(ctx, source, tiltDeg, width, height, turnDeg)
   return out
 }

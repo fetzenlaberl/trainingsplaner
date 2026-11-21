@@ -6,6 +6,7 @@ import {
   projectedBounds,
   projectPoint,
   warpedSize,
+  normalizeTurn,
 } from './perspective'
 
 const W = 1000
@@ -97,5 +98,38 @@ describe('affineFromTriangles', () => {
   it('falls back to identity for a degenerate triangle', () => {
     const p = { x: 1, y: 1 }
     expect(affineFromTriangles([p, p, p], [p, p, p])).toEqual([1, 0, 0, 1, 0, 0])
+  })
+})
+
+describe('turning the 3D view', () => {
+  const W = 400
+  const H = 300
+
+  it('keeps the old view without a turn', () => {
+    expect(projectPoint(10, 20, W, H, 45, 0)).toEqual(projectPoint(10, 20, W, H, 45))
+  })
+
+  it('shows the pitch from the other side at 180°', () => {
+    // The top left corner comes to the bottom right (near the viewer).
+    const turned = projectPoint(0, 0, W, H, 45, 180)
+    const plain = projectPoint(W, H, W, H, 45)
+    expect(turned.x).toBeCloseTo(plain.x)
+    expect(turned.y).toBeCloseTo(plain.y)
+  })
+
+  it('fits the turned picture', () => {
+    const b = projectedBounds(W, H, 0, 90)
+    expect(b.maxX - b.minX).toBeCloseTo(H)
+    expect(b.maxY - b.minY).toBeCloseTo(W)
+    const fit = fitProjected(W, H, 45, 800, 600, 30)
+    expect(fit.scale).toBeGreaterThan(0)
+    expect(warpedSize(W, H, 45, 90).width).toBe(W)
+  })
+
+  it('keeps turns between -180 and 180', () => {
+    expect(normalizeTurn(190)).toBe(-170)
+    expect(normalizeTurn(-190)).toBe(170)
+    expect(normalizeTurn(360)).toBe(0)
+    expect(normalizeTurn(45)).toBe(45)
   })
 })

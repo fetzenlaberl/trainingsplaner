@@ -2,7 +2,7 @@ import { locateTime, sceneStartTime, totalDuration } from '../animation/interpol
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop'
 import { togglePlayback } from '../store/playbackActions'
-import { MAX_TILT, MIN_TILT } from '../perspective/perspective'
+import { DEFAULT_TILT, MAX_TILT, MAX_TURN, MIN_TILT, MIN_TURN } from '../perspective/perspective'
 import { usePerspectiveStore } from '../store/perspectiveStore'
 import { SPEEDS, usePlaybackStore } from '../store/playbackStore'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -36,6 +36,8 @@ export function Timeline() {
   const tilt = usePerspectiveStore((s) => s.tilt)
   const setPerspectiveOn = usePerspectiveStore((s) => s.setEnabled)
   const setTilt = usePerspectiveStore((s) => s.setTilt)
+  const turn = usePerspectiveStore((s) => s.turn)
+  const setTurn = usePerspectiveStore((s) => s.setTurn)
   usePlaybackLoop()
 
   const total = totalDuration(scenes)
@@ -124,6 +126,45 @@ export function Timeline() {
             />
             <span className="w-9 text-right tabular-nums">{tilt}°</span>
           </label>
+        )}
+        {perspectiveOn && (
+          <div
+            role="group"
+            aria-label="Drehung der 3D-Ansicht"
+            className="flex flex-wrap items-center gap-1.5 text-sm text-slate-400"
+            title="Tipp: In der 3D-Ansicht aufs Feld fassen und ziehen – links/rechts dreht, hoch/runter neigt."
+          >
+            <button type="button" className={buttonClass} aria-label="45° nach links drehen" onClick={() => setTurn(turn - 45)}>
+              ⟲ 45°
+            </button>
+            <label className="flex items-center gap-1.5">
+              Drehung
+              <input
+                type="range"
+                className="w-28 accent-emerald-500"
+                min={MIN_TURN}
+                max={MAX_TURN}
+                step={1}
+                value={turn}
+                onChange={(e) => setTurn(Number(e.target.value))}
+              />
+              <span className="w-11 text-right tabular-nums">{turn}°</span>
+            </label>
+            <button type="button" className={buttonClass} aria-label="45° nach rechts drehen" onClick={() => setTurn(turn + 45)}>
+              ⟳ 45°
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              disabled={turn === 0 && tilt === DEFAULT_TILT}
+              onClick={() => {
+                setTurn(0)
+                setTilt(DEFAULT_TILT)
+              }}
+            >
+              Zurück
+            </button>
+          </div>
         )}
       </div>
 

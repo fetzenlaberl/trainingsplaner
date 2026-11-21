@@ -95,15 +95,17 @@ export async function renderScenePerspective(
   background: string | null,
   pxPerMeter = EXPORT_SCALE,
   images: Record<string, string> = {},
+  turn = 0,
 ): Promise<HTMLCanvasElement> {
   const flat = await renderSceneToCanvas(fieldType, pitch, scene, pxPerMeter, images, true)
-  const out = warpCanvas(flat, tilt, background)
+  const out = warpCanvas(flat, tilt, background, turn)
   const viewport = getViewport(fieldType)
   const project = makeProjector(
     { viewport, orientation: pitch.orientation, scale: pxPerMeter, offsetX: 0, offsetY: 0, width: flat.width, height: flat.height },
     tilt,
     out.width,
     out.height,
+    turn,
   )
   const overlay = await renderOffscreen(out.width, out.height, (
     <UprightItems items={scene.items} project={project} pitchColor={pitch.color} images={images} />

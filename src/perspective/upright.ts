@@ -67,11 +67,17 @@ export function fieldToFlat(layout: FlatLayout, x: number, y: number): Point2 {
  * Maps field points onto the tilted picture fitted into outWidth × outHeight,
  * exactly like the CSS view and the export warp.
  */
-export function makeProjector(layout: FlatLayout, tiltDeg: number, outWidth: number, outHeight: number): FieldProjector {
-  const fit = fitProjected(layout.width, layout.height, tiltDeg, outWidth, outHeight)
+export function makeProjector(
+  layout: FlatLayout,
+  tiltDeg: number,
+  outWidth: number,
+  outHeight: number,
+  turnDeg = 0,
+): FieldProjector {
+  const fit = fitProjected(layout.width, layout.height, tiltDeg, outWidth, outHeight, turnDeg)
   return (x, y) => {
     const flat = fieldToFlat(layout, x, y)
-    const p = projectPointScaled(flat.x, flat.y, layout.width, layout.height, tiltDeg)
+    const p = projectPointScaled(flat.x, flat.y, layout.width, layout.height, tiltDeg, turnDeg)
     return {
       x: outWidth / 2 + fit.offsetX + p.x * fit.scale,
       y: outHeight / 2 + fit.offsetY + p.y * fit.scale,

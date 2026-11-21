@@ -35,7 +35,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 3. Linienwerkzeuge: Pass (durchgezogen), Laufweg (gestrichelt), Dribbling (Welle), Schuss (doppelt), auch als Kurven
 4. Bearbeiten: auswählen, verschieben, drehen, kopieren, löschen (auch per Papierkorb unten links auf dem Feld: hinziehen oder Auswahl antippen; HTML, nicht im Export), Undo/Redo, Speichern/Laden
 5. Export: PNG und PDF
-6. Animation: Zeitleiste mit Szenen, Play/Pause, Tempo, Ball folgt Passlinien; 3D-Ansicht (nur Ansehen/Export): Boden gekippt, stehende Objekte (Spieler, Trainer, Ball, Hütchen, Stangen, Fahnen, Dummys, Text, Wappen – `src/perspective/upright.ts`) aufrecht darüber, nach hinten kleiner; Vorlagen „Perspektive leer/mit Dummys“ im Datei-Menü
+6. Animation: Zeitleiste mit Szenen, Play/Pause, Tempo, Ball folgt Passlinien; 3D-Ansicht (nur Ansehen/Export; Neigung und Drehung −180…180° per Regler, ±45°-Knöpfen oder Ziehen auf dem Feld, nicht in der Übung gespeichert): Boden gekippt, stehende Objekte (Spieler, Trainer, Ball, Hütchen, Stangen, Fahnen, Dummys, Text, Wappen – `src/perspective/upright.ts`) aufrecht darüber, nach hinten kleiner; Vorlagen „Perspektive leer/mit Dummys“ im Datei-Menü
 7. Videoexport: WebM (canvas.captureStream + MediaRecorder), danach MP4 (ffmpeg.wasm)
 8. Erweiterungen, in Teilschritten:
    - 8a Übungsbibliothek (IndexedDB, Suche, Kategorien, Sicherung als Datei) – erledigt

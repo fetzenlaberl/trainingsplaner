@@ -1,5 +1,6 @@
-// Perspective ("TV camera") view of a flat image: the image plane is tilted backwards
-// around its horizontal middle axis and seen from a camera in front of it.
+// Perspective ("TV camera") view of a flat image: the image plane is first turned around
+// its center (looking at the pitch from another side), then tilted backwards around its
+// horizontal middle axis and seen from a camera in front of it.
 // The same model drives the on-screen CSS transform and the canvas warp for exports.
 
 export interface Point2 {
@@ -10,6 +11,15 @@ export interface Point2 {
 export const MIN_TILT = 15
 export const MAX_TILT = 65
 export const DEFAULT_TILT = 45
+/** Turn of the pitch in the 3D view, degrees (0 = seen from the touchline as on screen). */
+export const MIN_TURN = -180
+export const MAX_TURN = 180
+
+/** Keeps a turn between -180 and 180 degrees. */
+export function normalizeTurn(deg: number): number {
+  const t = ((((deg + 180) % 360) + 360) % 360) - 180
+  return Object.is(t, -0) ? 0 : t
+}
 /** Camera distance relative to the larger image side (smaller = stronger perspective). */
 export const DISTANCE_FACTOR = 1.6
 
@@ -20,10 +30,17 @@ export function cameraDistance(width: number, height: number): number {
 /**
  * Projects an image point (pixels, origin top left) after tilting by `tiltDeg`.
  * Returns coordinates relative to the image center, like CSS
- * \`perspective(d) rotateX(tilt)\` with transform-origin at the center.
+ * \`perspective(d) rotateX(tilt) rotateZ(turn)\` with transform-origin at the center.
  */
-export function projectPoint(x: number, y: number, width: number, height: number, tiltDeg: number): Point2 {
-  const { x: px, y: py } = projectPointScaled(x, y, width, height, tiltDeg)
+export function projectPoint(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  tiltDeg: number,
+  turnDeg = 0,
+): Point2 {
+  const { x: px, y: py } = projectPointScaled(x, y, width, height, tiltDeg, turnDeg)
   return { x: px, y: py }
 }
 
@@ -34,11 +51,16 @@ export function projectPointScaled(
   width: number,
   height: number,
   tiltDeg: number,
+  turnDeg = 0,
 ): Point2 & { scale: number } {
   const tilt = (tiltDeg * Math.PI) / 180
+  const turn = (turnDeg * Math.PI) / 180
   const d = cameraDistance(width, height)
-  const cx = x - width / 2
-  const cy = y - height / 2
+  // rotateZ (clockwise on screen for positive angles), around the image center
+  const px = x - width / 2
+  const py = y - height / 2
+  const cx = px * Math.cos(turn) - py * Math.sin(turn)
+  const cy = px * Math.sin(turn) + py * Math.cos(turn)
   // rotateX: the top half moves away from the viewer (negative z), the bottom comes closer.
   const ry = cy * Math.cos(tilt)
   const rz = cy * Math.sin(tilt)
@@ -54,12 +76,13 @@ export interface Bounds {
 }
 
 /** Bounding box of the tilted image (relative to the image center). */
-export function projectedBounds(width: number, height: number, tiltDeg: number): Bounds {
+export function projectedBounds(width: number, height: number, tiltDeg: number, turnDeg = 0): Bounds {
+  // Straight lines stay straight in perspective, so the corners give the bounding box.
   const corners = [
-    projectPoint(0, 0, width, height, tiltDeg),
-    projectPoint(width, 0, width, height, tiltDeg),
-    projectPoint(width, height, width, height, tiltDeg),
-    projectPoint(0, height, width, height, tiltDeg),
+    projectPoint(0, 0, width, height, tiltDeg, turnDeg),
+    projectPoint(width, 0, width, height, tiltDeg, turnDeg),
+    projectPoint(width, height, width, height, tiltDeg, turnDeg),
+    projectPoint(0, height, width, height, tiltDeg, turnDeg),
   ]
   return {
     minX: Math.min(...corners.map((p) => p.x)),
@@ -79,8 +102,9 @@ export function fitProjected(
   tiltDeg: number,
   targetWidth: number,
   targetHeight: number,
+  turnDeg = 0,
 ): { scale: number; offsetX: number; offsetY: number } {
-  const b = projectedBounds(width, height, tiltDeg)
+  const b = projectedBounds(width, height, tiltDeg, turnDeg)
   const scale = Math.min(targetWidth / (b.maxX - b.minX), targetHeight / (b.maxY - b.minY))
   return {
     scale,
@@ -90,8 +114,13 @@ export function fitProjected(
 }
 
 /** Output size for an export: same width as the source, height from the tilted shape. */
-export function warpedSize(width: number, height: number, tiltDeg: number): { width: number; height: number } {
-  const b = projectedBounds(width, height, tiltDeg)
+export function warpedSize(
+  width: number,
+  height: number,
+  tiltDeg: number,
+  turnDeg = 0,
+): { width: number; height: number } {
+  const b = projectedBounds(width, height, tiltDeg, turnDeg)
   const scale = width / (b.maxX - b.minX)
   return { width, height: Math.max(2, Math.round(((b.maxY - b.minY) * scale) / 2) * 2) }
 }

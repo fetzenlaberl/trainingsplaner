@@ -5,7 +5,7 @@ import { currentScene, useDrillStore } from '../store/drillStore'
 import { downloadBlob } from './download'
 import type { PdfLayout } from './layout'
 import { pdfLayout } from './layout'
-import { exportTilt } from '../store/perspectiveStore'
+import { exportTilt, exportTurn } from '../store/perspectiveStore'
 import { appendNotes } from './notesImage'
 import { renderDrillToCanvas, renderScenePerspective } from './renderDrill'
 
@@ -14,7 +14,7 @@ async function renderForExport(background: string | null): Promise<HTMLCanvasEle
   const tilt = exportTilt()
   if (tilt === null) return renderDrillToCanvas()
   const state = useDrillStore.getState()
-  return renderScenePerspective(state.fieldType, state.pitch, currentScene(state), tilt, background, undefined, state.images)
+  return renderScenePerspective(state.fieldType, state.pitch, currentScene(state), tilt, background, undefined, state.images, exportTurn())
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob> {

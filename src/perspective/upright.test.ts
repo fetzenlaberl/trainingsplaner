@@ -72,3 +72,13 @@ describe('perspective templates', () => {
     expect(lines.filter((l) => l[0] === l[2]).map((l) => l[0])).toEqual([34.5, 70.5])
   })
 })
+
+describe('turned 3D view', () => {
+  it('turns the facing direction of standing items with the view', () => {
+    const plain = makeProjector(landscape, 45, 800, 600)
+    const turned = makeProjector(landscape, 45, 800, 600, 180)
+    // Facing the right goal points right normally and left when seen from the other side.
+    expect(Math.cos((projectedRotation(plain, 52.5, 34, 0) * Math.PI) / 180)).toBeGreaterThan(0.9)
+    expect(Math.cos((projectedRotation(turned, 52.5, 34, 0) * Math.PI) / 180)).toBeLessThan(-0.9)
+  })
+})

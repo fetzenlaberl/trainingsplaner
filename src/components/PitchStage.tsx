@@ -1,6 +1,6 @@
 import type Konva from 'konva'
 import type { KonvaEventObject } from 'konva/lib/Node'
-import { useEffect, useRef, useState, type CSSProperties, type RefObject } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { Layer, Stage, Transformer } from 'react-konva'
 import { getViewport } from '../field/dimensions'
 import { clampToRect, fitViewport, isInsideRect, pixelsToMeters } from '../field/layout'
@@ -50,6 +50,10 @@ export interface DropTarget {
   rotation: number
 }
 
+/** Degrees per pixel when dragging in the 3D view. */
+const ORBIT_TURN_PER_PX = 0.4
+const ORBIT_TILT_PER_PX = 0.2
+
 interface PitchStageProps {
   dropTargetRef: RefObject<DropTarget | null>
   /** Trash bin in the corner (off in the phone view, which has no editing tools) */
@@ -57,12 +61,12 @@ interface PitchStageProps {
 }
 
 /** CSS transform that shows the stage tilted like a TV camera view (same model as the export warp). */
-function perspectiveStyle(width: number, height: number, tilt: number | null): CSSProperties | undefined {
+function perspectiveStyle(width: number, height: number, tilt: number | null, turn = 0): CSSProperties | undefined {
   if (tilt === null || width <= 0 || height <= 0) return undefined
-  const fit = fitProjected(width, height, tilt, width, height)
+  const fit = fitProjected(width, height, tilt, width, height, turn)
   return {
     transformOrigin: 'center center',
-    transform: `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale}) perspective(${cameraDistance(width, height)}px) rotateX(${tilt}deg)`,
+    transform: `translate(${fit.offsetX}px, ${fit.offsetY}px) scale(${fit.scale}) perspective(${cameraDistance(width, height)}px) rotateX(${tilt}deg) rotateZ(${turn}deg)`,
   }
 }
 
@@ -82,6 +86,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
   const sceneIndex = useDrillStore((s) => s.sceneIndex)
   const time = usePlaybackStore((s) => s.time)
   const perspective = usePerspectiveStore((s) => (s.enabled ? s.tilt : null))
+  const turn = usePerspectiveStore((s) => s.turn)
   const tool = useToolStore((s) => s.tool)
   const lineColor = useToolStore((s) => s.lineColor)
   const linePattern = useToolStore((s) => s.linePattern)
@@ -381,6 +386,36 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
     cleanupRef.current = cleanup
   }
 
+  /** 3D view: dragging on the pitch turns it (left/right) and tilts it (up/down). */
+  function startOrbit(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.button !== 0 || touchCountRef.current > 1) return
+    const target = e.currentTarget
+    const pointerId = e.pointerId
+    let last = { x: e.clientX, y: e.clientY }
+    try {
+      target.setPointerCapture(pointerId)
+    } catch {
+      // not supported: window listeners below still work
+    }
+    const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return
+      // A second finger means pinch: stop turning.
+      if (touchCountRef.current > 1) return stop()
+      const { turn: currentTurn, tilt: currentTilt, setTurn, setTilt } = usePerspectiveStore.getState()
+      setTurn(currentTurn - (ev.clientX - last.x) * ORBIT_TURN_PER_PX)
+      setTilt(currentTilt - (ev.clientY - last.y) * ORBIT_TILT_PER_PX)
+      last = { x: ev.clientX, y: ev.clientY }
+    }
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', stop)
+    window.addEventListener('pointercancel', stop)
+  }
+
   return (
     <div
       ref={containerRef}
@@ -391,10 +426,11 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
       }}
       // The pitch has its own quick menu instead of the browser menu.
       onContextMenu={(e) => e.preventDefault()}
+      onPointerDown={perspective !== null ? startOrbit : undefined}
       style={{ cursor: zoomAreaMode ? 'zoom-in' : drawing ? 'crosshair' : undefined }}
     >
       {size.width > 0 && size.height > 0 && layout.scale > 0 && (
-        <div className="h-full w-full" style={perspectiveStyle(size.width, size.height, perspective)}>
+        <div className="h-full w-full" style={perspectiveStyle(size.width, size.height, perspective, turn)}>
           <Stage ref={stageRef} width={size.width} height={size.height} onPointerDown={handlePointerDown}>
             <Layer>
               <FieldView
@@ -509,6 +545,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
                   perspective,
                   size.width,
                   size.height,
+                  turn,
                 )}
               />
             </Layer>
@@ -518,7 +555,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
       {perspective !== null && (
         <div className="absolute inset-x-0 top-0 bottom-0 flex items-start justify-center p-3">
           <span className="pointer-events-none rounded-md bg-slate-900/85 px-3 py-1 text-sm text-slate-200">
-            3D-Ansicht – zum Bearbeiten in der Zeitleiste ausschalten
+            3D-Ansicht – ziehen zum Drehen und Neigen · zum Bearbeiten in der Zeitleiste ausschalten
           </span>
         </div>
       )}

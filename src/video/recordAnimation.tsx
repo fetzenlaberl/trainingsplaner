@@ -33,6 +33,8 @@ interface RecordOptions {
   speed: number
   /** Perspective tilt in degrees, or null for a flat video */
   tilt: number | null
+  /** Turn of the pitch in perspective, degrees */
+  turn?: number
   /** Called with 0..1 */
   onProgress: (progress: number) => void
   signal: AbortSignal
@@ -49,6 +51,7 @@ export async function recordAnimation({
   images,
   speed,
   tilt,
+  turn = 0,
   onProgress,
   signal,
 }: RecordOptions): Promise<{ blob: Blob; mimeType: string }> {
@@ -65,7 +68,7 @@ export async function recordAnimation({
 
   // Recording canvas: the Konva layer is copied into it, independent of the screen's pixel ratio.
   // In perspective the video keeps its width; the height follows the tilted pitch.
-  const outputSize = tilt === null ? { width, height } : warpedSize(width, height, tilt)
+  const outputSize = tilt === null ? { width, height } : warpedSize(width, height, tilt, turn)
   const output = document.createElement('canvas')
   output.width = outputSize.width
   output.height = outputSize.height
@@ -89,6 +92,7 @@ export async function recordAnimation({
           tilt,
           outputSize.width,
           outputSize.height,
+          turn,
         )
 
   const drawFrame = (time: number) => {
@@ -145,7 +149,7 @@ export async function recordAnimation({
     } else {
       ctx.fillStyle = '#0f172a'
       ctx.fillRect(0, 0, output.width, output.height)
-      drawWarped(ctx, layer.getNativeCanvasElement(), tilt, output.width, output.height)
+      drawWarped(ctx, layer.getNativeCanvasElement(), tilt, output.width, output.height, turn)
       const upright = (uprightStage as Konva.Stage | null)?.getLayers()[0]
       if (upright) {
         upright.draw()
