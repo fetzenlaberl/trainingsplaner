@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { FIELD_TYPE_LABELS, FIELD_TYPES, MAX_AREA, MIN_AREA } from '../field/dimensions'
-import { useDrillStore } from '../store/drillStore'
+import { customFieldScene, formatName } from '../model/fieldTemplates'
+import { currentScene, useDrillStore } from '../store/drillStore'
+import { buttonClass } from './ui'
 
 export function FieldTypeSwitcher() {
   const fieldType = useDrillStore((s) => s.fieldType)
@@ -49,6 +51,27 @@ function AreaInputs() {
     else if (l > 0 && w > 0) setFieldArea({ length: l, width: w })
   }
 
+  /** Dashed field with the entered size, size labels and the usual players for it. */
+  function drawField() {
+    const state = useDrillStore.getState()
+    const size = state.pitch.area
+    if (!size) return
+    const scene = currentScene(state)
+    const filled = scene.items.length + scene.lines.length + scene.zones.length > 0
+    if (filled && !window.confirm('Die Szene enthält schon Objekte. Durch das eingezeichnete Feld ersetzen? (Rückgängig möglich)')) return
+    const { items, lines, zones, format } = customFieldScene(size, state.pitch.orientation)
+    // Own ids, so nothing is mixed up with items of other scenes.
+    const suffix = Date.now().toString(36)
+    state.replaceSceneContent({
+      items: items.map((i) => ({ ...i, id: `${i.id}-${suffix}` })),
+      lines: lines.map((l) => ({ ...l, id: `${l.id}-${suffix}` })),
+      zones: zones.map((z) => ({ ...z, id: `${z.id}-${suffix}` })),
+    })
+    state.setInfo({ fieldSize: `${size.length} × ${size.width} m`, players: format.players * 2 })
+    setMessage(`Eingezeichnet: ${size.length} × ${size.width} m, ${formatName(format)}`)
+  }
+  const [message, setMessage] = useState<string | null>(null)
+
   const input =
     'min-h-10 w-16 rounded-md border border-slate-600 bg-slate-900 px-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none'
   return (
@@ -85,6 +108,16 @@ function AreaInputs() {
         onKeyDown={(e) => e.key === 'Enter' && commit(length, width)}
       />
       m
+      <button
+        type="button"
+        className={`${buttonClass} ml-1 bg-emerald-700 text-white hover:bg-emerald-600`}
+        disabled={!area}
+        title="Gestricheltes Feld in dieser Größe mit Maßangaben und der üblichen Spielerzahl einzeichnen"
+        onClick={drawField}
+      >
+        Feld einzeichnen
+      </button>
+      {message && <span className="text-xs text-emerald-300">{message}</span>}
     </label>
   )
 }

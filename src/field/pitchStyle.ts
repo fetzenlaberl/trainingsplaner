@@ -501,10 +501,18 @@ export const GRID_LABELS: Record<GridType, string> = {
   letters3x2: 'Zonen A–F: 3 × 2 Felder',
   penalty: 'Strafraum-Raster (ca. 12 × 10 m)',
   penaltyFine: 'Strafraum-Raster fein (ca. 9 × 6,7 m)',
-  squares5: 'Quadrate 5 × 5 m',
-  squares10: 'Quadrate 10 × 10 m',
-  squares15: 'Quadrate 15 × 15 m',
+  squares5: 'Quadrate 5 × 5 m (ab Mitte)',
+  squares10: 'Quadrate 10 × 10 m (ab Mitte)',
+  squares15: 'Quadrate 15 × 15 m (ab Mitte)',
   custom: 'Eigenes Raster …',
+}
+
+type FieldSize = { length: number; width: number }
+const BIG_PITCH: FieldSize = { length: PITCH.length, width: PITCH.width }
+
+/** Square grids are drawn in real meters on the field, starting from its centre lines. */
+export function isSquareGrid(grid: GridType): boolean {
+  return grid === 'squares5' || grid === 'squares10' || grid === 'squares15'
 }
 
 export const GRID_ORDER: GridType[] = [
@@ -712,17 +720,25 @@ type Cell = { x1: number; y1: number; x2: number; y2: number }
  * Zones of a grid as rectangles. Grids made of lines across the whole pitch (or the own grid's
  * area) give every crossing cell; the club grid has its own zones in its own order.
  */
-export function gridCells(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID): { cells: Cell[]; fixedOrder: boolean } {
+export function gridCells(
+  grid: GridType,
+  custom: CustomGrid = DEFAULT_CUSTOM_GRID,
+  size: FieldSize = BIG_PITCH,
+): { cells: Cell[]; fixedOrder: boolean } {
   if (grid === 'none') return { cells: [], fixedOrder: false }
   if (grid === 'zones20' || grid === 'zones20Plain') return { cells: zones20Layout().labels.map((l) => l.cell), fixedOrder: true }
   const bounds =
-    grid === 'custom' ? customGridLayout(custom).bounds : { x: 0, y: 0, width: PITCH.length, height: PITCH.width }
+    grid === 'custom'
+      ? customGridLayout(custom).bounds
+      : isSquareGrid(grid)
+        ? { x: 0, y: 0, width: size.length, height: size.width }
+        : { x: 0, y: 0, width: PITCH.length, height: PITCH.width }
   const x0 = bounds.x
   const x1 = bounds.x + bounds.width
   const y0 = bounds.y
   const y1 = bounds.y + bounds.height
   const inside = (v: number, a: number, b: number) => v > a + 1e-6 && v < b - 1e-6
-  const lines = gridLines(grid, custom)
+  const lines = gridLines(grid, custom, size)
   const xs = [...new Set(lines.filter((l) => l[0] === l[2] && inside(l[0], x0, x1)).map((l) => l[0]))]
   const ys = [...new Set(lines.filter((l) => l[1] === l[3] && inside(l[1], y0, y1)).map((l) => l[1]))]
   const columns = [x0, ...xs.sort((a, b) => a - b), x1]
@@ -759,11 +775,11 @@ const LABEL_SIZES: Record<GridLabelSize, { corner: number; center: number }> = {
  * gets a number or letter, counted row by row from the top left as seen on screen
  * (`upright` = 90 in portrait); the club grid keeps its own numbering.
  */
-export function pitchGridLabels(style: PitchStyle, upright = 0): GridLabel[] {
+export function pitchGridLabels(style: PitchStyle, upright = 0, size: FieldSize = BIG_PITCH): GridLabel[] {
   const own = style.gridLabelStyle
   if (!own) return gridLabels(style.grid)
   if (own.kind === 'none') return []
-  const { cells, fixedOrder } = gridCells(style.grid, style.customGrid)
+  const { cells, fixedOrder } = gridCells(style.grid, style.customGrid, size)
   if (cells.length === 0) return []
   // Screen frame: in portrait the screen's x runs along the pitch width and its y against the length.
   const portrait = upright % 180 !== 0
@@ -809,6 +825,8 @@ export function fitGridToField(
   const sy = size.width / PITCH.width
   const textScale = Math.sqrt(sx * sy)
   if (sx === 1 && sy === 1) return { point: (x, y) => ({ x, y }), textScale: 1 }
+  // Squares are laid out on the field itself (real meters), see gridLines.
+  if (isSquareGrid(grid)) return { point: (x, y) => ({ x, y }), textScale }
   if (grid === 'custom') {
     const dx = (size.length - PITCH.length) / 2
     const dy = (size.width - PITCH.width) / 2
@@ -836,7 +854,7 @@ export function fitGridLabel(label: GridLabel, fit: ReturnType<typeof fitGridToF
  * the positional grid adds cross lines at the penalty areas and the halfway line;
  * lanes with cross lines add one cross line in the middle of each half.
  */
-export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID): number[][] {
+export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GRID, size: FieldSize = BIG_PITCH): number[][] {
   const { length, width, penaltyAreaDepth, penaltyAreaWidth, goalAreaWidth } = PITCH
   const mid = width / 2
   const horizontal = (y: number) => [0, y, length, y]
@@ -882,11 +900,13 @@ export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GR
     case 'squares5':
     case 'squares10':
     case 'squares15': {
+      // Real squares on the field itself, lined up from its centre lines (halfway line and
+      // the middle axis lengthwise), so both halves look the same.
       const step = Number(grid.slice('squares'.length))
-      const lines: number[][] = []
-      for (let x = step; x < length - 1e-9; x += step) lines.push(vertical(x))
-      for (let y = step; y < width - 1e-9; y += step) lines.push(horizontal(y))
-      return lines
+      return [
+        ...symmetricPositions(size.length / 2, step, size.length).map((x) => [x, 0, x, size.width]),
+        ...symmetricPositions(size.width / 2, step, size.width).map((y) => [0, y, size.length, y]),
+      ]
     }
   }
 }

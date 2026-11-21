@@ -496,10 +496,12 @@ function variantDrill(
 // ---------------------------------------------------------------------------------------
 // Y-pass patterns
 
-export type YPassKey = 'basic' | 'opponent' | 'zones' | 'buildUp'
+export type YPassKey = 'basic' | 'vertical' | 'triangle' | 'opponent' | 'zones' | 'buildUp'
 
 export const Y_PASS_VARIANTS: { key: YPassKey; name: string; hint: string }[] = [
   { key: 'basic', name: 'Y-Pass – Grundform', hint: 'A auf B, Rückpass, Verlagerung auf C' },
+  { key: 'vertical', name: 'Y-Form – vertikaler Start', hint: 'A vertikal auf B, Ablage, A wahlweise auf C oder D' },
+  { key: 'triangle', name: 'Dreiecks-Form', hint: 'A – B – C im Dreieck' },
   { key: 'opponent', name: 'Y-Pass – mit Gegenspieler', hint: 'Gegner binden, dann verlagern' },
   { key: 'zones', name: 'Y-Pass – in Zonen', hint: 'Außen – Zentrum – Außen' },
   { key: 'buildUp', name: 'Y-Pass – im Spielaufbau', hint: 'Mit der Viererkette' },
@@ -508,8 +510,95 @@ export const Y_PASS_VARIANTS: { key: YPassKey; name: string; hint: string }[] = 
 const Y_PASS_PRINCIPLE =
   'Prinzip Y-Pass: Dreieck mit Rückpass – Winkel öffnen, Gegner binden, dann schnell auf die andere Seite verlagern.'
 
+/** Direction (degrees) from one point to another, for players facing their pass partner. */
+function facing(from: Point, to: Point): number {
+  return Math.round((Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI)
+}
+
+/** Point `d` meters from `from` towards `to`. */
+function toward(from: Point, to: Point, d: number): Point {
+  const len = Math.hypot(to.x - from.x, to.y - from.y)
+  return { x: from.x + ((to.x - from.x) / len) * d, y: from.y + ((to.y - from.y) / len) * d }
+}
+
+/** Pass line between two players, starting and ending a little away from them; `offset` moves it sideways. */
+function addPass(b: Builder, from: Point, to: Point, step: number, options: { offset?: number; pattern?: LinePattern } = {}): void {
+  const gap = 1.6
+  const len = Math.hypot(to.x - from.x, to.y - from.y)
+  const o = options.offset ?? 0
+  const side = { x: (-(to.y - from.y) / len) * o, y: ((to.x - from.x) / len) * o }
+  const shift = (p: Point): Point => ({ x: p.x + side.x, y: p.y + side.y })
+  addLine(b, 'pass', [shift(toward(from, to, gap)), shift(toward(to, from, gap))], {
+    color: PASS_COLOR,
+    step,
+    pattern: options.pattern ?? 'solid',
+  })
+}
+
+/** Y-form with a vertical start: A → B straight ahead, lay-off to A, then A to C or D. */
+function verticalYDrill(name: string): Drill {
+  const area = { length: 30, width: 26 }
+  const b = builder(area)
+  b.k = 0.8
+  addOutline(b, area)
+  addCornerCones(b, area)
+  const a = { x: 15, y: 22 }
+  const bPos = { x: 15, y: 12 }
+  const c = { x: 25, y: 4 }
+  const d = { x: 5, y: 4 }
+  const player = (p: Point, label: string, rotation: number) =>
+    addItem(b, 'player', p.x, p.y, { color: BLUE, size: 1.3, label, rotation })
+  player(a, 'A', -90)
+  player(bPos, 'B', 90)
+  player(c, 'C', facing(c, a))
+  player(d, 'D', facing(d, a))
+  addBall(b, a.x + 1, a.y - 1)
+  addPass(b, a, bPos, 1, { offset: -1 })
+  addPass(b, bPos, a, 2, { offset: -1 })
+  addPass(b, a, c, 3, { pattern: 'dashed' })
+  addPass(b, a, d, 3, { pattern: 'dashed' })
+  return fieldDrill(name, area, b, {
+    players: 4,
+    fieldSize: `${area.length} × ${area.width} m`,
+    area: 'tactic',
+    description:
+      '1. A passt vertikal auf B\n2. B legt ab zu A\n3. A spielt wahlweise rechts auf C oder links auf D (im Ypsilon)\n\n' +
+      'Danach die Positionen wechseln, zum Beispiel jeder läuft seinem Pass nach.\n' +
+      Y_PASS_PRINCIPLE,
+  })
+}
+
+/** Triangle: A → B → C → A. */
+function triangleDrill(name: string): Drill {
+  const area = { length: 30, width: 24 }
+  const b = builder(area)
+  b.k = 0.8
+  addOutline(b, area)
+  addCornerCones(b, area)
+  const a = { x: 7, y: 19 }
+  const bPos = { x: 15, y: 5 }
+  const c = { x: 23, y: 19 }
+  addItem(b, 'player', a.x, a.y, { color: BLUE, size: 1.3, label: 'A', rotation: facing(a, bPos) })
+  addItem(b, 'player', bPos.x, bPos.y, { color: BLUE, size: 1.3, label: 'B', rotation: facing(bPos, c) })
+  addItem(b, 'player', c.x, c.y, { color: BLUE, size: 1.3, label: 'C', rotation: facing(c, a) })
+  addBall(b, a.x + 1.2, a.y - 0.6)
+  addPass(b, a, bPos, 1)
+  addPass(b, bPos, c, 2)
+  addPass(b, c, a, 3)
+  return fieldDrill(name, area, b, {
+    players: 3,
+    fieldSize: `${area.length} × ${area.width} m`,
+    area: 'tactic',
+    description:
+      '1. A passt auf B\n2. B passt auf C\n3. C passt auf A\n\n' +
+      'Varianten: Richtung wechseln, direkt spielen, nach dem Pass auf die Position des Partners laufen.',
+  })
+}
+
 export function yPassDrill(key: YPassKey): Drill {
   const variant = Y_PASS_VARIANTS.find((v) => v.key === key)!
+  if (key === 'vertical') return verticalYDrill(variant.name)
+  if (key === 'triangle') return triangleDrill(variant.name)
   const wide = key === 'buildUp'
   const area = wide ? { length: 50, width: 28 } : key === 'zones' ? { length: 36, width: 22 } : { length: 30, width: 20 }
   const b = builder(area)
@@ -554,10 +643,6 @@ export function yPassDrill(key: YPassKey): Drill {
   }
 
   // 1: A → B, 2: back pass B → A (slightly curved beside the first), 3: A → C (dashed).
-  const toward = (from: Point, to: Point, d: number): Point => {
-    const len = Math.hypot(to.x - from.x, to.y - from.y)
-    return { x: from.x + ((to.x - from.x) / len) * d, y: from.y + ((to.y - from.y) / len) * d }
-  }
   const gap = 1.6
   addLine(b, 'pass', [toward(a, bPos, gap), toward(bPos, a, gap)], { color: PASS_COLOR, step: 1 })
   // The back pass runs parallel to the first pass, a little to the side.
@@ -573,4 +658,39 @@ export function yPassDrill(key: YPassKey): Drill {
     area: 'tactic',
     description: `${steps.map((s, i) => `${i + 1}. ${s}`).join('\n')}\n\n${Y_PASS_PRINCIPLE}`,
   })
+}
+
+// ---------------------------------------------------------------------------------------
+// Own size of the empty field, drawn in
+
+/** Small-sided format whose usual area is closest to the given field (1:1 to 9:9). */
+export function standardFormat(area: FieldArea): SizeFormat {
+  const size = area.length * area.width
+  const usual = (f: SizeFormat) => middle(f.length) * middle(f.width)
+  return SIZE_FORMATS.reduce((best, f) =>
+    Math.abs(Math.log(usual(f) / size)) < Math.abs(Math.log(usual(best) / size)) ? f : best,
+  )
+}
+
+/**
+ * Scene content for an own-size empty field: dashed outline with the entered size, size
+ * labels and the usual number of players for that size (two teams and a ball).
+ */
+export function customFieldScene(
+  area: FieldArea,
+  orientation: 'landscape' | 'portrait',
+): { items: Item[]; lines: Line[]; zones: Zone[]; format: SizeFormat } {
+  const b = builder(area)
+  addOutline(b, area, true)
+  const format = standardFormat(area)
+  const rows = SIZE_ROWS[format.players]
+  addTeam(b, area, BLUE, rows, 'left')
+  addTeam(b, area, RED, rows, 'right')
+  addBall(b, area.length / 2, area.width / 2)
+  const meters = (v: number) => `${v.toLocaleString('de-DE')} m`
+  // The labels read along their side on screen in both orientations.
+  const portrait = orientation === 'portrait'
+  addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0)
+  addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90)
+  return { items: b.items, lines: b.lines, zones: b.zones, format }
 }

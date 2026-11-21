@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getViewport } from '../field/dimensions'
-import { FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
+import { customFieldScene, FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
 import { parseDrill, serializeDrill } from './serialize'
 import type { Drill } from './types'
 
@@ -53,10 +53,21 @@ describe('field templates', () => {
     expect(fieldVariantDrill('open').scenes[0].zones[0].dashed).toBe(true)
   })
 
+  it('draws in a dashed field with the usual players for the entered size', () => {
+    const ten = customFieldScene({ length: 10, width: 10 }, 'landscape')
+    expect(ten.format.players).toBe(1)
+    expect(ten.zones[0].dashed).toBe(true)
+    expect(ten.items.filter((i) => i.type === 'player')).toHaveLength(2)
+    expect(ten.items.filter((i) => i.type === 'text').map((i) => i.label)).toEqual(['10 m', '10 m'])
+    expect(customFieldScene({ length: 40, width: 50 }, 'portrait').format.players).toBe(8)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]
-      expect(scene.lines.map((l) => l.step).filter(Boolean)).toEqual([1, 2, 3])
+      const steps = scene.lines.map((l) => l.step).filter(Boolean)
+      // The vertical Y offers two ways for step 3 (to C or D).
+      expect(steps).toEqual(v.key === 'vertical' ? [1, 2, 3, 3] : [1, 2, 3])
       expect(scene.items.filter((i) => ['A', 'B', 'C'].includes(i.label))).toHaveLength(3)
     }
   })

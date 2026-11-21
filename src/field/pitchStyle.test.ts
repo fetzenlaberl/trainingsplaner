@@ -133,10 +133,17 @@ describe('gridLines', () => {
     expect(gridLabels('positional')).toEqual([])
   })
 
-  it('draws evenly spaced squares inside the pitch', () => {
+  it('lines up squares from the centre lines of the pitch', () => {
     const lines = gridLines('squares10')
-    expect(verticalXs(lines)).toEqual([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
-    expect(horizontalYs(lines)).toEqual([10, 20, 30, 40, 50, 60])
+    expect(verticalXs(lines)).toEqual([2.5, 12.5, 22.5, 32.5, 42.5, 52.5, 62.5, 72.5, 82.5, 92.5, 102.5])
+    expect(horizontalYs(lines)).toEqual([4, 14, 24, 34, 44, 54, 64])
+  })
+
+  it('draws real 5 m squares on a small field, from its centre', () => {
+    const lines = gridLines('squares5', undefined, { length: 20, width: 20 })
+    expect(verticalXs(lines)).toEqual([5, 10, 15])
+    expect(horizontalYs(lines)).toEqual([5, 10, 15])
+    expect(lines.every((l) => Math.max(l[0], l[2]) <= 20 && Math.max(l[1], l[3]) <= 20)).toBe(true)
   })
 
   it('keeps every line on the pitch', () => {

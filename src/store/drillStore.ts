@@ -66,6 +66,8 @@ export interface DrillState extends DrillContent {
   setGrid: (grid: GridType) => void
   /** Own size of the empty field (null = as big as the big pitch) */
   setFieldArea: (area: FieldArea | null) => void
+  /** Replaces items, lines and zones of the current scene (one undo step) */
+  replaceSceneContent: (content: Pick<Scene, 'items' | 'lines' | 'zones'>) => void
   /** Shows the own grid with these column and row sizes (meters), as one undo step. */
   setCustomGrid: (grid: CustomGrid) => void
   /** Stores an imported picture (data URL) and returns its id; not part of the undo history. */
@@ -389,6 +391,8 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     }),
   setGrid: (grid) =>
     set((s) => (s.pitch.grid === grid ? {} : { ...recorded(s), pitch: { ...s.pitch, grid } })),
+  replaceSceneContent: ({ items, lines, zones }) =>
+    set((s) => ({ ...recorded(s), scenes: editScene(s, () => ({ items, lines, zones })), ...selection([]) })),
   setFieldArea: (area) =>
     set((s) => {
       const pitch = { ...s.pitch }

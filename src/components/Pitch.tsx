@@ -175,7 +175,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         </>
       )}
 
-      {gridLines(pitch.grid, pitch.customGrid).map((points, i) => (
+      {gridLines(pitch.grid, pitch.customGrid, size).map((points, i) => (
         <Line
           key={`grid-${i}`}
           points={fitPoints(points)}
@@ -185,7 +185,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
           dash={pitch.grid === 'custom' ? undefined : [gridWidth * 6, gridWidth * 4]}
         />
       ))}
-      {pitchGridLabels(pitch, upright)
+      {pitchGridLabels(pitch, upright, size)
         .map((label) => fitGridLabel(label, fit, label.cell ? CORNER_LABEL_SIZE : labelSize))
         .map((label) =>
         label.cell ? (
