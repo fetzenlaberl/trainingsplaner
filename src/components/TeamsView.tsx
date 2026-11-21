@@ -24,6 +24,8 @@ import { parseMatchReport, type ReportTeam } from '../teams/matchReport'
 import { MatchReportDialog } from './MatchReportDialog'
 import { deleteTeam, listTeams, putTeam } from '../teams/teamDb'
 import { TrashIcon } from './TrashIcon'
+import { MatchesPanel } from './MatchesPanel'
+import { deleteMatch, listMatches } from '../teams/matchDb'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const LOAD_ERROR =
@@ -39,6 +41,7 @@ export function TeamsView() {
   const [teams, setTeams] = useState<Team[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [tab, setTab] = useState<'squad' | 'matches'>('squad')
 
   useEffect(() => {
     let cancelled = false
@@ -76,11 +79,15 @@ export function TeamsView() {
   }
 
   function handleDelete() {
-    if (!selected || !window.confirm(`„${selected.name}“ mit allen Spielern löschen?`)) return
+    if (!selected || !window.confirm(`„${selected.name}“ mit allen Spielern und Spielberichten löschen?`)) return
     const remaining = (teams ?? []).filter((t) => t.id !== selected.id)
     setTeams(remaining)
     setSelectedId(remaining[0]?.id ?? null)
     deleteTeam(selected.id).catch(reportSaveError)
+    const teamId = selected.id
+    listMatches()
+      .then((all) => Promise.all(all.filter((m) => m.teamId === teamId).map((m) => deleteMatch(m.id))))
+      .catch(reportSaveError)
   }
 
   return (
@@ -120,7 +127,34 @@ export function TeamsView() {
 
       <section className="min-h-0 flex-1 overflow-y-auto p-4">
         {selected ? (
-          <TeamEditor key={selected.id} team={selected} onChange={update} onDelete={handleDelete} />
+          <>
+            <div role="tablist" aria-label="Ansicht der Mannschaft" className="mx-auto mb-4 flex max-w-3xl gap-1 border-b border-slate-700">
+              {(
+                [
+                  ['squad', 'Kader'],
+                  ['matches', 'Spielberichte'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === key}
+                  onClick={() => setTab(key)}
+                  className={`rounded-t-md px-4 py-2 text-sm font-semibold ${
+                    tab === key ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {tab === 'squad' ? (
+              <TeamEditor key={selected.id} team={selected} onChange={update} onDelete={handleDelete} />
+            ) : (
+              <MatchesPanel key={selected.id} team={selected} />
+            )}
+          </>
         ) : (
           teams && <p className="text-sm text-slate-400">Wähle links eine Mannschaft oder leg eine neue an.</p>
         )}

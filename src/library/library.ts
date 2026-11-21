@@ -4,11 +4,13 @@ import type { Category, Drill, DrillArea } from '../model/types'
 import { sessionFromData, type TrainingSession } from '../sessions/session'
 import { dayIntensityFromData, type DayIntensity } from '../sessions/week'
 import { teamFromData, type Team } from '../teams/team'
+import { matchFromData, type Match } from '../teams/match'
 
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 // Backup versions follow the drill file versions (2: waypoints, 3: zones, 4: text boxes etc.).
 // Version 8: also contains teams (squads). Version 10: day intensities of the week planner.
-export const BACKUP_VERSION = 13
+// Version 14: match reports.
+export const BACKUP_VERSION = 14
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',
@@ -99,11 +101,13 @@ export interface Backup {
   sessions: TrainingSession[]
   teams: Team[]
   days: DayIntensity[]
+  /** Match reports (missing in older backups) */
+  matches?: Match[]
 }
 
 /** Backup of drills and training sessions as one file. */
-export function serializeBackup({ entries, sessions, teams, days }: Backup): string {
-  return JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, entries, sessions, teams, days }, null, 2)
+export function serializeBackup({ entries, sessions, teams, days, matches = [] }: Backup): string {
+  return JSON.stringify({ format: BACKUP_FORMAT, version: BACKUP_VERSION, entries, sessions, teams, days, matches }, null, 2)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -130,7 +134,8 @@ export function parseBackup(text: string): Backup {
     !(data.sessions === undefined || Array.isArray(data.sessions)) ||
     // Teams were added in backup version 8.
     !(data.teams === undefined || Array.isArray(data.teams)) ||
-    !(data.days === undefined || Array.isArray(data.days))
+    !(data.days === undefined || Array.isArray(data.days)) ||
+    !(data.matches === undefined || Array.isArray(data.matches))
   ) {
     throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
   }
@@ -148,6 +153,11 @@ export function parseBackup(text: string): Backup {
     const day = dayIntensityFromData(value)
     if (!day) throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
     return day
+  })
+  const matches = ((data.matches as unknown[] | undefined) ?? []).map((value) => {
+    const match = matchFromData(value)
+    if (!match) throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
+    return match
   })
   const entries = data.entries.map((value): LibraryEntry => {
     if (
@@ -167,7 +177,7 @@ export function parseBackup(text: string): Backup {
       updatedAt: value.updatedAt,
     }
   })
-  return { entries, sessions, teams, days }
+  return { entries, sessions, teams, days, matches }
 }
 
 /**

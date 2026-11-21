@@ -1,3 +1,4 @@
+import { listMatches, putMatches } from '../teams/matchDb'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
 import { FIELD_TYPE_LABELS } from '../field/dimensions'
@@ -120,6 +121,7 @@ export function LibraryView() {
         sessions: await listSessions(),
         teams: await listTeams(),
         days: await listDayIntensities(),
+        matches: await listMatches(),
       }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
@@ -141,14 +143,16 @@ export function LibraryView() {
       const drills = planImport(await listEntries(), backup.entries)
       const sessions = planImport(await listSessions(), backup.sessions)
       const teams = planImport(await listTeams(), backup.teams)
+      const matches = planImport(await listMatches(), backup.matches ?? [])
       await putEntries(drills.toStore)
       await putSessions(sessions.toStore)
       await putTeams(teams.toStore)
+      await putMatches(matches.toStore)
       // Day intensities simply take the value from the backup.
       await putDayIntensities(backup.days)
-      const skipped = drills.skipped + sessions.skipped + teams.skipped
+      const skipped = drills.skipped + sessions.skipped + teams.skipped + matches.skipped
       window.alert(
-        `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en) und ${teams.toStore.length} Mannschaft(en) importiert.` +
+        `${drills.toStore.length} Übung(en), ${sessions.toStore.length} Einheit(en), ${teams.toStore.length} Mannschaft(en) und ${matches.toStore.length} Spielbericht(e) importiert.` +
           (skipped > 0 ? ` ${skipped} übersprungen, weil schon eine neuere Fassung vorhanden ist.` : ''),
       )
     } catch (err) {

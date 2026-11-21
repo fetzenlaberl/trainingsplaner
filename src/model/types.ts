@@ -14,6 +14,7 @@ export type ItemType =
   | 'dummy'
   | 'poleDummy'
   | 'figureDummy'
+  | 'figure'
   | 'wall'
   | 'ladder'
   | 'hurdle'
@@ -27,6 +28,9 @@ export type ItemType =
   | 'crest'
   | 'text'
   | 'textbox'
+
+/** Pose of a player figure (item type 'figure'). */
+export type FigurePose = 'stand' | 'run' | 'shoot' | 'keeper' | 'demand'
 
 /** How a player is drawn; other item types ignore it. */
 export type PlayerShape = 'circle' | 'triangle' | 'cross' | 'shirt'
@@ -52,6 +56,8 @@ export interface Item {
   highlight: boolean
   /** false: player without facing arrow (missing = with arrow) */
   facing?: boolean
+  /** Pose of a player figure (only type 'figure'; missing = standing) */
+  pose?: FigurePose
 }
 
 export interface Point {

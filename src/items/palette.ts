@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -95,6 +95,13 @@ function player(color: string, shape: PlayerShape): NewItem {
   return { type: 'player', color, shape, size: DEFAULT_PLAYER_SIZE }
 }
 
+/** Player figures (seen from the side); the color is free, the keeper starts yellow. */
+const FIGURE_TEMPLATES: ItemTemplate[] = (['stand', 'run', 'shoot', 'keeper', 'demand'] as const).map((pose) => ({
+  key: `figure-${pose}`,
+  name: `Spielerfigur ${({ stand: 'stehend', run: 'laufend', shoot: 'schießend', keeper: 'Torwart', demand: 'Ball fordernd' } as const)[pose]}`,
+  item: { type: 'figure' as const, color: pose === 'keeper' ? TEAM_COLORS.keeper : TEAM_COLORS.red, size: 1.6, label: '', pose },
+}))
+
 export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'player-red', name: 'Spieler Rot', item: player(TEAM_COLORS.red, 'circle') },
   { key: 'player-blue', name: 'Spieler Blau', item: player(TEAM_COLORS.blue, 'circle') },
@@ -138,6 +145,7 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'dummy', name: 'Dummy', item: { type: 'dummy', color: '#2563eb' } },
   { key: 'pole-dummy', name: 'Stangendummy', item: { type: 'poleDummy', color: '#f97316', size: 1.6 } },
   { key: 'figure-dummy', name: 'Figurendummy', item: { type: 'figureDummy', color: '#2563eb', size: 1.6 } },
+  ...FIGURE_TEMPLATES,
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
   { key: 'ladder', name: 'Koordinationsleiter', item: { type: 'ladder', color: '#facc15' } },
   { key: 'agility-3', name: 'Koordinationsraster 3×3', item: { type: 'agility', color: '#facc15', label: '3' } },
@@ -165,6 +173,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   dummy: 1,
   poleDummy: 2.8,
   figureDummy: 2.8,
+  figure: 2.8,
   wall: 2.6,
   ladder: 4.2,
   hurdle: 1.2,
@@ -189,6 +198,7 @@ export const COLORABLE_TYPES: ItemType[] = [
   'dummy',
   'poleDummy',
   'figureDummy',
+  'figure',
   'wall',
   'ladder',
   'hurdle',
@@ -203,6 +213,7 @@ export const COLORABLE_TYPES: ItemType[] = [
 /** Item types where rotation is visible. */
 export const ROTATABLE_TYPES: ItemType[] = [
   'player',
+  'figure',
   'goal',
   'minigoal',
   'slalom',

@@ -1,8 +1,9 @@
 import Konva from 'konva'
 import { useContext, useMemo } from 'react'
-import { Circle, Group, Line, Rect, RegularPolygon, Wedge } from 'react-konva'
+import { Circle, Ellipse, Group, Line, Rect, RegularPolygon, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
 import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
+import { figureMirrored, PlayerFigureShape } from './PlayerFigures'
 import { CrestItem, PictureItem } from './PictureShapes'
 import { displayColor } from '../field/pitchStyle'
 import { contrastTextColor } from '../items/colors'
@@ -50,7 +51,7 @@ const TEXTBOX_FONT_SIZE = 1.1
 const NAME_FONT_SIZE = 0.8
 const GLOW_COLOR = '#fde047'
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing'> & {
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing' | 'pose'> & {
   /** Player name tag (empty = none) */
   name?: string
   /** Highlight ring strength 0..1 */
@@ -58,7 +59,7 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' |
 }
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0 }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0, pose }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
   const upright = -useContext(ViewRotationContext)
   const onWhite = pitchColor === 'white'
@@ -113,6 +114,14 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       return (
         <Group rotation={upright}>
           <PoleDummyShape color={color} />
+        </Group>
+      )
+    case 'figure':
+      return (
+        <Group rotation={upright}>
+          {glow > 0 && <Ellipse y={1.1} radiusX={1.1} radiusY={0.38} stroke={GLOW_COLOR} strokeWidth={0.14} opacity={glow} listening={false} />}
+          <PlayerFigureShape color={color} pose={pose ?? 'stand'} label={label} mirrored={figureMirrored(rotation - upright)} />
+          {name && <NameTag name={name} />}
         </Group>
       )
     case 'figureDummy':

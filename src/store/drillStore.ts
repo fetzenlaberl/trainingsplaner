@@ -15,7 +15,7 @@ import {
 } from '../items/zones'
 import type { DrillInfo } from '../model/drillInfo'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, DrillArea, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
+import type { Category, Drill, DrillArea, FigurePose, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 export interface DrillContent {
@@ -105,6 +105,8 @@ export interface DrillState extends DrillContent {
   setItemShape: (id: string, shape: PlayerShape) => void
   setItemColor: (id: string, color: string) => void
   setItemHighlight: (id: string, highlight: boolean) => void
+  /** Pose of a player figure. */
+  setItemPose: (id: string, pose: FigurePose) => void
   /** Shows or hides the facing arrow of a player. */
   setItemFacing: (id: string, facing: boolean) => void
   /** Gives every item of the current scene the same size. */
@@ -522,6 +524,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         color: item.color,
         label,
         ...(item.facing === false ? { facing: false } : {}),
+        ...(item.pose ? { pose: item.pose } : {}),
       }
       // Later items of the same call see the earlier ones when numbering.
       items.push(newItem)
@@ -579,6 +582,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
+    })),
+  setItemPose: (id, pose) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { pose }) })),
     })),
   setItemFacing: (id, facing) =>
     set((s) => ({

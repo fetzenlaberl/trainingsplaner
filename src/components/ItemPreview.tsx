@@ -24,6 +24,7 @@ export function ItemPreview({ item, scale }: ItemPreviewProps) {
             rotation={item.rotation ?? 0}
             shape={item.shape ?? 'circle'}
             facing={item.facing}
+            pose={item.pose}
           />
         </Group>
       </Layer>

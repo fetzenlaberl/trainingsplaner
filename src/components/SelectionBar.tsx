@@ -1,3 +1,4 @@
+import { FIGURE_POSE_NAMES, FIGURE_POSE_ORDER } from './PlayerFigures'
 import { useRef } from 'react'
 import { isFreehand } from '../lines/freehand'
 import { BALL_STYLES,
@@ -231,6 +232,24 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
+      {item.type === 'figure' && (
+        <div role="group" aria-label="Haltung" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
+          {FIGURE_POSE_ORDER.map((pose) => (
+            <button
+              key={pose}
+              type="button"
+              aria-pressed={(item.pose ?? 'stand') === pose}
+              onClick={() => useDrillStore.getState().setItemPose(item.id, pose)}
+              className={`min-h-8 rounded-md px-2 text-sm ${
+                (item.pose ?? 'stand') === pose ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {FIGURE_POSE_NAMES[pose]}
+            </button>
+          ))}
+        </div>
+      )}
+
       {ROTATABLE_TYPES.includes(item.type) && (
         <>
           <button
@@ -252,15 +271,15 @@ function ItemControls({ item }: { item: Item }) {
         </>
       )}
 
-      {(item.type === 'player' || item.type === 'text' || item.type === 'coach') && (
+      {(item.type === 'player' || item.type === 'figure' || item.type === 'text' || item.type === 'coach') && (
         <LabelInput
-          caption={item.type === 'player' ? 'Nummer' : item.type === 'coach' ? 'Kürzel' : 'Beschriftung'}
+          caption={item.type === 'player' || item.type === 'figure' ? 'Nummer' : item.type === 'coach' ? 'Kürzel' : 'Beschriftung'}
           value={item.label}
           onChange={(label) => setItemLabel(item.id, label)}
         />
       )}
 
-      {item.type === 'player' && (
+      {(item.type === 'player' || item.type === 'figure') && (
         <>
           <LabelInput
             caption="Name"
@@ -277,7 +296,7 @@ function ItemControls({ item }: { item: Item }) {
           >
             ✦ Hervorheben
           </button>
-          {item.shape !== 'shirt' && (
+          {item.type === 'player' && item.shape !== 'shirt' && (
           <button
             type="button"
             aria-pressed={item.facing !== false}

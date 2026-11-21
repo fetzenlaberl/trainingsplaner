@@ -1,9 +1,9 @@
 const DB_NAME = 'trainingsplaner'
-// Version 1: drills. Version 2: sessions. Version 3: teams. Version 4: day intensities.
-const DB_VERSION = 4
+// Version 1: drills. Version 2: sessions. Version 3: teams. Version 4: day intensities. Version 5: match reports.
+const DB_VERSION = 5
 
-export type StoreName = 'drills' | 'sessions' | 'teams' | 'days'
-const STORES: StoreName[] = ['drills', 'sessions', 'teams', 'days']
+export type StoreName = 'drills' | 'sessions' | 'teams' | 'days' | 'matches'
+const STORES: StoreName[] = ['drills', 'sessions', 'teams', 'days', 'matches']
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
