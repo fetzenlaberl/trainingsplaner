@@ -75,8 +75,9 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
             draggingId !== zone.id &&
             !zone.locked &&
             hasDirectCorners(zone) && <DirectCornerHandles zone={zone} scale={scale} />}
-          {/* In a multi-selection zones get a highlight; a single zone has its resize handles instead. */}
-          {interactive && selectedIds.length > 1 && selectedIds.includes(zone.id) && (
+          {/* In a multi-selection zones get a highlight; a single zone has its resize handles instead
+              (a fixed zone has none, so it gets the highlight too). */}
+          {interactive && selectedIds.includes(zone.id) && (selectedIds.length > 1 || zone.locked) && (
             <ZoneShape
               {...zone}
               color={SELECTION_COLOR}
