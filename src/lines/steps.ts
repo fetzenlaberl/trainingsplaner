@@ -7,6 +7,15 @@ export function nextStep(lines: Pick<Line, 'step'>[]): number {
   return Math.min(MAX_STEP, lines.reduce((max, l) => Math.max(max, l.step ?? 0), 0) + 1)
 }
 
+/** Step number of the last numbered line (to give several lines the same step), or 1. */
+export function sameStep(lines: Pick<Line, 'step'>[]): number {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const step = lines[i].step
+    if (step !== null) return step
+  }
+  return 1
+}
+
 /** Renumbers the numbered lines 1, 2, 3 … in their current order, closing gaps. */
 export function renumberSteps<T extends Pick<Line, 'step'>>(lines: T[]): T[] {
   const ordered = lines

@@ -109,6 +109,14 @@ describe('lines', () => {
     ])
   })
 
+  it('gives new lines the same step number as the last one when chosen', () => {
+    store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true, sameStep: true })
+    store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })
+    store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true, sameStep: true })
+    store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })
+    expect(lines().map((l) => l.step)).toEqual([1, 2, 2, 3])
+  })
+
   it('numbers new lines on request and changes or removes step numbers', () => {
     store().addLine('pass', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })
     const second = store().addLine('run', { x: 0, y: 0 }, { x: 10, y: 0 }, '#fff', { numbered: true })

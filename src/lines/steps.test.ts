@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { clampStep, MAX_STEP, nextStep, renumberSteps } from './steps'
+import { clampStep, MAX_STEP, nextStep, renumberSteps, sameStep } from './steps'
 
 describe('steps', () => {
+  it('repeats the step of the last numbered line', () => {
+    expect(sameStep([])).toBe(1)
+    expect(sameStep([{ step: 3 }, { step: 1 }, { step: null }])).toBe(1)
+  })
+
   it('continues after the highest step', () => {
     expect(nextStep([])).toBe(1)
     expect(nextStep([{ step: 2 }, { step: null }, { step: 5 }])).toBe(6)

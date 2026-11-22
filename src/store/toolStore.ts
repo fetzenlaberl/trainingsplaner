@@ -22,6 +22,8 @@ interface ToolState {
   lineWeight: LineWeight
   /** New lines get the next action step number */
   numberSteps: boolean
+  /** Numbered new lines get the same step as the last one (actions at the same time) */
+  sameStep: boolean
   /** Every tap adds an element to the selection or removes it (for touch screens) */
   multiSelect: boolean
   /** Only a pen (Apple Pencil) draws lines; a finger moves and zooms the view (remembered per device) */
@@ -41,6 +43,7 @@ interface ToolState {
   setLinePattern: (pattern: LinePattern | 'auto') => void
   setLineWeight: (weight: LineWeight) => void
   setNumberSteps: (numberSteps: boolean) => void
+  setSameStep: (sameStep: boolean) => void
   setMultiSelect: (multiSelect: boolean) => void
   setPenOnly: (penOnly: boolean) => void
   setQuickMenu: (menu: { itemId: string; x: number; y: number } | null) => void
@@ -56,6 +59,7 @@ export const useToolStore = create<ToolState>((set) => ({
   linePattern: 'auto',
   lineWeight: 'extraThin',
   numberSteps: false,
+  sameStep: false,
   multiSelect: false,
   penOnly: typeof localStorage === 'undefined' ? false : loadPenOnly(),
   quickMenu: null,
@@ -69,6 +73,7 @@ export const useToolStore = create<ToolState>((set) => ({
   setLinePattern: (linePattern) => set({ linePattern }),
   setLineWeight: (lineWeight) => set({ lineWeight }),
   setNumberSteps: (numberSteps) => set({ numberSteps }),
+  setSameStep: (sameStep) => set({ sameStep }),
   setMultiSelect: (multiSelect) => set({ multiSelect }),
   setPenOnly: (penOnly) => {
     try {

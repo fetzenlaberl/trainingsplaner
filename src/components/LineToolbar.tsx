@@ -130,6 +130,8 @@ export function LineToolbar() {
   const lineWeight = useToolStore((s) => s.lineWeight)
   const setLineWeight = useToolStore((s) => s.setLineWeight)
   const numberSteps = useToolStore((s) => s.numberSteps)
+  const sameStepOn = useToolStore((s) => s.sameStep)
+  const setSameStep = useToolStore((s) => s.setSameStep)
   const setNumberSteps = useToolStore((s) => s.setNumberSteps)
   const renumberLineSteps = useDrillStore((s) => s.renumberLineSteps)
   const multiSelect = useToolStore((s) => s.multiSelect)
@@ -234,6 +236,19 @@ export function LineToolbar() {
           >
             ①②③ Schritte nummerieren
           </button>
+          {numberSteps && (
+            <button
+              type="button"
+              aria-pressed={sameStepOn}
+              title="Neue Linien bekommen dieselbe Nummer wie die letzte (gleichzeitige Aktionen); aus = nächste Nummer"
+              onClick={() => setSameStep(!sameStepOn)}
+              className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+                sameStepOn ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              ①① Gleiche Nummer
+            </button>
+          )}
           <button
             type="button"
             title="Lücken in den Schritt-Nummern schließen"

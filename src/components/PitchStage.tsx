@@ -93,6 +93,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
   const linePattern = useToolStore((s) => s.linePattern)
   const lineWeight = useToolStore((s) => s.lineWeight)
   const numberSteps = useToolStore((s) => s.numberSteps)
+  const sameStepOn = useToolStore((s) => s.sameStep)
   const containerRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
   /** Line being drawn: start and end, or all points of a freehand stroke */
@@ -354,6 +355,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
       pattern: linePattern === 'auto' ? undefined : linePattern,
       weight: lineWeight,
       numbered: numberSteps,
+      sameStep: sameStepOn,
     }
     const onMove = (ev: PointerEvent) => {
       if (!freehand) {

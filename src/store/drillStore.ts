@@ -4,7 +4,7 @@ import { nextSceneFrom } from '../animation/scenes'
 import { MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
-import { clampStep, nextStep, renumberSteps } from '../lines/steps'
+import { clampStep, nextStep, renumberSteps, sameStep } from '../lines/steps'
 import type { CustomGrid, GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
 import {
   clampItemSize,
@@ -149,14 +149,14 @@ export interface DrillState extends DrillContent {
     start: Point,
     end: Point,
     color: string,
-    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean },
+    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean; sameStep?: boolean },
   ) => string
   /** Adds a freehand stroke (already simplified points, meters) and returns its id. */
   addStrokeLine: (
     type: LineType,
     points: Point[],
     color: string,
-    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean },
+    style?: { pattern?: LinePattern; weight?: LineWeight; numbered?: boolean; sameStep?: boolean },
   ) => string
   /** Sets the action step number of a line (null = none). */
   setLineStep: (id: string, step: number | null) => void
@@ -751,7 +751,9 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       color,
       pattern: style.pattern ?? defaultPattern(type),
       weight: style.weight ?? 'medium',
-      step: style.numbered ? nextStep(currentScene(get()).lines) : null,
+      step: style.numbered
+        ? (style.sameStep ? sameStep : nextStep)(currentScene(get()).lines)
+        : null,
     }
     set((s) => ({
       ...recorded(s),
