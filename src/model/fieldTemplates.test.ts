@@ -130,6 +130,21 @@ describe('field templates', () => {
     expect(big.every((g) => g.x < 0 && g.rotation === 0)).toBe(true)
   })
 
+  it('puts the corner cones on the curve of rounded corners', () => {
+    const area = { length: 30, width: 20 }
+    const look = { ...DEFAULT_FIELD_DRAW_OPTIONS, cones: true }
+    const sharp = customFieldScene(area, 'landscape', look).items.filter((i) => i.type === 'cone')
+    expect(sharp.map((c) => [c.x, c.y])).toContainEqual([0, 0])
+    const round = customFieldScene(area, 'landscape', { ...look, rounded: true }).items.filter((i) => i.type === 'cone')
+    // Radius 3 m (a sixth of the shorter side, at most 3 m): the cone lies r from the curve centre.
+    const r = 3
+    for (const c of round) {
+      const cx = c.x < 15 ? r : 30 - r
+      const cy = c.y < 10 ? r : 20 - r
+      expect(Math.hypot(c.x - cx, c.y - cy)).toBeCloseTo(r)
+    }
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

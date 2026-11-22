@@ -5,6 +5,7 @@
 import { areaRunoff, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
 import type { LinePattern, LineWeight } from '../lines/styles'
 import { MINIGOAL } from '../items/equipment'
+import { zoneCornerRadius } from '../items/zones'
 import { clampItemSize } from '../items/palette'
 import { emptyDrill } from './serialize'
 import type { Drill, Item, ItemType, Line, LineType, Point, Zone } from './types'
@@ -806,7 +807,17 @@ export function customFieldScene(
   const format = standardFormat(area)
   if (options.cones) {
     addCornerCones(b, area)
-    for (const item of b.items) if (item.type === 'cone') item.color = options.coneColor
+    // On rounded corners the cones sit on the middle of the curve (45°).
+    const r = options.rounded
+      ? zoneCornerRadius({ shape: 'rect', width: area.length, height: area.width, corners: null, rounded: true })
+      : 0
+    const inset = r - r / Math.SQRT2
+    for (const item of b.items) {
+      if (item.type !== 'cone') continue
+      item.color = options.coneColor
+      item.x += item.x < area.length / 2 ? inset : -inset
+      item.y += item.y < area.width / 2 ? inset : -inset
+    }
   }
   for (const side of SCREEN_SIDES) addSideGoals(b, area, fieldSide(side, orientation), options.goals[side], options.goalType)
   const [blue, red] = teams ?? [format.players, format.players]
