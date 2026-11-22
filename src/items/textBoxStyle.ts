@@ -1,5 +1,5 @@
 // Look of text boxes and speech bubbles: shape, width, font, border and an optional tail
-// (speech point or thought bubbles) pointing in one of eight directions.
+// (speech point or thought bubbles) pointing in one of eight directions or dragged freely.
 
 import { isHexColor } from '../field/pitchStyle'
 
@@ -25,7 +25,21 @@ export interface TextBoxStyle {
   tail?: TailDirection
   /** missing = speech */
   tailKind?: TailKind
+  /** Tip of the tail dragged freely, relative to the middle of the box (meters at size 1); overrides the direction */
+  tailTip?: { x: number; y: number }
+  /** Own width of the text area in meters (dragged); overrides `width` */
+  w?: number
+  /** Own minimum height of the text area in meters (dragged) */
+  h?: number
+  /** Text color; missing = black or white, whichever reads better on the background */
+  textColor?: string
 }
+
+/** Limits of the freely dragged size (meters) and of the tail tip */
+export const MIN_TEXTBOX_W = 3
+export const MAX_TEXTBOX_W = 60
+export const MAX_TEXTBOX_H = 40
+export const MAX_TAIL_TIP = 80
 
 export const TEXTBOX_SHAPES: { value: TextBoxShape; label: string }[] = [
   { value: 'rect', label: 'Eckig' },
@@ -89,6 +103,7 @@ export function textBoxFontFactor(style: TextBoxStyle | undefined): number {
 }
 
 export function textBoxWidth(style: TextBoxStyle | undefined): number {
+  if (style?.w !== undefined) return style.w
   return TEXTBOX_WIDTHS.find((w) => w.value === style?.width)?.meters ?? 12
 }
 
@@ -100,6 +115,10 @@ export function changeTextBoxStyle(style: TextBoxStyle | undefined, change: Part
     if (next[key] === undefined || next[key] === null || next[key] === defaults[key]) delete next[key]
   }
   return Object.keys(next).length > 0 ? (next as TextBoxStyle) : undefined
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -119,7 +138,18 @@ export function parseTextBoxStyle(value: unknown): TextBoxStyle | null {
     !oneOf(value.tailKind, ['speech', 'thought'] as TailKind[]) ||
     !(value.bold === undefined || typeof value.bold === 'boolean') ||
     !(value.italic === undefined || typeof value.italic === 'boolean') ||
-    !(value.border === undefined || isHexColor(value.border))
+    !(value.border === undefined || isHexColor(value.border)) ||
+    !(value.textColor === undefined || isHexColor(value.textColor)) ||
+    !(value.w === undefined || (isFiniteNumber(value.w) && value.w >= MIN_TEXTBOX_W && value.w <= MAX_TEXTBOX_W)) ||
+    !(value.h === undefined || (isFiniteNumber(value.h) && value.h >= 0 && value.h <= MAX_TEXTBOX_H)) ||
+    !(
+      value.tailTip === undefined ||
+      (isRecord(value.tailTip) &&
+        isFiniteNumber(value.tailTip.x) &&
+        isFiniteNumber(value.tailTip.y) &&
+        Math.abs(value.tailTip.x) <= MAX_TAIL_TIP &&
+        Math.abs(value.tailTip.y) <= MAX_TAIL_TIP)
+    )
   ) {
     return null
   }
@@ -132,5 +162,9 @@ export function parseTextBoxStyle(value: unknown): TextBoxStyle | null {
     border: value.border,
     tail: value.tail,
     tailKind: value.tailKind,
+    textColor: value.textColor,
+    w: value.w,
+    h: value.h,
+    tailTip: isRecord(value.tailTip) ? { x: value.tailTip.x as number, y: value.tailTip.y as number } : undefined,
   }) ?? {}
 }

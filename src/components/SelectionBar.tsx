@@ -1,3 +1,4 @@
+import { NEON_COLORS } from '../lines/styles'
 import { FIGURE_POSE_NAMES, FIGURE_POSE_ORDER } from './PlayerFigures'
 import { useRef } from 'react'
 import { isFreehand } from '../lines/freehand'
@@ -581,6 +582,17 @@ function ItemControls({ item }: { item: Item }) {
 
 const selectClass = 'min-h-10 rounded-md bg-slate-800 px-2 text-sm text-slate-200'
 
+/** Text colors of text boxes (besides automatic black or white) */
+const TEXT_COLORS = [
+  { value: '#111827', name: 'Schwarz' },
+  { value: '#ffffff', name: 'Weiß' },
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#16a34a', name: 'Grün' },
+  { value: '#f97316', name: 'Orange' },
+  ...NEON_COLORS,
+]
+
 /** Shape, width, font, border and tail of a text box or speech bubble. */
 function TextBoxControls({ item }: { item: Item }) {
   const setTextBoxStyle = useDrillStore((s) => s.setTextBoxStyle)
@@ -602,12 +614,18 @@ function TextBoxControls({ item }: { item: Item }) {
       </label>
       <label className="flex items-center gap-1 text-sm text-slate-400">
         Breite
-        <select className={selectClass} value={box?.width ?? 'normal'} onChange={(e) => change({ width: e.target.value as TextBoxWidth })}>
+        <select
+          className={selectClass}
+          value={box?.w !== undefined ? 'own' : (box?.width ?? 'normal')}
+          title="Oder die Ecke der Blase auf dem Feld ziehen"
+          onChange={(e) => e.target.value !== 'own' && change({ width: e.target.value as TextBoxWidth, w: undefined, h: undefined })}
+        >
           {TEXTBOX_WIDTHS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
           ))}
+          {box?.w !== undefined && <option value="own">Eigene ({Math.round(box.w)} m)</option>}
         </select>
       </label>
       <label className="flex items-center gap-1 text-sm text-slate-400">
@@ -632,13 +650,19 @@ function TextBoxControls({ item }: { item: Item }) {
         value={box?.border ?? ''}
         onSelect={(border) => change({ border: border || undefined })}
       />
+      <ColorSwatches
+        label="Schrift"
+        colors={[{ value: '', name: 'Automatisch (schwarz oder weiß)', swatch: 'linear-gradient(135deg, #111827 50%, #ffffff 50%)' }, ...TEXT_COLORS]}
+        value={box?.textColor ?? ''}
+        onSelect={(textColor) => change({ textColor: textColor || undefined })}
+      />
       <div role="group" aria-label="Zipfel" className="flex items-center gap-1">
-        <span className="text-sm text-slate-400" title="Sprechblase: Richtung des Zipfels">
+        <span className="text-sm text-slate-400" title="Sprechblase: Richtung des Zipfels; die orange Spitze auf dem Feld lässt sich frei ziehen">
           Zipfel
         </span>
         <div className="grid grid-cols-3 gap-0.5">
           {TAIL_PICKER.map((dir) => {
-            const active = (box?.tail ?? null) === dir
+            const active = (box?.tail ?? null) === dir && (dir === null || !box?.tailTip)
             return (
               <button
                 key={dir ?? 'none'}
@@ -647,7 +671,7 @@ function TextBoxControls({ item }: { item: Item }) {
                 aria-label={dir ? `Zipfel ${TAIL_ARROWS[dir]}` : 'Kein Zipfel'}
                 title={dir ? `Zipfel ${TAIL_ARROWS[dir]}` : 'Kein Zipfel'}
                 className={`h-5 w-6 rounded text-xs leading-none ${active ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                onClick={() => change({ tail: dir ?? undefined })}
+                onClick={() => change({ tail: dir ?? undefined, tailTip: undefined })}
               >
                 {dir ? TAIL_ARROWS[dir] : '·'}
               </button>

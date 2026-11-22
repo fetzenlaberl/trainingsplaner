@@ -109,3 +109,47 @@ export function textBoxTail(body: TextBoxBody, direction: TailDirection, fontFac
     tip,
   }
 }
+
+/** Speech tail and thought bubbles reaching to a freely dragged tip (relative to the middle of the box). */
+export function textBoxTailTo(body: TextBoxBody, tip: { x: number; y: number }, fontFactor: number): TextBoxTail {
+  const len = Math.hypot(tip.x, tip.y) || 1
+  const u = { x: tip.x / len, y: tip.y / len }
+  const round = body.shape === 'oval' || body.shape === 'cloud'
+  // Where the line from the middle to the tip leaves the box, and the inward direction there.
+  let t: number
+  let inward: { x: number; y: number }
+  if (round) {
+    t = 1 / Math.sqrt((u.x / body.rx) ** 2 + (u.y / body.ry) ** 2)
+    inward = { x: -u.x, y: -u.y }
+  } else {
+    const tx = u.x === 0 ? Infinity : body.rx / Math.abs(u.x)
+    const ty = u.y === 0 ? Infinity : body.ry / Math.abs(u.y)
+    t = Math.min(tx, ty)
+    inward = tx < ty ? { x: -Math.sign(u.x), y: 0 } : { x: 0, y: -Math.sign(u.y) }
+  }
+  const edge = { x: u.x * t, y: u.y * t }
+  const depth = Math.min(0.7 * fontFactor, 0.45 * Math.min(body.rx, body.ry))
+  const half = Math.min(0.75 * fontFactor, 0.4 * Math.min(body.rx, body.ry) + 0.2)
+  const base = { x: edge.x + inward.x * depth, y: edge.y + inward.y * depth }
+  const side = { x: -inward.y * half, y: inward.x * half }
+  const reach = Math.max(0, len - t)
+  const bubbles = [
+    { f: 0.2, r: 0.55 },
+    { f: 0.55, r: 0.38 },
+    { f: 0.85, r: 0.25 },
+  ].map(({ f, r }) => ({ x: edge.x + u.x * reach * f, y: edge.y + u.y * reach * f, r: r * fontFactor }))
+  return {
+    points: [base.x + side.x, base.y + side.y, tip.x, tip.y, base.x - side.x, base.y - side.y],
+    bubbles,
+    tip: { ...tip },
+  }
+}
+
+/**
+ * Text area for a dragged corner of the box (half extents `lx`, `ly` from the middle):
+ * ovals and clouds are bigger than their text area, see textBoxBody.
+ */
+export function textAreaFromCorner(shape: TextBoxShape, lx: number, ly: number, fontFactor: number): { w: number; h: number } {
+  if (shape === 'oval' || shape === 'cloud') return { w: lx / 0.62, h: Math.max(0, (ly - 0.3 * fontFactor) / 0.72) }
+  return { w: 2 * lx, h: 2 * ly }
+}

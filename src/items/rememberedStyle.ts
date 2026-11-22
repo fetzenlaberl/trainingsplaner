@@ -2,6 +2,7 @@
 // the same kind starts with them, until they are changed again. Saved on this device.
 
 import type { Item, SymbolStyle } from '../model/types'
+import { parseTextBoxStyle, type TextBoxStyle } from './textBoxStyle'
 import { clampItemSize, ITEM_TEMPLATES, type ItemTemplate, type NewItem } from './palette'
 
 const STORAGE_KEY = 'trainingsplaner.objectStyles'
@@ -14,6 +15,8 @@ export interface RememberedStyle {
   size?: number
   /** Look (players and coaches: stored for all their entries together); null = with border */
   symbol?: SymbolStyle | null
+  /** Look of a text box / speech bubble; null = plain */
+  box?: TextBoxStyle | null
 }
 
 /** Sidebar entry each placed object came from (only for this session). */
@@ -34,6 +37,7 @@ function load(): Record<string, RememberedStyle> {
           ...(typeof v.color === 'string' && /^#[0-9a-f]{6}$|^[a-z]+$/i.test(v.color) ? { color: v.color } : {}),
           ...(typeof v.size === 'number' && Number.isFinite(v.size) ? { size: clampItemSize(v.size) } : {}),
           ...(v.symbol === 'flat' || v.symbol === 'outline' || v.symbol === null ? { symbol: v.symbol } : {}),
+          ...(v.box === null ? { box: null } : v.box !== undefined && parseTextBoxStyle(v.box) ? { box: parseTextBoxStyle(v.box) } : {}),
         }
       }
     }
@@ -67,6 +71,7 @@ export function withRememberedStyle(template: ItemTemplate): NewItem {
     ...(style?.color && keepsColor(template) ? { color: style.color } : {}),
     ...(style?.size !== undefined ? { size: style.size } : {}),
     ...(symbol ? { symbol } : {}),
+    ...(style?.box !== undefined ? { box: style.box && Object.keys(style.box).length > 0 ? { ...style.box } : undefined } : {}),
   }
 }
 
@@ -98,6 +103,7 @@ export function rememberStyle(item: Item, change: RememberedStyle): void {
   if (change.color !== undefined && keepsColor(template)) next.color = change.color
   if (change.size !== undefined) next.size = clampItemSize(change.size)
   if (change.symbol !== undefined) next.symbol = change.symbol
+  if (change.box !== undefined) next.box = change.box
   all[template.key] = next
   save()
 }

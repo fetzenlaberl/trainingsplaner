@@ -94,7 +94,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 32: flag with pole, leaning poles on discs, goal seen from the front, new figure poses.
 // Version 33: full-size goal seen from behind or the side.
 // Version 34: mini goal seen from the front, behind or the side; player symbols flat or as outline.
-export const FILE_VERSION = 34
+// Version 35: speech bubbles with freely dragged tail tip, own size and text color.
+export const FILE_VERSION = 35
 const FIGURE_POSES: FigurePose[] = ['stand', 'front', 'run', 'sprint', 'pass', 'shoot', 'keeper', 'demand']
 const POLE_LEANS: PoleLean[] = ['left', 'right', 'front', 'back']
 const GOAL_VIEWS: GoalView[] = ['front', 'back', 'left', 'right']

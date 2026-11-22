@@ -1,7 +1,6 @@
-import Konva from 'konva'
 import { useContext, useMemo } from 'react'
 import { Circle, Ellipse, Group, Line, Rect, RegularPolygon, Shape, Wedge } from 'react-konva'
-import { MeterText, TEXT_SCALE } from './MeterText'
+import { MeterText } from './MeterText'
 import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
 import { BIG_GOAL, DiscPoleShape, FlagPoleShape, GoalPerspectiveShape, MINI_GOAL } from './PerspectiveEquipment'
 import { figureMirrored, PlayerFigureShape } from './PlayerFigures'
@@ -26,8 +25,9 @@ import {
 import { PitchColorContext } from './pitchColorContext'
 import { ViewRotationContext } from './viewRotationContext'
 import type { Item } from '../model/types'
-import { textBoxFontFactor, textBoxWidth, type TextBoxStyle } from '../items/textBoxStyle'
-import { textBoxBody, textBoxTail, traceTextBoxBody } from '../items/textBoxGeometry'
+import type { TextBoxStyle } from '../items/textBoxStyle'
+import { traceTextBoxBody } from '../items/textBoxGeometry'
+import { textBoxLayout } from './textBoxLayout'
 
 const PLAYER_RADIUS = 1
 const TRIANGLE_RADIUS = 1.3
@@ -48,8 +48,6 @@ const GOAL_WIDTH = 5
 const GOAL_DEPTH = 2
 const TEXT_SIZE = 2
 const TEXT_BOX_WIDTH = 16
-const TEXTBOX_PADDING = 0.6
-const TEXTBOX_FONT_SIZE = 1.1
 const NAME_FONT_SIZE = 0.8
 const GLOW_COLOR = '#fde047'
 
@@ -481,34 +479,10 @@ function NameTag({ name }: { name: string }) {
  * rectangle, rounded, oval or cloud, optionally with a speech tail or thought bubbles.
  */
 function TextBox({ text, background, rotation, style }: { text: string; background: string; rotation: number; style?: TextBoxStyle }) {
-  const f = textBoxFontFactor(style)
-  const width = textBoxWidth(style)
-  const fontSize = TEXTBOX_FONT_SIZE * f
-  const padding = TEXTBOX_PADDING * f
-  const fontStyle = [style?.italic ? 'italic' : '', style?.bold ? 'bold' : ''].filter(Boolean).join(' ') || 'normal'
-  // Measure the wrapped text once per change so the box fits around it.
-  const height = useMemo(() => {
-    const measure = new Konva.Text({
-      text: text || ' ',
-      // Measured at the same enlarged size as it is drawn (see MeterText).
-      width: width * TEXT_SCALE,
-      padding: padding * TEXT_SCALE,
-      fontSize: fontSize * TEXT_SCALE,
-      fontStyle,
-      lineHeight: 1.25,
-      wrap: 'word',
-    })
-    const h = measure.height() / TEXT_SCALE
-    measure.destroy()
-    return h
-  }, [text, width, padding, fontSize, fontStyle])
-
-  const shape = style?.shape ?? 'rounded'
-  const round = shape === 'oval' || shape === 'cloud'
-  const body = textBoxBody(shape, width, height, f)
+  const { width, height, fontSize, padding, fontStyle, fontFactor: f, body, tail } = useMemo(() => textBoxLayout(text, style), [text, style])
+  const round = body.shape === 'oval' || body.shape === 'cloud'
   const stroke = style?.border ?? 'rgba(15,23,42,0.3)'
   const strokeWidth = style?.border ? 0.16 * Math.max(1, f * 0.8) : 0.08
-  const tail = style?.tail ? textBoxTail(body, style.tail, f) : null
   const thought = style?.tailKind === 'thought'
 
   return (
@@ -535,13 +509,15 @@ function TextBox({ text, background, rotation, style }: { text: string; backgrou
         x={-width / 2}
         y={-height / 2}
         width={width}
+        height={height}
+        verticalAlign="middle"
         padding={padding}
         fontSize={fontSize}
         fontStyle={fontStyle}
         lineHeight={1.25}
         wrap="word"
         align={round ? 'center' : 'left'}
-        fill={contrastTextColor(background)}
+        fill={style?.textColor ?? contrastTextColor(background)}
       />
     </Group>
   )

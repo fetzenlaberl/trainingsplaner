@@ -62,6 +62,15 @@ describe('remembered object style', () => {
     expect(withRememberedStyle(template('player-red')).symbol).toBeUndefined()
   })
 
+  it('keeps the look of a speech bubble for the next one from the same entry', () => {
+    noteOrigin('b1', 'bubble')
+    rememberStyle(item('textbox', 'b1'), { box: { shape: 'cloud', textColor: '#dc2626', tail: 'n', tailTip: { x: 2, y: -8 } } })
+    expect(withRememberedStyle(template('bubble')).box).toEqual({ shape: 'cloud', textColor: '#dc2626', tail: 'n', tailTip: { x: 2, y: -8 } })
+    expect(withRememberedStyle(template('textbox')).box).toBeUndefined()
+    rememberStyle(item('textbox', 'b1'), { box: null })
+    expect(withRememberedStyle(template('bubble')).box).toBeUndefined()
+  })
+
   it('remembers per entry when a type has several entries, by where the object came from', () => {
     rememberStyle(item('discPole', 'x'), { color: '#dc2626' })
     expect(withRememberedStyle(template('disc-pole-left')).color).toBe(template('disc-pole-left').item.color)

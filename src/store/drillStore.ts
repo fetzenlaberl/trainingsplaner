@@ -137,6 +137,8 @@ export interface DrillState extends DrillContent {
   setItemColor: (id: string, color: string) => void
   /** Look of a text box or speech bubble, in every scene. */
   setTextBoxStyle: (id: string, change: Partial<TextBoxStyle>) => void
+  /** Same without an undo step (while dragging a handle; the caller pushes the history). */
+  setTextBoxStyleLive: (id: string, change: Partial<TextBoxStyle>) => void
   setItemHighlight: (id: string, highlight: boolean) => void
   /** Pose of a player figure. */
   setItemPose: (id: string, pose: FigurePose) => void
@@ -732,9 +734,16 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
       }
     }),
-  setTextBoxStyle: (id, change) =>
+  setTextBoxStyle: (id, change) => {
+    const before = contentOf(get())
+    get().setTextBoxStyleLive(id, change)
+    // One undo step; the next text box from the same sidebar entry starts like this one.
+    set((s) => recorded(s, before))
+    const item = currentScene(get()).items.find((i) => i.id === id)
+    if (item) rememberStyle(item, { box: item.box ?? null })
+  },
+  setTextBoxStyleLive: (id, change) =>
     set((s) => ({
-      ...recorded(s),
       scenes: s.scenes.map((scene) => ({
         ...scene,
         items: scene.items.map((item) => {

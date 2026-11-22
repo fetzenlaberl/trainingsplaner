@@ -9,6 +9,7 @@ import { useDrillStore, type DrillContent } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
 import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updateGroupDrag } from './groupDrag'
 import { ItemShape } from './ItemShape'
+import { TextBoxHandles } from './TextBoxHandles'
 import { cancelLongPress, startLongPress } from './longPress'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
 
@@ -136,6 +137,9 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
         ROTATABLE_TYPES.includes(selectedItem.type) && (
           <RotationHandle item={selectedItem} scale={scale} />
         )}
+      {selectedItem && !selectedItem.locked && draggingId !== selectedItem.id && selectedItem.type === 'textbox' && (
+        <TextBoxHandles item={selectedItem} scale={scale} />
+      )}
     </Group>
   )
 }
