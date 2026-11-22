@@ -689,7 +689,21 @@ export interface FieldDrawOptions {
   rounded: boolean
   /** Players as circle with facing arrow, or plain circles / triangles */
   playerShape: 'arrow' | 'circle' | 'triangle'
+  /** Shirt numbers on the players */
+  numbers: boolean
+  /** Colors of the two teams (first = left/bottom team) */
+  teamColors: [string, string]
+  /** Cones on the four corners */
+  cones: boolean
+  coneColor: string
+  /** Goals on each side as seen on screen (0–4, spread evenly) */
+  goals: Record<ScreenSide, number>
+  goalType: 'minigoal' | 'goal'
 }
+
+export type ScreenSide = 'top' | 'bottom' | 'left' | 'right'
+export const SCREEN_SIDES: ScreenSide[] = ['top', 'bottom', 'left', 'right']
+export const MAX_SIDE_GOALS = 4
 
 export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   pattern: 'dashed',
@@ -699,6 +713,43 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   fillOpacity: 0.25,
   rounded: false,
   playerShape: 'arrow',
+  numbers: true,
+  teamColors: [BLUE, RED],
+  cones: false,
+  coneColor: CONE,
+  goals: { top: 0, bottom: 0, left: 0, right: 0 },
+  goalType: 'minigoal',
+}
+
+/**
+ * Field side for a side as seen on screen; portrait turns the view by -90°, so the
+ * field's start (x = 0) is at the bottom there.
+ */
+function fieldSide(side: ScreenSide, orientation: 'landscape' | 'portrait'): 'start' | 'end' | 'near' | 'far' {
+  if (orientation === 'landscape') return { left: 'start', right: 'end', top: 'near', bottom: 'far' }[side] as 'start'
+  return { bottom: 'start', top: 'end', left: 'near', right: 'far' }[side] as 'start'
+}
+
+/** `count` goals spread evenly along one side, opening into the field. */
+function addSideGoals(
+  b: Builder,
+  area: FieldArea,
+  side: 'start' | 'end' | 'near' | 'far',
+  count: number,
+  type: 'minigoal' | 'goal',
+): void {
+  const n = Math.min(MAX_SIDE_GOALS, Math.max(0, Math.round(count)))
+  if (n === 0) return
+  const along = side === 'start' || side === 'end' ? area.width : area.length
+  // Big goals (5 m wide at size 1) shrink when several share a short side.
+  const size = type === 'goal' ? clampItemSize(Math.min(1, along / (n + 1) / 6)) : miniGoalSize(area)
+  for (let i = 1; i <= n; i++) {
+    const t = (i / (n + 1)) * along
+    if (side === 'start') addGoal(b, type, 0, t, 0, size)
+    else if (side === 'end') addGoal(b, type, area.length, t, 180, size)
+    else if (side === 'near') addGoal(b, type, t, 0, 90, size)
+    else addGoal(b, type, t, area.width, -90, size)
+  }
 }
 
 /**
@@ -753,9 +804,15 @@ export function customFieldScene(
     ...(options.rounded ? { rounded: true } : {}),
   })
   const format = standardFormat(area)
+  if (options.cones) {
+    addCornerCones(b, area)
+    for (const item of b.items) if (item.type === 'cone') item.color = options.coneColor
+  }
+  for (const side of SCREEN_SIDES) addSideGoals(b, area, fieldSide(side, orientation), options.goals[side], options.goalType)
   const [blue, red] = teams ?? [format.players, format.players]
-  if (blue > 0) addTeam(b, area, BLUE, SIZE_ROWS[Math.min(blue, MAX_TEAM_PLAYERS)], 'left')
-  if (red > 0) addTeam(b, area, RED, SIZE_ROWS[Math.min(red, MAX_TEAM_PLAYERS)], 'right')
+  const label = options.numbers ? undefined : () => ''
+  if (blue > 0) addTeam(b, area, options.teamColors[0], SIZE_ROWS[Math.min(blue, MAX_TEAM_PLAYERS)], 'left', label)
+  if (red > 0) addTeam(b, area, options.teamColors[1], SIZE_ROWS[Math.min(red, MAX_TEAM_PLAYERS)], 'right', label)
   if (options.playerShape !== 'arrow') {
     for (const item of b.items) {
       if (item.type === 'player') Object.assign(item, { shape: options.playerShape, facing: false })

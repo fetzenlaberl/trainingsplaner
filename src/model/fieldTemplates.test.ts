@@ -99,6 +99,37 @@ describe('field templates', () => {
     expect(solid.items.filter((i) => i.type === 'player')).toHaveLength(4)
   })
 
+  it('adds corner cones, goals on any side, team colors and players without numbers', () => {
+    const area = { length: 30, width: 20 }
+    const look = {
+      ...DEFAULT_FIELD_DRAW_OPTIONS,
+      cones: true,
+      coneColor: '#facc15',
+      goals: { top: 1, bottom: 2, left: 3, right: 4 },
+      numbers: false,
+      teamColors: ['#22c55e', '#111827'] as [string, string],
+    }
+    const scene = customFieldScene(area, 'landscape', look, [2, 2])
+    const cones = scene.items.filter((i) => i.type === 'cone')
+    expect(cones).toHaveLength(4)
+    expect(cones.every((c) => c.color === '#facc15')).toBe(true)
+    const goals = scene.items.filter((i) => i.type === 'minigoal')
+    expect(goals).toHaveLength(10)
+    // Landscape: left = x 0, right = x length, top = y 0, bottom = y width (nets outside the lines).
+    expect(goals.filter((g) => g.x < 0)).toHaveLength(3)
+    expect(goals.filter((g) => g.x > area.length)).toHaveLength(4)
+    expect(goals.filter((g) => g.y < 0)).toHaveLength(1)
+    expect(goals.filter((g) => g.y > area.width)).toHaveLength(2)
+    const players = scene.items.filter((i) => i.type === 'player')
+    expect(players.every((p) => p.label === '')).toBe(true)
+    expect(players.map((p) => p.color).sort()).toEqual(['#111827', '#111827', '#22c55e', '#22c55e'])
+    // Portrait turns the view: the bottom of the screen is the field's start (x = 0).
+    const portrait = customFieldScene(area, 'portrait', { ...look, goals: { top: 0, bottom: 2, left: 0, right: 0 }, goalType: 'goal' })
+    const big = portrait.items.filter((i) => i.type === 'goal')
+    expect(big).toHaveLength(2)
+    expect(big.every((g) => g.x < 0 && g.rotation === 0)).toBe(true)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

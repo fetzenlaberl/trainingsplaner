@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FIELD_TYPE_LABELS, FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
 import { isHexColor } from '../field/pitchStyle'
 import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS } from '../items/zones'
@@ -8,13 +8,17 @@ import {
   customFieldScene,
   DEFAULT_FIELD_DRAW_OPTIONS,
   formatName,
+  MAX_SIDE_GOALS,
   MAX_TEAM_PLAYERS,
+  SCREEN_SIDES,
   type FieldDrawOptions,
+  type ScreenSide,
 } from '../model/fieldTemplates'
+import type { Scene } from '../model/types'
 import { currentScene, useDrillStore } from '../store/drillStore'
 import { ColorSwatches } from './controls'
 import { LineStylePicker } from './LineStylePicker'
-import { buttonClass } from './ui'
+import { buttonClass, dangerButtonClass } from './ui'
 
 export function FieldTypeSwitcher() {
   const fieldType = useDrillStore((s) => s.fieldType)
@@ -44,6 +48,9 @@ export function FieldTypeSwitcher() {
 }
 
 const OPTIONS_KEY = 'trainingsplaner.fieldDrawOptions'
+const FIELD_ZONE_PREFIX = 'zone-tpl-field-'
+
+const isCount = (v: unknown, max: number): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max
 
 /** Remembered look of the drawn-in field (per device; falls back to the defaults). */
 function loadDrawOptions(): FieldDrawOptions {
@@ -52,6 +59,12 @@ function loadDrawOptions(): FieldDrawOptions {
     const raw = localStorage.getItem(OPTIONS_KEY)
     if (!raw) return d
     const v = JSON.parse(raw) as Partial<FieldDrawOptions>
+    const goals = { ...d.goals }
+    for (const side of SCREEN_SIDES) {
+      const n = v.goals?.[side]
+      if (isCount(n, MAX_SIDE_GOALS)) goals[side] = n
+    }
+    const colors = Array.isArray(v.teamColors) && v.teamColors.every(isHexColor) && v.teamColors.length === 2 ? v.teamColors : d.teamColors
     return {
       pattern: LINE_PATTERNS.includes(v.pattern as LinePattern) ? (v.pattern as LinePattern) : d.pattern,
       weight: LINE_WEIGHTS.includes(v.weight as LineWeight) ? (v.weight as LineWeight) : d.weight,
@@ -63,6 +76,12 @@ function loadDrawOptions(): FieldDrawOptions {
           : d.fillOpacity,
       rounded: v.rounded === true,
       playerShape: v.playerShape === 'circle' || v.playerShape === 'triangle' ? v.playerShape : 'arrow',
+      numbers: v.numbers !== false,
+      teamColors: [colors[0], colors[1]],
+      cones: v.cones === true,
+      coneColor: isHexColor(v.coneColor) ? v.coneColor : d.coneColor,
+      goals,
+      goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
     }
   } catch {
     return d
@@ -83,11 +102,54 @@ const PLAYER_SHAPES: { value: FieldDrawOptions['playerShape']; label: string }[]
   { value: 'triangle', label: 'Dreieck' },
 ]
 
+const SIDE_LABELS: Record<ScreenSide, string> = { top: 'Oben', bottom: 'Unten', left: 'Links', right: 'Rechts' }
+
+const CONE_COLORS = [
+  { value: '#f97316', name: 'Orange' },
+  { value: '#facc15', name: 'Gelb' },
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#22c55e', name: 'Grün' },
+  { value: '#ffffff', name: 'Weiß' },
+]
+
+const TEAM_COLORS = [
+  { value: '#2563eb', name: 'Blau' },
+  { value: '#dc2626', name: 'Rot' },
+  { value: '#facc15', name: 'Gelb' },
+  { value: '#22c55e', name: 'Grün' },
+  { value: '#f97316', name: 'Orange' },
+  { value: '#7c3aed', name: 'Lila' },
+  { value: '#ffffff', name: 'Weiß' },
+  { value: '#111827', name: 'Schwarz' },
+]
+
 /** Players per team from an input, or null when it is not a valid count. */
 function playerCount(value: string): number | null {
   const n = Number(value)
   return value.trim() !== '' && Number.isInteger(n) && n >= 0 && n <= MAX_TEAM_PLAYERS ? n : null
 }
+
+/** Id ending of the drawn-in field in the current scene, or null when there is none. */
+function drawnFieldSuffix(scene: Scene): string | null {
+  const zone = scene.zones.find((z) => z.id.startsWith(FIELD_ZONE_PREFIX))
+  return zone ? zone.id.slice(FIELD_ZONE_PREFIX.length) : null
+}
+
+type SceneContent = Pick<Scene, 'items' | 'lines' | 'zones'>
+
+/** What was drawn last: to redraw it with a new look, and to see whether it was changed since. */
+interface LastDraw {
+  suffix: string
+  size: FieldArea
+  teams?: [number, number]
+  content: SceneContent
+}
+
+// Kept outside the component, so it survives switching the field type back and forth.
+let lastDraw: LastDraw | null = null
+
+const sameContent = (a: SceneContent, b: SceneContent) => JSON.stringify(a) === JSON.stringify(b)
 
 /**
  * Own size of the empty field: length × width in meters (empty = as big as the big pitch),
@@ -96,6 +158,8 @@ function playerCount(value: string): number | null {
 function AreaInputs() {
   const area = useDrillStore((s) => s.pitch.area)
   const setFieldArea = useDrillStore((s) => s.setFieldArea)
+  const canUndo = useDrillStore((s) => s.past.length > 0)
+  const hasDrawnField = useDrillStore((s) => drawnFieldSuffix(currentScene(s)) !== null)
   const [length, setLength] = useState(area ? String(area.length) : '')
   const [width, setWidth] = useState(area ? String(area.width) : '')
   const [teamA, setTeamA] = useState('')
@@ -103,18 +167,14 @@ function AreaInputs() {
   const [message, setMessage] = useState<string | null>(null)
   const [options, setOptions] = useState<FieldDrawOptions>(loadDrawOptions)
   const [showOptions, setShowOptions] = useState(false)
+  // Look changes by the user (not the first render) redraw the field after a short pause.
+  const changedByUser = useRef(false)
 
   // Follow undo/redo and loaded drills.
   useEffect(() => {
     setLength(area ? String(area.length) : '')
     setWidth(area ? String(area.width) : '')
   }, [area])
-
-  function changeOptions(change: Partial<FieldDrawOptions>) {
-    const next = { ...options, ...change }
-    setOptions(next)
-    saveDrawOptions(next)
-  }
 
   function commit(nextLength: string, nextWidth: string) {
     const l = Number(nextLength)
@@ -127,20 +187,27 @@ function AreaInputs() {
   const b = playerCount(teamB)
   const teams: [number, number] | null = a !== null && b !== null && a + b > 0 ? [a, b] : null
 
+  /** Builds the field content with own ids (so nothing is mixed up with other scenes). */
+  function build(size: FieldArea, look: FieldDrawOptions, chosenTeams: [number, number] | undefined, suffix: string) {
+    const { items, lines, zones, format } = customFieldScene(size, useDrillStore.getState().pitch.orientation, look, chosenTeams)
+    const content: SceneContent = {
+      items: items.map((i) => ({ ...i, id: `${i.id}-${suffix}` })),
+      lines: lines.map((l) => ({ ...l, id: `${l.id}-${suffix}` })),
+      zones: zones.map((z) => ({ ...z, id: `${z.id}-${suffix}` })),
+    }
+    return { content, format }
+  }
+
   /** Outline with the size, size labels and the players; replaces the scene (undo possible). */
   function drawField(size: FieldArea, chosenTeams?: [number, number]) {
     const state = useDrillStore.getState()
     const scene = currentScene(state)
     const filled = scene.items.length + scene.lines.length + scene.zones.length > 0
     if (filled && !window.confirm('Die Szene enthält schon Objekte. Durch das eingezeichnete Feld ersetzen? (Rückgängig möglich)')) return
-    const { items, lines, zones, format } = customFieldScene(size, state.pitch.orientation, options, chosenTeams)
-    // Own ids, so nothing is mixed up with items of other scenes.
     const suffix = Date.now().toString(36)
-    state.replaceSceneContent({
-      items: items.map((i) => ({ ...i, id: `${i.id}-${suffix}` })),
-      lines: lines.map((l) => ({ ...l, id: `${l.id}-${suffix}` })),
-      zones: zones.map((z) => ({ ...z, id: `${z.id}-${suffix}` })),
-    })
+    const { content, format } = build(size, options, chosenTeams, suffix)
+    state.replaceSceneContent(content)
+    lastDraw = { suffix, size, teams: chosenTeams, content }
     const total = chosenTeams ? chosenTeams[0] + chosenTeams[1] : format.players * 2
     state.setInfo({ fieldSize: `${size.length} × ${size.width} m`, players: total })
     const who = chosenTeams ? `${chosenTeams[0]} gegen ${chosenTeams[1]}` : formatName(format)
@@ -160,14 +227,67 @@ function AreaInputs() {
     drawField(useDrillStore.getState().pitch.area ?? size, teams)
   }
 
+  // A new look redraws the field drawn last (when it is still in this scene).
+  useEffect(() => {
+    if (!changedByUser.current) return
+    const timer = window.setTimeout(() => {
+      const state = useDrillStore.getState()
+      const scene = currentScene(state)
+      const draw = lastDraw
+      if (!draw || drawnFieldSuffix(scene) !== draw.suffix) return
+      const current: SceneContent = { items: scene.items, lines: scene.lines, zones: scene.zones }
+      const next = build(draw.size, options, draw.teams, draw.suffix).content
+      if (sameContent(current, next)) return
+      if (
+        !sameContent(current, draw.content) &&
+        !window.confirm('Das Feld wurde seit dem Einzeichnen verändert. Mit dem neuen Aussehen neu zeichnen? (Rückgängig möglich)')
+      ) {
+        return
+      }
+      state.replaceSceneContent(next)
+      lastDraw = { ...draw, content: next }
+    }, 300)
+    return () => window.clearTimeout(timer)
+    // build only reads the store and its arguments
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options])
+
+  // Builds on the newest options, so quick clicks one after another all count.
+  function changeOptions(change: Partial<FieldDrawOptions> | ((current: FieldDrawOptions) => Partial<FieldDrawOptions>)) {
+    changedByUser.current = true
+    setOptions((current) => {
+      const next = { ...current, ...(typeof change === 'function' ? change(current) : change) }
+      saveDrawOptions(next)
+      return next
+    })
+  }
+
+  /** Removes the drawn-in field with everything that belongs to it (undo possible). */
+  function deleteField() {
+    const state = useDrillStore.getState()
+    const scene = currentScene(state)
+    const suffix = drawnFieldSuffix(scene)
+    if (!suffix) return
+    const own = (id: string) => id.endsWith(`-${suffix}`)
+    state.replaceSceneContent({
+      items: scene.items.filter((i) => !own(i.id)),
+      lines: scene.lines.filter((l) => !own(l.id)),
+      zones: scene.zones.filter((z) => !own(z.id)),
+    })
+    lastDraw = null
+    setMessage('Feld gelöscht (Rückgängig möglich)')
+  }
+
   const input =
     'min-h-10 w-14 rounded-md border border-slate-600 bg-slate-900 px-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none'
   const drawButton = `${buttonClass} bg-emerald-700 text-white hover:bg-emerald-600`
   const choice = (active: boolean) =>
     `min-h-8 rounded-md px-2 text-sm ${active ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`
+  const row = 'flex flex-wrap items-center gap-x-2 gap-y-1'
+  const rowLabel = 'w-20 shrink-0 text-sm text-slate-400'
 
   return (
-    <div className="relative flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-sm text-slate-300">
+    <div className="flex basis-full flex-wrap items-center gap-x-3 gap-y-1 px-2 text-sm text-slate-300">
       <label
         className="flex items-center gap-1"
         title={`Eigene Größe der Fläche (${MIN_AREA}–${MAX_AREA} m); leer = so groß wie das Großfeld`}
@@ -221,7 +341,7 @@ function AreaInputs() {
           inputMode="numeric"
           min={0}
           max={MAX_TEAM_PLAYERS}
-          aria-label="Spieler Team Blau"
+          aria-label="Spieler Team 1"
           placeholder="6"
           className={input}
           value={teamA}
@@ -234,7 +354,7 @@ function AreaInputs() {
           inputMode="numeric"
           min={0}
           max={MAX_TEAM_PLAYERS}
-          aria-label="Spieler Team Rot"
+          aria-label="Spieler Team 2"
           placeholder="3"
           className={input}
           value={teamB}
@@ -256,25 +376,27 @@ function AreaInputs() {
         className={`${buttonClass} ${showOptions ? 'bg-slate-600 text-white' : ''}`}
         aria-expanded={showOptions}
         onClick={() => setShowOptions(!showOptions)}
-        title="Aussehen des eingezeichneten Felds: Randlinie, Füllung, Ecken, Spieler"
+        title="Aussehen des eingezeichneten Felds: Rand, Füllung, Ecken, Hütchen, Tore, Spieler"
       >
         Aussehen {showOptions ? '▴' : '▾'}
       </button>
       {message && <span className="text-xs text-emerald-300">{message}</span>}
 
       {showOptions && (
-        <div className="absolute top-full left-0 z-30 mt-2 flex w-max max-w-[min(40rem,calc(100vw-2rem))] flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm text-slate-400">Rand</span>
+        // Its own row below the inputs: pushes the pitch down instead of covering it.
+        <div className="flex basis-full flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900 p-3">
+          <div className={row}>
+            <span className={rowLabel}>Rand</span>
             <LineStylePicker
               pattern={options.pattern}
               weight={options.weight}
               onPattern={(pattern) => pattern !== 'auto' && changeOptions({ pattern })}
               onWeight={(weight) => changeOptions({ weight })}
             />
+            <ColorSwatches label="Farbe" colors={LINE_COLORS} value={options.color} onSelect={(color) => changeOptions({ color })} />
           </div>
-          <ColorSwatches label="Randfarbe" colors={LINE_COLORS} value={options.color} onSelect={(color) => changeOptions({ color })} />
-          <div className="flex flex-wrap items-center gap-1">
+          <div className={row}>
+            <span className={rowLabel}>Fläche</span>
             <button
               type="button"
               aria-pressed={options.fill === null}
@@ -298,9 +420,7 @@ function AreaInputs() {
                 <span className="w-9 text-right tabular-nums">{Math.round(options.fillOpacity * 100)} %</span>
               </label>
             )}
-          </div>
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-sm text-slate-400">Ecken</span>
+            <span className="ml-2 text-sm text-slate-400">Ecken</span>
             <button type="button" aria-pressed={!options.rounded} className={choice(!options.rounded)} onClick={() => changeOptions({ rounded: false })}>
               Eckig
             </button>
@@ -308,8 +428,58 @@ function AreaInputs() {
               Abgerundet
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-1">
-            <span className="text-sm text-slate-400">Spieler</span>
+          <div className={row}>
+            <span className={rowLabel}>Hütchen</span>
+            <button type="button" aria-pressed={!options.cones} className={choice(!options.cones)} onClick={() => changeOptions({ cones: false })}>
+              Keine
+            </button>
+            <button type="button" aria-pressed={options.cones} className={choice(options.cones)} onClick={() => changeOptions({ cones: true })}>
+              An den Ecken
+            </button>
+            {options.cones && (
+              <ColorSwatches label="Farbe" colors={CONE_COLORS} value={options.coneColor} onSelect={(coneColor) => changeOptions({ coneColor })} />
+            )}
+          </div>
+          <div className={row}>
+            <span className={rowLabel}>Tore</span>
+            {SCREEN_SIDES.map((side) => (
+              <div key={side} role="group" aria-label={`Tore ${SIDE_LABELS[side]}`} className="flex items-center gap-0.5 rounded-lg bg-slate-800 p-1">
+                <span className="w-12 px-1 text-xs text-slate-400">{SIDE_LABELS[side]}</span>
+                {Array.from({ length: MAX_SIDE_GOALS + 1 }, (_, n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-label={`${n} Tore ${SIDE_LABELS[side]}`}
+                    aria-pressed={options.goals[side] === n}
+                    className={`min-h-8 min-w-7 rounded-md text-sm ${
+                      options.goals[side] === n ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+                    }`}
+                    onClick={() => changeOptions((current) => ({ goals: { ...current.goals, [side]: n } }))}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            ))}
+            <button
+              type="button"
+              aria-pressed={options.goalType === 'minigoal'}
+              className={choice(options.goalType === 'minigoal')}
+              onClick={() => changeOptions({ goalType: 'minigoal' })}
+            >
+              Minitore
+            </button>
+            <button
+              type="button"
+              aria-pressed={options.goalType === 'goal'}
+              className={choice(options.goalType === 'goal')}
+              onClick={() => changeOptions({ goalType: 'goal' })}
+            >
+              Große Tore
+            </button>
+          </div>
+          <div className={row}>
+            <span className={rowLabel}>Spieler</span>
             {PLAYER_SHAPES.map((shape) => (
               <button
                 key={shape.value}
@@ -321,10 +491,53 @@ function AreaInputs() {
                 {shape.label}
               </button>
             ))}
+            <button type="button" aria-pressed={options.numbers} className={choice(options.numbers)} onClick={() => changeOptions({ numbers: true })}>
+              Mit Zahl
+            </button>
+            <button type="button" aria-pressed={!options.numbers} className={choice(!options.numbers)} onClick={() => changeOptions({ numbers: false })}>
+              Ohne Zahl
+            </button>
           </div>
-          <p className="text-xs text-slate-500">
-            Gilt beim nächsten Einzeichnen. Ein schon eingezeichnetes Feld antippen und in der Leiste ändern.
-          </p>
+          <div className={row}>
+            <span className={rowLabel}>Teamfarben</span>
+            <ColorSwatches
+              label="Team 1"
+              colors={TEAM_COLORS}
+              value={options.teamColors[0]}
+              onSelect={(c) => changeOptions((current) => ({ teamColors: [c, current.teamColors[1]] }))}
+            />
+            <ColorSwatches
+              label="Team 2"
+              colors={TEAM_COLORS}
+              value={options.teamColors[1]}
+              onSelect={(c) => changeOptions((current) => ({ teamColors: [current.teamColors[0], c] }))}
+            />
+          </div>
+          <div className={`${row} border-t border-slate-700 pt-2`}>
+            <button type="button" className={buttonClass} disabled={!canUndo} onClick={() => useDrillStore.getState().undo()} title="Letzte Änderung zurücknehmen">
+              ↶ Rückgängig
+            </button>
+            <button
+              type="button"
+              className={dangerButtonClass}
+              disabled={!hasDrawnField}
+              onClick={deleteField}
+              title="Eingezeichnetes Feld mit Rand, Maßen, Hütchen, Toren und Spielern entfernen"
+            >
+              🗑 Feld löschen
+            </button>
+            <button
+              type="button"
+              className={buttonClass}
+              onClick={() => changeOptions(DEFAULT_FIELD_DRAW_OPTIONS)}
+              title="Alle Aussehen-Einstellungen auf den Anfang zurücksetzen"
+            >
+              Standard
+            </button>
+            <span className="text-xs text-slate-500">
+              Änderungen gelten sofort für das zuletzt eingezeichnete Feld und beim nächsten Einzeichnen.
+            </span>
+          </div>
         </div>
       )}
     </div>
