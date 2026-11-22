@@ -5,13 +5,14 @@ import type { Item, SymbolStyle } from '../model/types'
 import { clampItemSize, ITEM_TEMPLATES, type ItemTemplate, type NewItem } from './palette'
 
 const STORAGE_KEY = 'trainingsplaner.objectStyles'
-/** The symbol look (border, flat, outline) applies to all player entries together. */
-const PLAYER_SYMBOL_KEY = 'players'
+/** The look (border, flat, outline) applies to all player entries together, and to all coach entries. */
+const SHARED_SYMBOL_KEYS: Partial<Record<Item['type'], string>> = { player: 'players', coach: 'coaches' }
+const isSharedKey = (key: string) => Object.values(SHARED_SYMBOL_KEYS).includes(key)
 
 export interface RememberedStyle {
   color?: string
   size?: number
-  /** Look of players (stored for all players together) or cones; null = with border */
+  /** Look (players and coaches: stored for all their entries together); null = with border */
   symbol?: SymbolStyle | null
 }
 
@@ -27,7 +28,7 @@ function load(): Record<string, RememberedStyle> {
     const data: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
     if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
       for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-        if ((key !== PLAYER_SYMBOL_KEY && !ITEM_TEMPLATES.some((t) => t.key === key)) || typeof value !== 'object' || value === null) continue
+        if ((!isSharedKey(key) && !ITEM_TEMPLATES.some((t) => t.key === key)) || typeof value !== 'object' || value === null) continue
         const v = value as Record<string, unknown>
         styles[key] = {
           ...(typeof v.color === 'string' && /^#[0-9a-f]{6}$|^[a-z]+$/i.test(v.color) ? { color: v.color } : {}),
@@ -58,7 +59,8 @@ function keepsColor(template: ItemTemplate): boolean {
 /** The template item with the remembered color and size. */
 export function withRememberedStyle(template: ItemTemplate): NewItem {
   const style = load()[template.key]
-  const symbol = template.item.type === 'player' ? load()[PLAYER_SYMBOL_KEY]?.symbol : style?.symbol
+  const shared = SHARED_SYMBOL_KEYS[template.item.type]
+  const symbol = shared ? load()[shared]?.symbol : style?.symbol
   if (!style && !symbol) return template.item
   return {
     ...template.item,
@@ -83,8 +85,9 @@ function templateOf(item: Item): ItemTemplate | undefined {
 
 /** Remembers the color and/or size just chosen for an object. */
 export function rememberStyle(item: Item, change: RememberedStyle): void {
-  if (change.symbol !== undefined && item.type === 'player') {
-    load()[PLAYER_SYMBOL_KEY] = { symbol: change.symbol }
+  const shared = SHARED_SYMBOL_KEYS[item.type]
+  if (change.symbol !== undefined && shared) {
+    load()[shared] = { symbol: change.symbol }
     save()
     return
   }

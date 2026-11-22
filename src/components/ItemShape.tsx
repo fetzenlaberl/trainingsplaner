@@ -7,7 +7,7 @@ import { BIG_GOAL, DiscPoleShape, FlagPoleShape, GoalPerspectiveShape, MINI_GOAL
 import { figureMirrored, PlayerFigureShape } from './PlayerFigures'
 import { CrestItem, PictureItem } from './PictureShapes'
 import { displayColor } from '../field/pitchStyle'
-import { contrastTextColor } from '../items/colors'
+import { contrastTextColor, outlineTextColor } from '../items/colors'
 import { AGILITY_SQUARE, TRAINING_BALL } from '../items/palette'
 import { MINIGOAL } from '../items/equipment'
 import {
@@ -180,7 +180,7 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
             verticalAlign="middle"
             fontSize={label.length > 1 ? 0.78 : 0.95}
             fontStyle="bold"
-            fill={symbol === 'outline' ? color : contrastTextColor(color)}
+            fill={symbol === 'outline' ? outlineTextColor(color) : contrastTextColor(color)}
             {...(symbol === 'outline' ? { stroke: 'rgba(15,23,42,0.75)', strokeWidth: 0.1, fillAfterStrokeEnabled: true } : {})}
             wrap="none"
           />
@@ -237,9 +237,12 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
               width={COACH_HALF * 2}
               height={COACH_HALF * 2}
               cornerRadius={0.35}
-              fill={color}
-              stroke="#ffffff"
-              strokeWidth={0.15}
+              // With white border (usual), fully colored, or only the colored outline
+              {...(symbol === 'outline'
+                ? { fill: 'rgba(0,0,0,0)', stroke: color, strokeWidth: 0.2 }
+                : symbol === 'flat'
+                  ? { fill: color }
+                  : { fill: color, stroke: '#ffffff', strokeWidth: 0.15 })}
             />
             <MeterText
               text={label}
@@ -251,7 +254,8 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
               verticalAlign="middle"
               fontSize={0.85}
               fontStyle="bold"
-              fill={contrastTextColor(color)}
+              fill={symbol === 'outline' ? outlineTextColor(color) : contrastTextColor(color)}
+              {...(symbol === 'outline' ? { stroke: 'rgba(15,23,42,0.75)', strokeWidth: 0.1, fillAfterStrokeEnabled: true } : {})}
             />
           </Group>
           {name && <NameTag name={name} />}
@@ -303,7 +307,7 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true, symbol 
   const body = outline
     ? { fill: 'rgba(0,0,0,0)', stroke: color, strokeWidth: 0.24 }
     : { fill: color, stroke: symbol === 'flat' ? undefined : '#ffffff', strokeWidth: symbol === 'flat' ? 0 : 0.15 }
-  const textColor = outline ? color : contrastTextColor(color)
+  const textColor = outline ? outlineTextColor(color) : contrastTextColor(color)
   if (shape === 'triangle') {
     // The tip of the triangle shows the facing direction, so no extra marker.
     return (

@@ -30,7 +30,7 @@ import {
 import type { GoalView, Item, Line, PlayerShape, PoleLean, SymbolStyle, Zone } from '../model/types'
 
 /** Objects that can be drawn with border, fully colored or as outline */
-const SYMBOL_TYPES: Item['type'][] = ['player', 'cone', 'disc', 'ring', 'marker']
+const SYMBOL_TYPES: Item['type'][] = ['player', 'cone', 'disc', 'ring', 'marker', 'coach']
 
 const SYMBOL_STYLES: { value: SymbolStyle | null; label: string }[] = [
   { value: null, label: 'Mit Rand' },

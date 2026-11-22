@@ -83,7 +83,7 @@ export interface Item {
   lean?: PoleLean
   /** View of a goal in perspective (only 'goalFront' / 'minigoalFront'; missing = front) */
   view?: GoalView
-  /** Look of a player symbol, cone, disc, ring or marker (missing = as usual, with border) */
+  /** Look of a player symbol, coach, cone, disc, ring or marker (missing = as usual, with border) */
   symbol?: SymbolStyle
 }
 

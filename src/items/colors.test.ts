@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contrastTextColor, shadeColor } from './colors'
+import { contrastTextColor, shadeColor, outlineTextColor } from './colors'
 import { TEAM_COLORS } from './palette'
 
 describe('contrastTextColor', () => {
@@ -18,5 +18,13 @@ describe('shadeColor', () => {
     expect(shadeColor('#808080', 0.5)).toBe('#c0c0c0')
     expect(shadeColor('#808080', -0.5)).toBe('#404040')
     expect(shadeColor('training', 0.5)).toBe('training')
+  })
+})
+
+describe('outlineTextColor', () => {
+  it('keeps the symbol color but uses white for very dark colors', () => {
+    expect(outlineTextColor('#facc15')).toBe('#facc15')
+    expect(outlineTextColor('#dc2626')).toBe('#dc2626')
+    expect(outlineTextColor('#111827')).toBe('#ffffff')
   })
 })
