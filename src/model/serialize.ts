@@ -60,6 +60,7 @@ import type {
   ZoneGoals,
   ZoneShape,
   FigurePose,
+  PoleLean,
 } from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
@@ -88,8 +89,10 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 26: own size of the empty field (small-sided training fields).
 // Version 30: own opacity of zones.
 // Version 31: text box shapes, fonts and speech bubbles.
-export const FILE_VERSION = 31
-const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
+// Version 32: flag with pole, leaning poles on discs, goal seen from the front, new figure poses.
+export const FILE_VERSION = 32
+const FIGURE_POSES: FigurePose[] = ['stand', 'front', 'run', 'sprint', 'pass', 'shoot', 'keeper', 'demand']
+const POLE_LEANS: PoleLean[] = ['left', 'right', 'front', 'back']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -105,6 +108,9 @@ const ITEM_TYPES: ItemType[] = [
   'poleDummy',
   'figureDummy',
   'figure',
+  'flagPole',
+  'discPole',
+  'goalFront',
   'marker',
   'wall',
   'ladder',
@@ -404,6 +410,8 @@ function parseItem(value: unknown): Item {
   // Text box shapes and speech bubbles came in version 31.
   const box = value.box === undefined ? undefined : parseTextBoxStyle(value.box)
   if (box === null) throw corrupt()
+  // Leaning poles came in version 32.
+  if (!(value.lean === undefined || POLE_LEANS.includes(value.lean as PoleLean))) throw corrupt()
   return {
     ...alphaOf(value),
     ...lockedOf(value),
@@ -421,6 +429,7 @@ function parseItem(value: unknown): Item {
     ...(value.facing === false ? { facing: false } : {}),
     ...(value.pose !== undefined ? { pose: value.pose as FigurePose } : {}),
     ...(box && Object.keys(box).length > 0 ? { box } : {}),
+    ...(value.lean !== undefined ? { lean: value.lean as PoleLean } : {}),
   }
 }
 

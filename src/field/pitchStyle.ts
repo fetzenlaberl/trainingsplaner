@@ -327,8 +327,13 @@ export const MAX_CUSTOM_SIZE = 150
 
 export const DEFAULT_PITCH_STYLE: PitchStyle = { color: 'grass', grid: 'none', orientation: 'landscape' }
 
-/** Look of a new drill: plain dark green without stripes. */
-export const NEW_DRILL_PITCH_STYLE: PitchStyle = { ...DEFAULT_PITCH_STYLE, color: 'darkGreenPlain' }
+/** Look of a new drill: plain dark green without stripes, thin lines, rounded corners. */
+export const NEW_DRILL_PITCH_STYLE: PitchStyle = {
+  ...DEFAULT_PITCH_STYLE,
+  color: 'darkGreenPlain',
+  lineWidth: 'thin',
+  roundedCorners: true,
+}
 
 export const ORIENTATION_LABELS: Record<Orientation, string> = {
   landscape: 'Querformat',

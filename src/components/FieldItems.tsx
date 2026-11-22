@@ -120,6 +120,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
                 facing={item.facing}
                 pose={item.pose}
                 box={item.box}
+                lean={item.lean}
                 name={item.name}
                 glow={item.glow ?? (item.highlight ? 1 : 0)}
               />

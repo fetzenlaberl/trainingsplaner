@@ -27,7 +27,14 @@ import {
   zoneExtent,
   zonePattern,
 } from '../items/zones'
-import type { Item, Line, PlayerShape, Zone } from '../model/types'
+import type { Item, Line, PlayerShape, PoleLean, Zone } from '../model/types'
+
+const POLE_LEANS: { value: PoleLean; label: string }[] = [
+  { value: 'left', label: 'Links' },
+  { value: 'right', label: 'Rechts' },
+  { value: 'front', label: 'Nach vorne' },
+  { value: 'back', label: 'Nach hinten' },
+]
 import {
   BORDER_COLORS,
   TAIL_ARROWS,
@@ -361,6 +368,25 @@ function ItemControls({ item }: { item: Item }) {
               }`}
             >
               {FIGURE_POSE_NAMES[pose]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {item.type === 'discPole' && (
+        <div role="group" aria-label="Neigung" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
+          <span className="px-1 text-sm text-slate-400">Neigung</span>
+          {POLE_LEANS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={(item.lean ?? 'right') === o.value}
+              onClick={() => useDrillStore.getState().setItemLean(item.id, o.value)}
+              className={`min-h-8 rounded-md px-2 text-sm ${
+                (item.lean ?? 'right') === o.value ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {o.label}
             </button>
           ))}
         </div>

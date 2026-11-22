@@ -25,7 +25,7 @@ import {
 } from '../items/zones'
 import type { DrillInfo } from '../model/drillInfo'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, DrillArea, FigurePose, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
+import type { Category, Drill, DrillArea, FigurePose, Item, PoleLean, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 /** Faintest own opacity of items and lines that can be set (stays visible). */
@@ -139,6 +139,8 @@ export interface DrillState extends DrillContent {
   setItemHighlight: (id: string, highlight: boolean) => void
   /** Pose of a player figure. */
   setItemPose: (id: string, pose: FigurePose) => void
+  /** Lean of a pole on a disc. */
+  setItemLean: (id: string, lean: PoleLean) => void
   /** Shows or hides the facing arrow of a player. */
   setItemFacing: (id: string, facing: boolean) => void
   /** Gives every item of the current scene the same size. */
@@ -643,6 +645,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         ...(item.facing === false ? { facing: false } : {}),
         ...(item.pose ? { pose: item.pose } : {}),
         ...(item.box ? { box: { ...item.box } } : {}),
+        ...(item.lean ? { lean: item.lean } : {}),
       }
       // Later items of the same call see the earlier ones when numbering.
       items.push(newItem)
@@ -717,6 +720,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
           return next ? { ...rest, box: next } : rest
         }),
       })),
+    })),
+  setItemLean: (id, lean) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { lean }) })),
     })),
   setItemPose: (id, pose) =>
     set((s) => ({

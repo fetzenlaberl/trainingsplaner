@@ -26,6 +26,7 @@ export function ItemPreview({ item, scale }: ItemPreviewProps) {
             facing={item.facing}
             pose={item.pose}
             box={item.box}
+            lean={item.lean}
           />
         </Group>
       </Layer>

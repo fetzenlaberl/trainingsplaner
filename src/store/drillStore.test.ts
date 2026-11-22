@@ -643,7 +643,7 @@ describe('pitch style', () => {
   it('changes pitch color and grid with undo', () => {
     store().setPitchColor('white')
     store().setGrid('positional')
-    expect(store().pitch).toEqual({ color: 'white', grid: 'positional', orientation: 'landscape' })
+    expect(store().pitch).toMatchObject({ color: 'white', grid: 'positional', orientation: 'landscape' })
     store().undo()
     expect(store().pitch.grid).toBe('none')
     store().undo()

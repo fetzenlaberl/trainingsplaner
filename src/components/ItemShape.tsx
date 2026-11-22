@@ -3,6 +3,7 @@ import { useContext, useMemo } from 'react'
 import { Circle, Ellipse, Group, Line, Rect, RegularPolygon, Shape, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
 import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
+import { DiscPoleShape, FlagPoleShape, GoalFrontShape } from './PerspectiveEquipment'
 import { figureMirrored, PlayerFigureShape } from './PlayerFigures'
 import { CrestItem, PictureItem } from './PictureShapes'
 import { displayColor } from '../field/pitchStyle'
@@ -52,7 +53,7 @@ const TEXTBOX_FONT_SIZE = 1.1
 const NAME_FONT_SIZE = 0.8
 const GLOW_COLOR = '#fde047'
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing' | 'pose' | 'box'> & {
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing' | 'pose' | 'box' | 'lean'> & {
   /** Player name tag (empty = none) */
   name?: string
   /** Highlight ring strength 0..1 */
@@ -60,7 +61,7 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' |
 }
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0, pose, box }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0, pose, box, lean }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
   const upright = -useContext(ViewRotationContext)
   const onWhite = pitchColor === 'white'
@@ -115,6 +116,24 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       return (
         <Group rotation={upright}>
           <PoleDummyShape color={color} />
+        </Group>
+      )
+    case 'flagPole':
+      return (
+        <Group rotation={upright}>
+          <FlagPoleShape color={color} />
+        </Group>
+      )
+    case 'discPole':
+      return (
+        <Group rotation={upright}>
+          <DiscPoleShape color={color} lean={lean ?? 'right'} />
+        </Group>
+      )
+    case 'goalFront':
+      return (
+        <Group rotation={upright}>
+          <GoalFrontShape color={color} />
         </Group>
       )
     case 'figure':

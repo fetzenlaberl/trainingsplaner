@@ -34,6 +34,8 @@ const STAND: Pose = {
 
 export const FIGURE_POSES: Record<FigurePose, Pose> = {
   stand: STAND,
+  // Drawn separately (FrontFigure); this side pose is only a fallback.
+  front: STAND,
   run: {
     neck: [0.14, -0.5],
     hip: [0, 0.2],
@@ -46,16 +48,43 @@ export const FIGURE_POSES: Record<FigurePose, Pose> = {
       { points: [[0.02, 0.24], [0.34, 0.5], [0.24, 0.92]], toe: [0.16, 0.02] },
     ],
   },
-  shoot: {
-    neck: [-0.1, -0.5],
-    hip: [0, 0.2],
+  // Strong forward lean, long stride, arms swinging high.
+  sprint: {
+    neck: [0.32, -0.42],
+    hip: [0.02, 0.2],
     arms: [
-      [[-0.08, -0.42], [-0.32, -0.32], [-0.55, -0.4]],
-      [[-0.04, -0.42], [0.22, -0.26], [0.42, -0.1]],
+      [[0.26, -0.36], [0.02, -0.16], [-0.14, 0.08]],
+      [[0.3, -0.36], [0.52, -0.2], [0.64, -0.46]],
     ],
     legs: [
-      { points: [[-0.04, 0.24], [-0.06, 0.62], [-0.1, 1]], toe: [0.16, 0] },
-      { points: [[0.04, 0.24], [0.32, 0.42], [0.62, 0.48]], toe: [0.12, -0.08] },
+      { points: [[0, 0.24], [-0.26, 0.56], [-0.62, 0.66]], toe: [0.04, 0.16] },
+      { points: [[0.04, 0.24], [0.44, 0.36], [0.4, 0.78]], toe: [0.16, 0.04] },
+    ],
+  },
+  // Pass with the inside of the foot: standing leg next to the ball, foot turned out.
+  pass: {
+    neck: [0.02, -0.5],
+    hip: [0, 0.2],
+    arms: [
+      [[-0.04, -0.42], [-0.26, -0.2], [-0.44, -0.04]],
+      [[0.04, -0.42], [0.24, -0.22], [0.4, -0.08]],
+    ],
+    legs: [
+      { points: [[-0.04, 0.24], [-0.04, 0.62], [-0.06, 1]], toe: [0.16, 0] },
+      { points: [[0.04, 0.24], [0.22, 0.6], [0.34, 0.92]], toe: [0.05, 0.07] },
+    ],
+  },
+  // Shot: upper body leaning back, kicking leg swinging through high, arms wide.
+  shoot: {
+    neck: [-0.14, -0.48],
+    hip: [0, 0.2],
+    arms: [
+      [[-0.1, -0.4], [-0.38, -0.36], [-0.62, -0.52]],
+      [[-0.06, -0.4], [0.18, -0.18], [0.42, -0.26]],
+    ],
+    legs: [
+      { points: [[-0.04, 0.24], [-0.08, 0.62], [-0.12, 1]], toe: [0.16, 0] },
+      { points: [[0.04, 0.24], [0.38, 0.3], [0.7, 0.16]], toe: [0.12, -0.1] },
     ],
   },
   keeper: {
@@ -80,11 +109,14 @@ export const FIGURE_POSES: Record<FigurePose, Pose> = {
   },
 }
 
-export const FIGURE_POSE_ORDER: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
+export const FIGURE_POSE_ORDER: FigurePose[] = ['stand', 'front', 'run', 'sprint', 'pass', 'shoot', 'keeper', 'demand']
 
 export const FIGURE_POSE_NAMES: Record<FigurePose, string> = {
   stand: 'stehend',
+  front: 'von vorne',
   run: 'laufend',
+  sprint: 'sprintend',
+  pass: 'passend',
   shoot: 'schießend',
   keeper: 'Torwart',
   demand: 'Ball fordernd',
@@ -116,6 +148,7 @@ export function PlayerFigureShape({
   label: string
   mirrored: boolean
 }) {
+  if (pose === 'front') return <FrontFigure color={color} label={label} />
   const p = FIGURE_POSES[pose] ?? STAND
   const dark = shadeColor(color, -0.35)
   const sock = shadeColor(color, -0.15)
@@ -165,6 +198,56 @@ export function PlayerFigureShape({
           text={label}
           x={numberX - 0.4}
           y={chest[1] - 0.2}
+          width={0.8}
+          height={0.4}
+          align="center"
+          verticalAlign="middle"
+          fontSize={0.3}
+          fontStyle="bold"
+          fill={contrastTextColor(color)}
+          wrap="none"
+        />
+      )}
+    </Group>
+  )
+}
+
+/** Standing player seen from the front: both arms and legs, number on the chest. */
+function FrontFigure({ color, label }: { color: string; label: string }) {
+  const dark = shadeColor(color, -0.35)
+  const sock = shadeColor(color, -0.15)
+  const limb = { lineCap: 'round' as const, lineJoin: 'round' as const }
+  const side = (s: 1 | -1) => (
+    <Group key={s}>
+      {/* arm with short sleeve */}
+      <Line points={[s * 0.27, -0.4, s * 0.36, -0.08, s * 0.36, 0.24]} stroke={SKIN} strokeWidth={0.11} {...limb} />
+      <Line points={[s * 0.25, -0.42, s * 0.32, -0.22]} stroke={color} strokeWidth={0.17} {...limb} />
+      {/* leg: thigh, sock, boot pointing slightly outwards */}
+      <Line points={[s * 0.12, 0.32, s * 0.13, 0.66]} stroke={SKIN} strokeWidth={0.15} {...limb} />
+      <Line points={[s * 0.13, 0.68, s * 0.14, 0.98]} stroke={sock} strokeWidth={0.14} {...limb} />
+      <Ellipse x={s * 0.17} y={1.02} radiusX={0.1} radiusY={0.06} fill={BOOT} />
+    </Group>
+  )
+  return (
+    <Group>
+      <Ellipse x={0.12} y={1.07} radiusX={0.55} radiusY={0.14} fill={SHADOW} />
+      {side(-1)}
+      {side(1)}
+      {/* shorts */}
+      <Line points={[-0.24, 0.12, 0.24, 0.12, 0.26, 0.36, 0.02, 0.36, 0, 0.3, -0.02, 0.36, -0.26, 0.36]} closed fill={SHORTS} stroke={OUTLINE} strokeWidth={0.02} />
+      {/* shirt */}
+      <Line points={[-0.26, -0.46, 0.26, -0.46, 0.25, 0.16, -0.25, 0.16]} closed tension={0.08} fill={color} stroke={OUTLINE} strokeWidth={0.03} />
+      <Line points={[0.16, -0.42, 0.18, 0.12]} stroke={dark} strokeWidth={0.08} opacity={0.35} {...limb} />
+      <Line points={[-0.08, -0.46, 0, -0.38, 0.08, -0.46]} stroke={dark} strokeWidth={0.04} {...limb} />
+      {/* neck and head with hair */}
+      <Line points={[0, -0.5, 0, -0.56]} stroke={SKIN} strokeWidth={0.1} {...limb} />
+      <Circle y={-0.76} radius={0.2} fill={SKIN} stroke={OUTLINE} strokeWidth={0.03} />
+      <Ellipse y={-0.88} radiusX={0.2} radiusY={0.1} fill={HAIR} />
+      {label && (
+        <MeterText
+          text={label}
+          x={-0.4}
+          y={-0.36}
           width={0.8}
           height={0.4}
           align="center"

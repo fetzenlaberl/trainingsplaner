@@ -100,6 +100,7 @@ describe('serializeDrill / parseDrill', () => {
 
   it('round-trips an empty drill', () => {
     expect(parseDrill(serializeDrill(emptyDrill()))).toEqual(emptyDrill())
+    expect(emptyDrill().pitch).toMatchObject({ color: 'darkGreenPlain', lineWidth: 'thin', roundedCorners: true })
   })
 
   it('writes format and version into the file', () => {

@@ -16,6 +16,9 @@ export type ItemType =
   | 'poleDummy'
   | 'figureDummy'
   | 'figure'
+  | 'flagPole'
+  | 'discPole'
+  | 'goalFront'
   | 'marker'
   | 'wall'
   | 'ladder'
@@ -32,7 +35,10 @@ export type ItemType =
   | 'textbox'
 
 /** Pose of a player figure (item type 'figure'). */
-export type FigurePose = 'stand' | 'run' | 'shoot' | 'keeper' | 'demand'
+export type FigurePose = 'stand' | 'front' | 'run' | 'sprint' | 'pass' | 'shoot' | 'keeper' | 'demand'
+
+/** Direction a pole on a disc leans to (only type 'discPole'; front = towards the viewer). */
+export type PoleLean = 'left' | 'right' | 'front' | 'back'
 
 /** How a player is drawn; other item types ignore it. */
 export type PlayerShape = 'circle' | 'triangle' | 'cross' | 'shirt'
@@ -66,6 +72,8 @@ export interface Item {
   alpha?: number
   /** Look of a text box / speech bubble (only type 'textbox'; missing = plain rounded box) */
   box?: TextBoxStyle
+  /** Lean of a pole on a disc (only type 'discPole'; missing = right) */
+  lean?: PoleLean
 }
 
 export interface Point {

@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box' | 'lean'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -121,9 +121,19 @@ function player(color: string, shape: PlayerShape): NewItem {
 }
 
 /** Player figures (seen from the side); the color is free, the keeper starts yellow. */
-const FIGURE_TEMPLATES: ItemTemplate[] = (['stand', 'run', 'shoot', 'keeper', 'demand'] as const).map((pose) => ({
+const FIGURE_NAMES = {
+  stand: 'stehend',
+  front: 'stehend von vorne',
+  run: 'laufend',
+  sprint: 'sprintend',
+  pass: 'passend',
+  shoot: 'schießend',
+  keeper: 'Torwart',
+  demand: 'Ball fordernd',
+} as const
+const FIGURE_TEMPLATES: ItemTemplate[] = (Object.keys(FIGURE_NAMES) as (keyof typeof FIGURE_NAMES)[]).map((pose) => ({
   key: `figure-${pose}`,
-  name: `Spielerfigur ${({ stand: 'stehend', run: 'laufend', shoot: 'schießend', keeper: 'Torwart', demand: 'Ball fordernd' } as const)[pose]}`,
+  name: `Spielerfigur ${FIGURE_NAMES[pose]}`,
   item: { type: 'figure' as const, color: pose === 'keeper' ? TEAM_COLORS.keeper : TEAM_COLORS.red, size: 1.6, label: '', pose },
 }))
 
@@ -171,6 +181,12 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'pole-dummy', name: 'Stangendummy', item: { type: 'poleDummy', color: '#f97316', size: 1.6 } },
   { key: 'figure-dummy', name: 'Figurendummy', item: { type: 'figureDummy', color: '#2563eb', size: 1.6 } },
   ...FIGURE_TEMPLATES,
+  { key: 'flag-pole', name: 'Fahne mit Stange', item: { type: 'flagPole', color: '#dc2626', size: 1.4 } },
+  { key: 'disc-pole-left', name: 'Stange auf Teller links', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'left' } },
+  { key: 'disc-pole-right', name: 'Stange auf Teller rechts', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'right' } },
+  { key: 'disc-pole-front', name: 'Stange auf Teller nach vorne', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'front' } },
+  { key: 'disc-pole-back', name: 'Stange auf Teller nach hinten', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'back' } },
+  { key: 'goal-front', name: 'Großtor (perspektivisch)', item: { type: 'goalFront', color: '#ffffff' } },
   { key: 'marker-number', name: 'Nummer 1–30', item: { type: 'marker', color: '#ffffff', label: NEXT_NUMBER_LABEL } },
   { key: 'marker-letter', name: 'Buchstabe A–Z', item: { type: 'marker', color: '#facc15', label: NEXT_LETTER_LABEL } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
@@ -206,6 +222,9 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   poleDummy: 2.8,
   figureDummy: 2.8,
   figure: 2.8,
+  flagPole: 2.8,
+  discPole: 2.6,
+  goalFront: 8,
   marker: 1.6,
   wall: 2.6,
   ladder: 4.2,
@@ -232,6 +251,9 @@ export const COLORABLE_TYPES: ItemType[] = [
   'poleDummy',
   'figureDummy',
   'figure',
+  'flagPole',
+  'discPole',
+  'goalFront',
   'marker',
   'wall',
   'ladder',
