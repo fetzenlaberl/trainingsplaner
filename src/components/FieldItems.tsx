@@ -58,7 +58,8 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             listening={!item.locked || showLocked}
             x={item.x}
             y={item.y}
-            opacity={(item.opacity ?? 1) * (item.alpha ?? 1)}
+            // Fading in the animation; the own opacity only applies to the shape (not the selection ring).
+            opacity={item.opacity ?? 1}
             draggable={interactive && !item.locked}
             onPointerDown={(e) => {
               selectOnPointerDown(e, item.id)
@@ -109,7 +110,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
                 listening={false}
               />
             )}
-            <Group scaleX={item.size} scaleY={item.size}>
+            <Group scaleX={item.size} scaleY={item.size} opacity={item.alpha ?? 1}>
               <ItemShape
                 type={item.type}
                 color={item.color}
