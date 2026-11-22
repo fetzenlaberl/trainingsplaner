@@ -84,7 +84,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 24: player figures with poses.
 // Version 25: number and letter markers.
 // Version 26: own size of the empty field (small-sided training fields).
-export const FILE_VERSION = 27
+export const FILE_VERSION = 28
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -358,6 +358,13 @@ function parsePoint(value: unknown): Point {
   return { x: value.x, y: value.y }
 }
 
+/** Fixed elements (version 28): cannot be selected or moved on the pitch. */
+function lockedOf(value: Record<string, unknown>): { locked?: true } {
+  if (value.locked === undefined) return {}
+  if (typeof value.locked !== 'boolean') throw corrupt()
+  return value.locked ? { locked: true } : {}
+}
+
 function parseItem(value: unknown): Item {
   if (
     !isRecord(value) ||
@@ -383,6 +390,7 @@ function parseItem(value: unknown): Item {
     throw corrupt()
   }
   return {
+    ...lockedOf(value),
     id: value.id,
     type: value.type as ItemType,
     x: value.x,
@@ -429,6 +437,7 @@ function parseLine(value: unknown): Line {
   }
   const type = value.type as LineType
   return {
+    ...lockedOf(value),
     id: value.id,
     type,
     ...parseLinePath(value),
@@ -479,6 +488,7 @@ function parseZone(value: unknown): Zone {
     throw corrupt()
   }
   return {
+    ...lockedOf(value),
     ...(value.pattern !== undefined ? { pattern: value.pattern as LinePattern } : {}),
     ...(value.weight !== undefined ? { weight: value.weight as LineWeight } : {}),
     ...(value.rounded === true ? { rounded: true } : {}),

@@ -53,10 +53,12 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
           <Group
             key={item.id}
             id={item.id}
+            // Fixed elements let taps and drags go through to the pitch.
+            listening={!item.locked}
             x={item.x}
             y={item.y}
             opacity={item.opacity ?? 1}
-            draggable={interactive}
+            draggable={interactive && !item.locked}
             onPointerDown={(e) => {
               selectOnPointerDown(e, item.id)
               if (e.evt.pointerType === 'touch') {

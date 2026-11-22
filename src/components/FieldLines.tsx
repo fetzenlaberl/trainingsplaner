@@ -38,8 +38,10 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
           <Group
             key={line.id}
             id={line.id}
+            // Fixed elements let taps and drags go through to the pitch.
+            listening={!line.locked}
             name="line-group"
-            draggable={interactive}
+            draggable={interactive && !line.locked}
             onPointerDown={(e) => selectOnPointerDown(e, line.id)}
             onClick={(e) => selectOnClick(e, line.id)}
             onTap={(e) => selectOnClick(e, line.id)}

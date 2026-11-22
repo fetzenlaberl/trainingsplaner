@@ -39,11 +39,13 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
         <Group
           key={zone.id}
           id={zone.id}
+          // Fixed zones let taps and drags go through to the pitch.
+          listening={!zone.locked}
           x={zone.x}
           y={zone.y}
           rotation={zone.rotation}
           opacity={zone.opacity ?? 1}
-          draggable={interactive}
+          draggable={interactive && !zone.locked}
           onPointerDown={(e) => selectOnPointerDown(e, zone.id)}
           onClick={(e) => selectOnClick(e, zone.id)}
           onTap={(e) => selectOnClick(e, zone.id)}

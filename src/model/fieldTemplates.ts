@@ -676,6 +676,21 @@ export function standardFormat(area: FieldArea): SizeFormat {
   )
 }
 
+/** Item types that belong to the field itself (fixed with it); players and the ball stay movable. */
+const FIELD_PART_TYPES = new Set<ItemType>(['text', 'cone', 'goal', 'minigoal'])
+
+/** True for the parts of a drawn-in field that are fixed with it. */
+export function isFieldPart(element: Item | Line | Zone): boolean {
+  return 'type' in element && 'size' in element ? FIELD_PART_TYPES.has((element as Item).type) : true
+}
+
+/** Fixes the field: outline, size labels with their arrows, cones and goals. */
+function lockFieldParts(b: Builder): void {
+  for (const item of b.items) if (FIELD_PART_TYPES.has(item.type)) item.locked = true
+  for (const line of b.lines) line.locked = true
+  for (const zone of b.zones) zone.locked = true
+}
+
 /** Most players per team for a field from the player count */
 export const MAX_TEAM_PLAYERS = 11
 
@@ -703,6 +718,8 @@ export interface FieldDrawOptions {
   /** Goals on each side as seen on screen (0–4, spread evenly) */
   goals: Record<ScreenSide, number>
   goalType: 'minigoal' | 'goal'
+  /** Outline, size labels, cones and goals fixed (players and ball stay movable) */
+  lockField: boolean
 }
 
 export type ConeSize = 'normal' | 'large' | 'xlarge'
@@ -733,6 +750,7 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   coneSize: 'large',
   goals: { top: 0, bottom: 0, left: 0, right: 0 },
   goalType: 'minigoal',
+  lockField: true,
 }
 
 /**
@@ -869,5 +887,6 @@ export function customFieldScene(
   const portrait = orientation === 'portrait'
   addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0)
   addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90)
+  if (options.lockField) lockFieldParts(b)
   return { items: b.items, lines: b.lines, zones: b.zones, format }
 }

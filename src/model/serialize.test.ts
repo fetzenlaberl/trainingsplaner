@@ -326,6 +326,17 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'line', pattern: 'dashdot' })
   })
 
+  it('round-trips fixed items, lines and zones', () => {
+    const text = tamper((d) => {
+      d.scenes[0].items[0].locked = true
+      d.scenes[0].lines[0].locked = true
+      d.scenes[0].zones[0].locked = true
+    })
+    const scene = parseDrill(text).scenes[0]
+    expect([scene.items[0].locked, scene.lines[0].locked, scene.zones[0].locked]).toEqual([true, true, true])
+    expect(() => parseDrill(tamper((d) => (d.scenes[0].items[0].locked = 'yes')))).toThrow()
+  })
+
   it('round-trips zone outline pattern, thickness and rounded corners', () => {
     const text = tamper((d) => {
       Object.assign(d.scenes[0].zones[0], { pattern: 'dotted', weight: 'thick', rounded: true })

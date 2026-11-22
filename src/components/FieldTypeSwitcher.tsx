@@ -9,6 +9,7 @@ import {
   customFieldScene,
   DEFAULT_FIELD_DRAW_OPTIONS,
   formatName,
+  isFieldPart,
   MAX_SIDE_CONES,
   MAX_SIDE_GOALS,
   MAX_TEAM_PLAYERS,
@@ -87,6 +88,7 @@ function loadDrawOptions(): FieldDrawOptions {
       coneColor: isHexColor(v.coneColor) ? v.coneColor : d.coneColor,
       goals,
       goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
+      lockField: v.lockField !== false,
     }
   } catch {
     return d
@@ -165,6 +167,7 @@ function AreaInputs() {
   const setFieldArea = useDrillStore((s) => s.setFieldArea)
   const canUndo = useDrillStore((s) => s.past.length > 0)
   const hasDrawnField = useDrillStore((s) => drawnFieldSuffix(currentScene(s)) !== null)
+  const fieldLocked = useDrillStore((s) => currentScene(s).zones.some((z) => z.id.startsWith(FIELD_ZONE_PREFIX) && z.locked === true))
   const [length, setLength] = useState(area ? String(area.length) : '')
   const [width, setWidth] = useState(area ? String(area.width) : '')
   const [teamA, setTeamA] = useState('')
@@ -174,6 +177,8 @@ function AreaInputs() {
   const [showOptions, setShowOptions] = useState(false)
   // Look changes by the user (not the first render) redraw the field after a short pause.
   const changedByUser = useRef(false)
+  // Fixing or freeing the field changes it directly, without a redraw.
+  const skipRedraw = useRef(false)
 
   // Follow undo/redo and loaded drills.
   useEffect(() => {
@@ -235,6 +240,10 @@ function AreaInputs() {
   // A new look redraws the field drawn last (when it is still in this scene).
   useEffect(() => {
     if (!changedByUser.current) return
+    if (skipRedraw.current) {
+      skipRedraw.current = false
+      return
+    }
     const timer = window.setTimeout(() => {
       const state = useDrillStore.getState()
       const scene = currentScene(state)
@@ -265,6 +274,34 @@ function AreaInputs() {
       saveDrawOptions(next)
       return next
     })
+  }
+
+  /**
+   * Fixes or frees the drawn-in field (outline, size labels, cones, goals), so it does not
+   * move by accident while drawing; players and the ball stay movable. One undo step.
+   */
+  function setFieldLocked(lock: boolean) {
+    skipRedraw.current = true
+    changeOptions({ lockField: lock })
+    const state = useDrillStore.getState()
+    const scene = currentScene(state)
+    const suffix = drawnFieldSuffix(scene)
+    if (!suffix) return
+    function apply<T extends Scene['items'][number] | Scene['lines'][number] | Scene['zones'][number]>(element: T): T {
+      if (!element.id.endsWith(`-${suffix}`) || !isFieldPart(element)) return element
+      const next = { ...element }
+      if (lock) next.locked = true
+      else delete next.locked
+      return next
+    }
+    const applyAll = (content: SceneContent): SceneContent => ({
+      items: content.items.map(apply),
+      lines: content.lines.map(apply),
+      zones: content.zones.map(apply),
+    })
+    state.replaceSceneContent(applyAll(scene))
+    if (lastDraw?.suffix === suffix) lastDraw = { ...lastDraw, content: applyAll(lastDraw.content) }
+    setMessage(lock ? 'Feld fixiert: Rand, Maße, Hütchen und Tore bleiben stehen' : 'Feld gelöst: alles lässt sich wieder verschieben')
   }
 
   /** Removes the drawn-in field with everything that belongs to it (undo possible). */
@@ -375,6 +412,20 @@ function AreaInputs() {
         onClick={drawFromPlayers}
       >
         Feld aus Spielern
+      </button>
+      <button
+        type="button"
+        aria-pressed={fieldLocked}
+        disabled={!hasDrawnField}
+        className={`${buttonClass} ${fieldLocked ? 'bg-amber-600 text-white hover:bg-amber-500' : ''}`}
+        onClick={() => setFieldLocked(!fieldLocked)}
+        title={
+          fieldLocked
+            ? 'Feld ist fixiert (Rand, Maße, Hütchen, Tore). Antippen zum Lösen.'
+            : 'Feld fixieren: Rand, Maße, Hütchen und Tore lassen sich nicht mehr aus Versehen verschieben'
+        }
+      >
+        {fieldLocked ? '🔒 Feld fixiert' : '🔓 Feld fixieren'}
       </button>
       <button
         type="button"

@@ -59,6 +59,8 @@ export interface Item {
   facing?: boolean
   /** Pose of a player figure (only type 'figure'; missing = standing) */
   pose?: FigurePose
+  /** Fixed: cannot be selected or moved on the pitch (missing = free) */
+  locked?: boolean
 }
 
 export interface Point {
@@ -82,6 +84,8 @@ export interface Line {
   weight: LineWeight
   /** Number of the action step shown on the line (1, 2, 3 …), or null */
   step: number | null
+  /** Fixed: cannot be selected or moved on the pitch (missing = free) */
+  locked?: boolean
 }
 
 export type ZoneShape = 'rect' | 'triangle' | 'ellipse'
@@ -113,6 +117,8 @@ export interface Zone {
   weight?: LineWeight
   /** Rounded corners (rectangles without free corners only) */
   rounded?: boolean
+  /** Fixed: cannot be selected or moved on the pitch (missing = free) */
+  locked?: boolean
   label: string
   goals: ZoneGoals
   /**

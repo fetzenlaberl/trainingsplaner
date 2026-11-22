@@ -158,6 +158,18 @@ describe('field templates', () => {
     expect(large).toBeCloseTo(normal * 2.2)
   })
 
+  it('fixes outline, size labels, cones and goals, but not players and ball', () => {
+    const look = { ...DEFAULT_FIELD_DRAW_OPTIONS, cones: true, goals: { top: 1, bottom: 0, left: 0, right: 0 } }
+    const scene = customFieldScene({ length: 30, width: 20 }, 'landscape', look)
+    expect(scene.zones.every((z) => z.locked)).toBe(true)
+    expect(scene.lines.every((l) => l.locked)).toBe(true)
+    for (const item of scene.items) {
+      expect(item.locked === true).toBe(!['player', 'ball'].includes(item.type))
+    }
+    const free = customFieldScene({ length: 30, width: 20 }, 'landscape', { ...look, lockField: false })
+    expect([...free.items, ...free.lines, ...free.zones].some((e) => e.locked)).toBe(false)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

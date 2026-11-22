@@ -72,6 +72,16 @@ describe('elementsInRect', () => {
     expect(ids.sort()).toEqual(['inside', 'lineIn', 'zoneIn'])
   })
 
+  it('leaves out fixed elements', () => {
+    const fixed = {
+      items: [{ ...item('inside', 10, 10), locked: true }],
+      lines: [{ ...line('lineIn', 0, 20, 20), locked: true }],
+      zones: [{ ...zone('zoneIn', 15, 15), locked: true }, zone('free', 10, 10)],
+    }
+    expect(elementsInRect(fixed, { minX: 0, minY: 0, maxX: 25, maxY: 25 })).toEqual(['free'])
+    expect(allElementIds(fixed)).toEqual(['free'])
+  })
+
   it('selects nothing in an empty area', () => {
     expect(elementsInRect(scene, { minX: 90, minY: 60, maxX: 100, maxY: 68 })).toEqual([])
   })
