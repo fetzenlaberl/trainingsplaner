@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { LINE_COLORS } from '../lines/styles'
-import { useDrillStore } from '../store/drillStore'
+import { currentScene, useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore, type Tool } from '../store/toolStore'
 import { LineStylePicker } from './LineStylePicker'
@@ -88,6 +88,37 @@ const TOOLS: { tool: Tool; name: string; icon: ReactNode }[] = [
     ),
   },
 ]
+
+/**
+ * Shown when the scene has fixed elements: lets them be selected (to free them or change
+ * their look); while it is off they ignore taps and drags.
+ */
+function LockedToggle() {
+  const count = useDrillStore((s) => {
+    const scene = currentScene(s)
+    return [...scene.items, ...scene.lines, ...scene.zones].filter((e) => e.locked).length
+  })
+  const showLocked = useToolStore((s) => s.showLocked)
+  const setShowLocked = useToolStore((s) => s.setShowLocked)
+  if (count === 0 && !showLocked) return null
+  return (
+    <button
+      type="button"
+      aria-pressed={showLocked}
+      title={
+        showLocked
+          ? 'Fixierte Teile lassen sich jetzt antippen (zum Lösen), aber nicht verschieben. Antippen zum Beenden.'
+          : 'Fixierte Teile antippbar machen, um sie zu lösen oder zu ändern'
+      }
+      onClick={() => setShowLocked(!showLocked)}
+      className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+        showLocked ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+      }`}
+    >
+      🔒 Fixierte ({count}) {showLocked ? 'auswählbar' : 'auswählen'}
+    </button>
+  )
+}
 
 export function LineToolbar() {
   const tool = useToolStore((s) => s.tool)
@@ -227,6 +258,7 @@ export function LineToolbar() {
           ⧉ Mehrfach
         </button>
       )}
+      {tool === 'select' && <LockedToggle />}
 
       {tool === 'select' && (
         <div className="ml-auto">

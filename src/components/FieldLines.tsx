@@ -24,6 +24,7 @@ interface FieldLinesProps {
 
 /** All drawn lines; in select mode they can be selected and dragged as a whole. */
 export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
+  const showLocked = useToolStore((s) => s.showLocked)
   const selectedIds = useDrillStore((s) => s.selectedIds)
   const select = useDrillStore((s) => s.select)
   const moveLine = useDrillStore((s) => s.moveLine)
@@ -39,7 +40,7 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
             key={line.id}
             id={line.id}
             // Fixed elements let taps and drags go through to the pitch.
-            listening={!line.locked}
+            listening={!line.locked || showLocked}
             name="line-group"
             draggable={interactive && !line.locked}
             onPointerDown={(e) => selectOnPointerDown(e, line.id)}
@@ -88,7 +89,7 @@ export function LineHandles({ scale }: { scale: number }) {
   const line = useDrillStore((s) => selectLines(s).find((l) => l.id === s.selectedId))
   const draggingId = useToolStore((s) => s.draggingId)
   // Freehand strokes have too many points for handles; they are moved as a whole.
-  if (!line || draggingId === line.id || isFreehand(line.type)) return null
+  if (!line || line.locked || draggingId === line.id || isFreehand(line.type)) return null
   return <SelectedLineHandles line={line} scale={scale} />
 }
 

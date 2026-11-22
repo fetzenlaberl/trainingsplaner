@@ -35,6 +35,7 @@ function snapAngle(degrees: number): number {
 
 /** All placed items; they can be selected, dragged and rotated. */
 export function FieldItems({ items, viewport, scale, interactive }: FieldItemsProps) {
+  const showLocked = useToolStore((s) => s.showLocked)
   const selectedId = useDrillStore((s) => s.selectedId)
   const selectedIds = useDrillStore((s) => s.selectedIds)
   const select = useDrillStore((s) => s.select)
@@ -54,7 +55,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             key={item.id}
             id={item.id}
             // Fixed elements let taps and drags go through to the pitch.
-            listening={!item.locked}
+            listening={!item.locked || showLocked}
             x={item.x}
             y={item.y}
             opacity={item.opacity ?? 1}
@@ -125,6 +126,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
         )
       })}
       {selectedItem &&
+        !selectedItem.locked &&
         draggingId !== selectedItem.id &&
         ROTATABLE_TYPES.includes(selectedItem.type) && (
           <RotationHandle item={selectedItem} scale={scale} />

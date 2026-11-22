@@ -90,7 +90,28 @@ export function SelectionBar() {
       >
         Löschen
       </button>
+      <LockButton ids={[selected.id]} locked={selected.locked === true} />
     </div>
+  )
+}
+
+/** Fixes the selection (no more moving by accident) or frees it again. */
+function LockButton({ ids, locked }: { ids: string[]; locked: boolean }) {
+  const setLocked = useDrillStore((s) => s.setLocked)
+  return (
+    <button
+      type="button"
+      aria-pressed={locked}
+      className={`${buttonClass} ${locked ? 'bg-amber-600 text-white hover:bg-amber-500' : ''}`}
+      title={
+        locked
+          ? 'Fixiert: lässt sich nicht verschieben. Antippen zum Lösen.'
+          : 'Fixieren: lässt sich nicht mehr aus Versehen verschieben oder auswählen (wieder lösen über „🔒 Fixierte auswählen“)'
+      }
+      onClick={() => setLocked(ids, !locked)}
+    >
+      {locked ? '🔓 Lösen' : '🔒 Fixieren'}
+    </button>
   )
 }
 
@@ -152,6 +173,7 @@ function MultiControls() {
       >
         Löschen
       </button>
+      <LockButton ids={selectedIds} locked={elements.length > 0 && elements.every((el) => el.locked === true)} />
       <button type="button" className={buttonClass} title="Auswahl aufheben (Esc)" onClick={() => select(null)}>
         Aufheben
       </button>

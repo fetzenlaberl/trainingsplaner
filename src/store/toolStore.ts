@@ -34,6 +34,8 @@ interface ToolState {
   editingCornersId: string | null
   /** Text, text box or crest whose input window is open */
   editingContentId: string | null
+  /** Fixed elements can be selected (to free them again); they still cannot be moved */
+  showLocked: boolean
   setTool: (tool: Tool) => void
   setLineColor: (color: string) => void
   setLinePattern: (pattern: LinePattern | 'auto') => void
@@ -45,6 +47,7 @@ interface ToolState {
   setDraggingId: (id: string | null) => void
   setEditingCornersId: (id: string | null) => void
   setEditingContentId: (id: string | null) => void
+  setShowLocked: (showLocked: boolean) => void
 }
 
 export const useToolStore = create<ToolState>((set) => ({
@@ -59,6 +62,8 @@ export const useToolStore = create<ToolState>((set) => ({
   draggingId: null,
   editingCornersId: null,
   editingContentId: null,
+  showLocked: false,
+  setShowLocked: (showLocked) => set({ showLocked }),
   setTool: (tool) => set({ tool }),
   setLineColor: (lineColor) => set({ lineColor }),
   setLinePattern: (linePattern) => set({ linePattern }),

@@ -26,6 +26,7 @@ interface FieldZonesProps {
  * so the editor can attach its resize/rotate handles to it.
  */
 export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesProps) {
+  const showLocked = useToolStore((s) => s.showLocked)
   const select = useDrillStore((s) => s.select)
   const selectedIds = useDrillStore((s) => s.selectedIds)
   const updateZone = useDrillStore((s) => s.updateZone)
@@ -40,7 +41,7 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
           key={zone.id}
           id={zone.id}
           // Fixed zones let taps and drags go through to the pitch.
-          listening={!zone.locked}
+          listening={!zone.locked || showLocked}
           x={zone.x}
           y={zone.y}
           rotation={zone.rotation}
@@ -72,6 +73,7 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
             selectedIds[0] === zone.id &&
             editingCornersId !== zone.id &&
             draggingId !== zone.id &&
+            !zone.locked &&
             hasDirectCorners(zone) && <DirectCornerHandles zone={zone} scale={scale} />}
           {/* In a multi-selection zones get a highlight; a single zone has its resize handles instead. */}
           {interactive && selectedIds.length > 1 && selectedIds.includes(zone.id) && (

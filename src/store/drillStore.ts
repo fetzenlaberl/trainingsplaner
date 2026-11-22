@@ -95,6 +95,8 @@ export interface DrillState extends DrillContent {
   resizeItems: (ids: string[], step: number) => void
   /** Colors several items whose color can be chosen (one undo step). */
   setItemsColor: (ids: string[], color: string) => void
+  /** Fixes or frees items, lines and zones (in every scene, since they keep their id), as one undo step. */
+  setLocked: (ids: string[], locked: boolean) => void
 
   selectScene: (index: number) => void
   /** Adds the follow-up scene after the current one (lines applied) and shows it. */
@@ -509,6 +511,26 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         items: scene.items.map((i) => (ids.includes(i.id) && COLORABLE_TYPES.includes(i.type) ? { ...i, color } : i)),
       })),
     })),
+
+  setLocked: (ids, locked) =>
+    set((s) => {
+      const change = <T extends { id: string; locked?: boolean }>(element: T): T => {
+        if (!ids.includes(element.id) || (element.locked === true) === locked) return element
+        const next = { ...element }
+        if (locked) next.locked = true
+        else delete next.locked
+        return next
+      }
+      return {
+        ...recorded(s),
+        scenes: s.scenes.map((scene) => ({
+          ...scene,
+          items: scene.items.map(change),
+          lines: scene.lines.map(change),
+          zones: scene.zones.map(change),
+        })),
+      }
+    }),
 
   selectScene: (index) =>
     set((s) =>

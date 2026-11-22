@@ -885,3 +885,16 @@ describe('placeItems', () => {
     expect(store().scenes[1].items[0]).toMatchObject({ x: 10, y: 20 })
   })
 })
+
+describe('fixing elements', () => {
+  it('fixes and frees items in every scene, as one undo step each', () => {
+    const id = store().addItem({ type: 'cone', color: ORANGE }, 10, 10)
+    store().addScene()
+    store().setLocked([id], true)
+    expect(store().scenes.every((s) => s.items.find((i) => i.id === id)?.locked === true)).toBe(true)
+    store().setLocked([id], false)
+    expect(store().scenes.some((s) => 'locked' in s.items.find((i) => i.id === id)!)).toBe(false)
+    store().undo()
+    expect(store().scenes[0].items[0].locked).toBe(true)
+  })
+})

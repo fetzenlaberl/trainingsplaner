@@ -155,11 +155,13 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
   const zones = frame ? frame.zones : scenes[sceneIndex].zones
   const selectedZone =
     tool === 'select' && !animating ? sceneZones.find((z) => z.id === selectedId) : undefined
+  // A fixed zone gets no resize/rotate handles.
+  const handledZone = selectedZone?.locked ? undefined : selectedZone
   const editingCornersId = useToolStore((s) => s.editingCornersId)
   const editingContentId = useToolStore((s) => s.editingContentId)
   const setEditingContentId = useToolStore((s) => s.setEditingContentId)
-  const cornerMode = selectedZone !== undefined && editingCornersId === selectedZone.id
-  const transformedZone = cornerMode ? undefined : selectedZone
+  const cornerMode = handledZone !== undefined && editingCornersId === handledZone.id
+  const transformedZone = cornerMode ? undefined : handledZone
 
   // Selecting something else ends corner editing.
   useEffect(() => {
@@ -294,7 +296,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
       ].map(([x, y]) => clientToMeters(x + rect.left, y + rect.top))
       if (corners.some((c) => c === null)) return
       const state = useDrillStore.getState()
-      const ids = elementsInRect(currentScene(state), rectFromPoints(corners as Point[]))
+      const ids = elementsInRect(currentScene(state), rectFromPoints(corners as Point[]), useToolStore.getState().showLocked)
       state.selectMany(additive ? [...new Set([...state.selectedIds, ...ids])] : ids)
     }
     const cleanup = () => {
