@@ -744,6 +744,38 @@ export interface FieldDrawOptions {
   lockField: boolean
   /** Opacity of the size labels: 0 = none, else 0.1–1 */
   labelOpacity: number
+  /** Lines dividing the field (in the outline's style) */
+  division: FieldDivision
+}
+
+/** none, center line, thirds, quarters 2 × 2, or four strips from goal to goal */
+export type FieldDivision = 'none' | 'half' | 'thirds' | 'quarters' | 'quarterStrips'
+export const FIELD_DIVISIONS: { value: FieldDivision; label: string; title: string }[] = [
+  { value: 'none', label: 'Keine', title: 'Feld nicht teilen' },
+  { value: 'half', label: 'Mittellinie', title: 'Feld in zwei Hälften teilen' },
+  { value: 'thirds', label: 'Drittel', title: 'Drei Drittel hintereinander von Tor zu Tor' },
+  { value: 'quarters', label: 'Viertel 2 × 2', title: 'Mittellinie und eine Linie längs durch die Mitte' },
+  { value: 'quarterStrips', label: 'Viertel Streifen', title: 'Vier Streifen hintereinander von Tor zu Tor' },
+]
+
+/** Lines dividing the field: across at the given fractions of the length, plus one along the middle for 2 × 2. */
+function divisionLines(area: FieldArea, division: FieldDivision): [Point, Point][] {
+  const across = (t: number): [Point, Point] => [
+    { x: area.length * t, y: 0 },
+    { x: area.length * t, y: area.width },
+  ]
+  switch (division) {
+    case 'none':
+      return []
+    case 'half':
+      return [across(1 / 2)]
+    case 'thirds':
+      return [across(1 / 3), across(2 / 3)]
+    case 'quarters':
+      return [across(1 / 2), [{ x: 0, y: area.width / 2 }, { x: area.length, y: area.width / 2 }]]
+    case 'quarterStrips':
+      return [across(1 / 4), across(1 / 2), across(3 / 4)]
+  }
 }
 
 /** Valid opacity of the size labels: 0 (none) or 0.1–1. */
@@ -781,6 +813,7 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   goalType: 'minigoal',
   lockField: true,
   labelOpacity: 0.5,
+  division: 'none',
 }
 
 /**
@@ -874,6 +907,9 @@ export function customFieldScene(
     fillOpacity: options.fill ? options.fillOpacity : 0,
     ...(options.rounded ? { rounded: true } : {}),
   })
+  for (const [from, to] of divisionLines(area, options.division)) {
+    addLine(b, 'line', [from, to], { color: options.color, pattern: options.pattern, weight: options.weight })
+  }
   const format = standardFormat(area)
   const coneSize = clampItemSize(b.k * (CONE_SIZES.find((c) => c.value === options.coneSize)?.factor ?? 1))
   const cone = (x: number, y: number) => addItem(b, 'cone', x, y, { color: options.coneColor, size: coneSize })

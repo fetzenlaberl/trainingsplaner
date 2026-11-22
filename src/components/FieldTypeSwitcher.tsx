@@ -11,6 +11,7 @@ import {
   formatName,
   isFieldPart,
   isLabelOpacity,
+  FIELD_DIVISIONS,
   SIZE_LABEL_OPACITY,
   MAX_SIDE_CONES,
   MAX_SIDE_GOALS,
@@ -92,6 +93,7 @@ function loadDrawOptions(): FieldDrawOptions {
       goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
       lockField: v.lockField !== false,
       labelOpacity: isLabelOpacity(v.labelOpacity) ? v.labelOpacity : d.labelOpacity,
+      division: FIELD_DIVISIONS.find((o) => o.value === v.division)?.value ?? d.division,
     }
   } catch {
     return d
@@ -486,6 +488,21 @@ function AreaInputs() {
             <button type="button" aria-pressed={options.rounded} className={choice(options.rounded)} onClick={() => changeOptions({ rounded: true })}>
               Abgerundet
             </button>
+          </div>
+          <div className={row}>
+            <span className={rowLabel}>Teilung</span>
+            {FIELD_DIVISIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                aria-pressed={options.division === o.value}
+                className={choice(options.division === o.value)}
+                onClick={() => changeOptions({ division: o.value })}
+                title={o.title}
+              >
+                {o.label}
+              </button>
+            ))}
           </div>
           <div className={row}>
             <span className={rowLabel}>Maße</span>

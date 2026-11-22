@@ -203,6 +203,19 @@ describe('field templates', () => {
     expect(arrow.items.filter((i) => i.type === 'text').every((t) => t.alpha === 0.3)).toBe(true)
   })
 
+  it('divides the field with lines in the outline style', () => {
+    const area = { length: 40, width: 30 }
+    const lines = (division: typeof DEFAULT_FIELD_DRAW_OPTIONS.division) =>
+      customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, labelOpacity: 0, division }).lines
+    expect(lines('none')).toHaveLength(0)
+    expect(lines('half').map((l) => l.points[0].x)).toEqual([20])
+    expect(lines('thirds').map((l) => Math.round(l.points[0].x * 10) / 10)).toEqual([13.3, 26.7])
+    expect(lines('quarterStrips').map((l) => l.points[0].x)).toEqual([10, 20, 30])
+    const quarters = lines('quarters')
+    expect(quarters[1].points).toEqual([{ x: 0, y: 15 }, { x: 40, y: 15 }])
+    expect(quarters.every((l) => l.type === 'line' && l.pattern === 'dashed' && l.locked)).toBe(true)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]
