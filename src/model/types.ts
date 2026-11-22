@@ -40,6 +40,9 @@ export type FigurePose = 'stand' | 'front' | 'run' | 'sprint' | 'pass' | 'shoot'
 /** Direction a pole on a disc leans to (only type 'discPole'; front = towards the viewer). */
 export type PoleLean = 'left' | 'right' | 'front' | 'back'
 
+/** From where the full-size goal is seen (only type 'goalFront'; left/right = side view, opening to that side). */
+export type GoalView = 'front' | 'back' | 'left' | 'right'
+
 /** How a player is drawn; other item types ignore it. */
 export type PlayerShape = 'circle' | 'triangle' | 'cross' | 'shirt'
 
@@ -74,6 +77,8 @@ export interface Item {
   box?: TextBoxStyle
   /** Lean of a pole on a disc (only type 'discPole'; missing = right) */
   lean?: PoleLean
+  /** View of the full-size goal (only type 'goalFront'; missing = front) */
+  view?: GoalView
 }
 
 export interface Point {

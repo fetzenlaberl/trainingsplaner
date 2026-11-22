@@ -1,6 +1,6 @@
 import { Ellipse, Group, Line, Rect } from 'react-konva'
 import { shadeColor } from '../items/colors'
-import type { PoleLean } from '../model/types'
+import type { GoalView, PoleLean } from '../model/types'
 
 // Equipment seen slightly from above (own drawings), like the perspective dummies: they
 // stand upright on screen, the ground is at about y = 1.05 and the caller turns them back
@@ -114,55 +114,138 @@ export function DiscPoleShape({ color, lean }: { color: string; lean: PoleLean }
   )
 }
 
-/** Full-size goal (7.32 × 2.44 m) seen from the front and slightly above, with its net going back. */
-export function GoalFrontShape({ color }: { color: string }) {
+const NET = 'rgba(255,255,255,0.5)'
+const MESH = 0.018
+
+/**
+ * Full-size goal (7.32 × 2.44 m, 2 m deep) seen slightly from above: from the front (net going
+ * back), from behind (looking through the net at the frame) or from the side (opening to the
+ * left or right).
+ */
+export function GoalPerspectiveShape({ color, view }: { color: string; view: GoalView }) {
+  if (view === 'left' || view === 'right') return <GoalSide color={color} mirrored={view === 'left'} />
   const half = 3.66
   const height = 2.44
   const ground = 1
   const barY = ground - height
-  // The back of the net lies further away: higher on screen and a little narrower.
+  // The far rectangle lies further away: higher on screen and a little narrower.
   const rise = 0.85
-  const backHalf = half * 0.93
-  const backTop = barY - rise
-  const backBottom = ground - rise
-  const net = 'rgba(255,255,255,0.5)'
-  const mesh = 0.018
+  const farHalf = half * 0.93
+  const farTop = barY - rise
+  const farBottom = ground - rise
   const lines: number[][] = []
-  // Back panel: vertical and horizontal strings
-  for (let x = -backHalf; x <= backHalf + 1e-6; x += backHalf / 14) lines.push([x, backTop, x, backBottom])
-  for (let y = backTop; y <= backBottom + 1e-6; y += (backBottom - backTop) / 8) lines.push([-backHalf, y, backHalf, y])
-  // Roof: strings from the crossbar to the back bar, and across
+  // The back of the net: far away from the front, close from behind.
+  const panel = view === 'front' ? { h: farHalf, top: farTop, bottom: farBottom } : { h: half, top: barY, bottom: ground }
+  for (let x = -panel.h; x <= panel.h + 1e-6; x += panel.h / 14) lines.push([x, panel.top, x, panel.bottom])
+  for (let y = panel.top; y <= panel.bottom + 1e-6; y += (panel.bottom - panel.top) / 8) lines.push([-panel.h, y, panel.h, y])
+  // Roof: strings between the near and the far top bars, and across
   for (let i = 0; i <= 28; i++) {
     const t = i / 28
-    lines.push([-half + 2 * half * t, barY, -backHalf + 2 * backHalf * t, backTop])
+    lines.push([-half + 2 * half * t, barY, -farHalf + 2 * farHalf * t, farTop])
   }
   for (let i = 1; i < 4; i++) {
     const t = i / 4
-    const y = barY + (backTop - barY) * t
-    const x = half + (backHalf - half) * t
+    const y = barY + (farTop - barY) * t
+    const x = half + (farHalf - half) * t
     lines.push([-x, y, x, y])
   }
-  // Side panels between the posts and the back corners
+  // Side panels between the near and the far corners
   for (const s of [-1, 1]) {
     for (let i = 1; i < 8; i++) {
       const t = i / 8
-      lines.push([s * half, barY + height * t, s * backHalf, backTop + (backBottom - backTop) * t])
+      lines.push([s * half, barY + height * t, s * farHalf, farTop + (farBottom - farTop) * t])
     }
-    lines.push([s * half, ground, s * backHalf, backBottom])
+    lines.push([s * half, ground, s * farHalf, farBottom])
   }
+  const near = [-half, ground, -half, barY, half, barY, half, ground]
+  const far = [-farHalf, farBottom, -farHalf, farTop, farHalf, farTop, farHalf, farBottom]
+  const netLines = lines.map((p, i) => <Line key={i} points={p} stroke={NET} strokeWidth={MESH} />)
+  const frame = (points: number[], width: number) => (
+    <>
+      <Line points={points} stroke="rgba(0,0,0,0.35)" strokeWidth={width * 1.35} lineJoin="round" lineCap="round" />
+      <Line points={points} stroke={color} strokeWidth={width} lineJoin="round" lineCap="round" />
+    </>
+  )
   return (
     <Group>
       {/* ground shadow and an invisible area so taps on the net hit the goal */}
-      <Line points={[-half, ground, half, ground, backHalf, backBottom, -backHalf, backBottom]} closed fill="rgba(0,0,0,0.1)" />
-      <Rect x={-half} y={backTop} width={half * 2} height={ground - backTop} fill="rgba(0,0,0,0)" />
-      {lines.map((p, i) => (
-        <Line key={i} points={p} stroke={net} strokeWidth={mesh} />
+      <Line points={[-half, ground, half, ground, farHalf, farBottom, -farHalf, farBottom]} closed fill="rgba(0,0,0,0.1)" />
+      <Rect x={-half} y={farTop} width={half * 2} height={ground - farTop} fill="rgba(0,0,0,0)" />
+      {view === 'front' ? (
+        <>
+          {netLines}
+          <Line points={far} stroke={shadeColor(color, -0.25)} strokeWidth={0.05} lineJoin="round" />
+          {frame(near, 0.12)}
+        </>
+      ) : (
+        <>
+          {/* From behind the goal frame is the far rectangle; the net hangs in front of it. */}
+          {frame(far, 0.1)}
+          {netLines}
+          <Line points={near} stroke={shadeColor(color, -0.25)} strokeWidth={0.05} lineJoin="round" />
+        </>
+      )}
+    </Group>
+  )
+}
+
+/** The goal from its side: post and crossbar in front, the net box going back; the far side shows a little higher. */
+function GoalSide({ color, mirrored }: { color: string; mirrored: boolean }) {
+  const height = 2.44
+  const depth = 2
+  const ground = 1
+  const barY = ground - height
+  // Opening on the right (posts at x = +depth / 2), the net at the back on the left.
+  const front = depth / 2
+  const back = -depth / 2
+  // The far side of the goal lies 7.32 m away: higher on screen and slightly shifted.
+  const rise = 0.7
+  const shift = 0.15
+  const far: number[][] = []
+  const near: number[][] = []
+  const sidePanel = (target: number[][], dx: number, dy: number) => {
+    for (let i = 1; i < 8; i++) {
+      const x = back + ((front - back) * i) / 8
+      target.push([x + dx, barY + dy, x + dx, ground + dy])
+    }
+    for (let i = 1; i < 8; i++) {
+      const y = barY + (height * i) / 8
+      target.push([back + dx, y + dy, front + dx, y + dy])
+    }
+  }
+  sidePanel(far, shift, -rise)
+  // Roof and back of the net between the near and the far side
+  for (let i = 0; i <= 6; i++) {
+    const x = back + ((front - back) * i) / 6
+    far.push([x, barY, x + shift, barY - rise])
+  }
+  for (let i = 1; i < 10; i++) {
+    const y = barY + (height * i) / 10
+    far.push([back, y, back + shift, y - rise])
+  }
+  sidePanel(near, 0, 0)
+  const outline = (dx: number, dy: number) => [front + dx, barY + dy, back + dx, barY + dy, back + dx, ground + dy]
+  const dark = shadeColor(color, -0.25)
+  return (
+    <Group scaleX={mirrored ? -1 : 1}>
+      <Line points={[front, ground, back, ground, back + shift, ground - rise, front + shift, ground - rise]} closed fill="rgba(0,0,0,0.12)" />
+      <Rect x={back} y={barY - rise} width={depth + shift} height={height + rise} fill="rgba(0,0,0,0)" />
+      {/* far side: its post, net frame and net, then the roof */}
+      <Line points={[front + shift, ground - rise, front + shift, barY - rise]} stroke={dark} strokeWidth={0.09} lineCap="round" />
+      <Line points={outline(shift, -rise)} stroke={dark} strokeWidth={0.04} lineJoin="round" />
+      {far.map((p, i) => (
+        <Line key={`f${i}`} points={p} stroke={NET} strokeWidth={MESH} />
       ))}
-      {/* back frame */}
-      <Line points={[-backHalf, backBottom, -backHalf, backTop, backHalf, backTop, backHalf, backBottom]} stroke={shadeColor(color, -0.25)} strokeWidth={0.05} lineJoin="round" />
-      {/* posts and crossbar in front */}
-      <Line points={[-half, ground, -half, barY, half, barY, half, ground]} stroke="rgba(0,0,0,0.35)" strokeWidth={0.16} lineJoin="round" lineCap="round" />
-      <Line points={[-half, ground, -half, barY, half, barY, half, ground]} stroke={color} strokeWidth={0.12} lineJoin="round" lineCap="round" />
+      {/* crossbar going away from the viewer and the ground bar at the back */}
+      <Line points={[front, barY, front + shift, barY - rise]} stroke={color} strokeWidth={0.1} lineCap="round" />
+      <Line points={[back, ground, back + shift, ground - rise]} stroke={dark} strokeWidth={0.04} />
+      {near.map((p, i) => (
+        <Line key={`n${i}`} points={p} stroke={NET} strokeWidth={MESH} />
+      ))}
+      {/* near side: net frame going back, post in front */}
+      <Line points={outline(0, 0)} stroke={dark} strokeWidth={0.05} lineJoin="round" />
+      <Line points={[front, ground, front, barY]} stroke="rgba(0,0,0,0.35)" strokeWidth={0.16} lineCap="round" />
+      <Line points={[front, ground, front, barY]} stroke={color} strokeWidth={0.12} lineCap="round" />
     </Group>
   )
 }

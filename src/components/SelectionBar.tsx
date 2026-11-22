@@ -27,7 +27,14 @@ import {
   zoneExtent,
   zonePattern,
 } from '../items/zones'
-import type { Item, Line, PlayerShape, PoleLean, Zone } from '../model/types'
+import type { GoalView, Item, Line, PlayerShape, PoleLean, Zone } from '../model/types'
+
+const GOAL_VIEWS: { value: GoalView; label: string }[] = [
+  { value: 'front', label: 'Von vorne' },
+  { value: 'back', label: 'Von hinten' },
+  { value: 'left', label: 'Seite, Öffnung links' },
+  { value: 'right', label: 'Seite, Öffnung rechts' },
+]
 
 const POLE_LEANS: { value: PoleLean; label: string }[] = [
   { value: 'left', label: 'Links' },
@@ -368,6 +375,25 @@ function ItemControls({ item }: { item: Item }) {
               }`}
             >
               {FIGURE_POSE_NAMES[pose]}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {item.type === 'goalFront' && (
+        <div role="group" aria-label="Ansicht" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
+          <span className="px-1 text-sm text-slate-400">Ansicht</span>
+          {GOAL_VIEWS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={(item.view ?? 'front') === o.value}
+              onClick={() => useDrillStore.getState().setGoalView(item.id, o.value)}
+              className={`min-h-8 rounded-md px-2 text-sm ${
+                (item.view ?? 'front') === o.value ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {o.label}
             </button>
           ))}
         </div>

@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box' | 'lean'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box' | 'lean' | 'view'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -186,7 +186,9 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'disc-pole-right', name: 'Stange auf Teller rechts', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'right' } },
   { key: 'disc-pole-front', name: 'Stange auf Teller nach vorne', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'front' } },
   { key: 'disc-pole-back', name: 'Stange auf Teller nach hinten', item: { type: 'discPole', color: '#facc15', size: 1.4, lean: 'back' } },
-  { key: 'goal-front', name: 'Großtor (perspektivisch)', item: { type: 'goalFront', color: '#ffffff' } },
+  { key: 'goal-front', name: 'Großtor von vorne', item: { type: 'goalFront', color: '#ffffff' } },
+  { key: 'goal-back', name: 'Großtor von hinten', item: { type: 'goalFront', color: '#ffffff', view: 'back' } },
+  { key: 'goal-side', name: 'Großtor von der Seite', item: { type: 'goalFront', color: '#ffffff', view: 'right' } },
   { key: 'marker-number', name: 'Nummer 1–30', item: { type: 'marker', color: '#ffffff', label: NEXT_NUMBER_LABEL } },
   { key: 'marker-letter', name: 'Buchstabe A–Z', item: { type: 'marker', color: '#facc15', label: NEXT_LETTER_LABEL } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
