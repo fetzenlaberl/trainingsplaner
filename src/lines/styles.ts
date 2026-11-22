@@ -6,6 +6,17 @@ export type LineWeight = 'extraThin' | 'thin' | 'medium' | 'thick' | 'extraThick
 export const LINE_PATTERNS: LinePattern[] = ['solid', 'dashed', 'dotted', 'dashdot']
 export const LINE_WEIGHTS: LineWeight[] = ['extraThin', 'thin', 'medium', 'thick', 'extraThick']
 
+/** Bright neon colors (lines, zones and text stand out on any pitch) */
+export const NEON_COLORS: { value: string; name: string }[] = [
+  { value: '#eaff00', name: 'Neongelb' },
+  { value: '#39ff14', name: 'Neongrün' },
+  { value: '#ff6f00', name: 'Neonorange' },
+  { value: '#ff2bd6', name: 'Neonpink' },
+  { value: '#00e5ff', name: 'Neonblau' },
+  { value: '#ff1744', name: 'Neonrot' },
+  { value: '#b026ff', name: 'Neonlila' },
+]
+
 /** Colors for drawn lines */
 export const LINE_COLORS: { value: string; name: string }[] = [
   { value: '#ffffff', name: 'Weiß' },
@@ -18,6 +29,7 @@ export const LINE_COLORS: { value: string; name: string }[] = [
   { value: '#2563eb', name: 'Blau' },
   { value: '#06b6d4', name: 'Türkis' },
   { value: '#22c55e', name: 'Grün' },
+  ...NEON_COLORS,
 ]
 
 export const LINE_PATTERN_LABELS: Record<LinePattern, string> = {

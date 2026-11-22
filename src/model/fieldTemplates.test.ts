@@ -184,6 +184,25 @@ describe('field templates', () => {
     expect(none.lines).toHaveLength(0)
   })
 
+  it('templates use players without arrow, extra thin lines and faint size labels', () => {
+    for (const drill of all) {
+      const scene = drill.scenes[0]
+      expect(scene.items.filter((i) => i.type === 'player').every((p) => p.facing === false), drill.title).toBe(true)
+      expect(scene.lines.every((l) => l.weight === 'extraThin'), drill.title).toBe(true)
+    }
+    const sizes = sizeFormatDrill(SIZE_FORMATS[3]).scenes[0]
+    const texts = sizes.items.filter((i) => i.type === 'text')
+    expect(texts.length).toBeGreaterThan(0)
+    expect(texts.every((t) => t.alpha === 0.5)).toBe(true)
+  })
+
+  it('keeps the facing arrow on drawn-in players when chosen, with any label opacity', () => {
+    const area = { length: 30, width: 20 }
+    const arrow = customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, labelOpacity: 0.3 })
+    expect(arrow.items.filter((i) => i.type === 'player').every((p) => p.facing === undefined)).toBe(true)
+    expect(arrow.items.filter((i) => i.type === 'text').every((t) => t.alpha === 0.3)).toBe(true)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

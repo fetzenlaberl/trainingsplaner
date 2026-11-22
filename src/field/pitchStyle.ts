@@ -9,6 +9,13 @@ export type PitchColor =
   | 'grassStadium'
   | 'grassPlain'
   | 'darkGreen'
+  | 'darkGreenPlain'
+  | 'firGreen'
+  | 'forestGreen'
+  | 'mossGreen'
+  | 'oliveGreen'
+  | 'emeraldGreen'
+  | 'mintGreen'
   | 'lightGreen'
   | 'blue'
   | 'grey'
@@ -316,6 +323,9 @@ export const MAX_CUSTOM_SIZE = 150
 
 export const DEFAULT_PITCH_STYLE: PitchStyle = { color: 'grass', grid: 'none', orientation: 'landscape' }
 
+/** Look of a new drill: plain dark green without stripes. */
+export const NEW_DRILL_PITCH_STYLE: PitchStyle = { ...DEFAULT_PITCH_STYLE, color: 'darkGreenPlain' }
+
 export const ORIENTATION_LABELS: Record<Orientation, string> = {
   landscape: 'Querformat',
   portrait: 'Hochformat',
@@ -390,6 +400,62 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     stripe: '#22612a',
     line: '#ffffff',
     grid: 'rgba(255,255,255,0.55)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  darkGreenPlain: {
+    label: 'Dunkelgrün ohne Streifen',
+    base: '#1d5524',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  firGreen: {
+    label: 'Tannengrün',
+    base: '#173f26',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  forestGreen: {
+    label: 'Waldgrün',
+    base: '#256b30',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  mossGreen: {
+    label: 'Moosgrün',
+    base: '#4d6b2c',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  oliveGreen: {
+    label: 'Olivgrün',
+    base: '#636b2f',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  emeraldGreen: {
+    label: 'Smaragdgrün',
+    base: '#0f7a55',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  mintGreen: {
+    label: 'Mintgrün',
+    base: '#4fb488',
+    stripe: null,
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.6)',
     goalFill: 'rgba(255,255,255,0.25)',
   },
   lightGreen: {
@@ -517,6 +583,13 @@ export const PITCH_COLOR_ORDER: PitchColor[] = [
   'grassStadium',
   'grassPlain',
   'darkGreen',
+  'darkGreenPlain',
+  'firGreen',
+  'forestGreen',
+  'mossGreen',
+  'oliveGreen',
+  'emeraldGreen',
+  'mintGreen',
   'lightGreen',
   'blue',
   'navy',

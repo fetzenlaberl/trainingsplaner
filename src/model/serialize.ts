@@ -2,6 +2,7 @@ import { FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from 
 import type { Orientation } from '../field/orientation'
 import {
   DEFAULT_PITCH_STYLE,
+  NEW_DRILL_PITCH_STYLE,
   GRID_ORDER,
   MAX_CUSTOM_PARTS,
   MAX_NOTES_LENGTH,
@@ -138,7 +139,7 @@ export function emptyDrill(): Drill {
     area: 'drill',
     info: { ...EMPTY_DRILL_INFO },
     fieldType: 'full',
-    pitch: { ...DEFAULT_PITCH_STYLE },
+    pitch: { ...NEW_DRILL_PITCH_STYLE },
     scenes: [{ durationMs: DEFAULT_SCENE_DURATION_MS, items: [], lines: [], zones: [] }],
   }
 }

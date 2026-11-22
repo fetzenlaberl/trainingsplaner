@@ -46,6 +46,8 @@ function addItem(b: Builder, type: ItemType, x: number, y: number, extra: Partia
     label: '',
     name: '',
     highlight: false,
+    // Players in the templates come without the facing arrow.
+    ...(type === 'player' ? { facing: false } : {}),
     ...extra,
     ...(extra.size !== undefined ? { size: clampItemSize(extra.size) } : {}),
   })
@@ -64,7 +66,7 @@ function addLine(
     smooth: options.smooth ?? false,
     color: options.color ?? WHITE,
     pattern: options.pattern ?? 'solid',
-    weight: options.weight ?? 'medium',
+    weight: options.weight ?? 'extraThin',
     step: options.step ?? null,
   })
 }
@@ -122,7 +124,27 @@ function miniGoalSize(area: FieldArea): number {
  * side 'bottom' = along y = width (length label), 'left' = along x = 0 (width label);
  * `screenUp` turns the text so it reads along the side on screen.
  */
-function addSizeLabel(b: Builder, area: FieldArea, side: 'bottom' | 'left', text: string, textRotation = 0): void {
+function addSizeLabel(
+  b: Builder,
+  area: FieldArea,
+  side: 'bottom' | 'left',
+  text: string,
+  textRotation = 0,
+  alpha = SIZE_LABEL_OPACITY,
+): void {
+  const firstItem = b.items.length
+  const firstLine = b.lines.length
+  addSizeLabelParts(b, area, side, text, textRotation)
+  if (alpha < 1) {
+    for (const item of b.items.slice(firstItem)) item.alpha = alpha
+    for (const line of b.lines.slice(firstLine)) line.alpha = alpha
+  }
+}
+
+/** Usual opacity of the size labels (faint, so they do not distract). */
+export const SIZE_LABEL_OPACITY = 0.5
+
+function addSizeLabelParts(b: Builder, area: FieldArea, side: 'bottom' | 'left', text: string, textRotation: number): void {
   const offset = areaRunoff(area) * 0.7
   const textSize = clampItemSize(0.75 * b.k)
   const font = 2 * textSize
@@ -409,7 +431,7 @@ export function fieldVariantDrill(key: VariantKey): Drill {
       addGoal(b, 'goal', 0, area.width / 2, 0)
       addGoal(b, 'goal', area.length, area.width / 2, 180)
       for (const x of [area.length / 3, (2 * area.length) / 3]) {
-        addLine(b, 'line', [{ x, y: 0 }, { x, y: area.width }], { pattern: 'dashed', weight: 'medium' })
+        addLine(b, 'line', [{ x, y: 0 }, { x, y: area.width }], { pattern: 'dashed' })
       }
       addItem(b, 'player', 2.5, area.width / 2, { color: NEUTRAL, size: 1.5 * b.k, label: 'TW' })
       addItem(b, 'player', area.length - 2.5, area.width / 2, { color: NEUTRAL, size: 1.5 * b.k, label: 'TW', rotation: 180 })
@@ -720,15 +742,14 @@ export interface FieldDrawOptions {
   goalType: 'minigoal' | 'goal'
   /** Outline, size labels, cones and goals fixed (players and ball stay movable) */
   lockField: boolean
-  /** Opacity of the size labels: 0 = none, 0.5 = faint, 1 = full */
+  /** Opacity of the size labels: 0 = none, else 0.1–1 */
   labelOpacity: number
 }
 
-export const LABEL_OPACITIES: { value: number; label: string }[] = [
-  { value: 0, label: 'Aus' },
-  { value: 0.5, label: '50 %' },
-  { value: 1, label: '100 %' },
-]
+/** Valid opacity of the size labels: 0 (none) or 0.1–1. */
+export function isLabelOpacity(value: unknown): value is number {
+  return typeof value === 'number' && (value === 0 || (value >= 0.1 && value <= 1))
+}
 
 export type ConeSize = 'normal' | 'large' | 'xlarge'
 export const CONE_SIZES: { value: ConeSize; label: string; factor: number }[] = [
@@ -885,24 +906,18 @@ export function customFieldScene(
   const label = options.numbers ? undefined : () => ''
   if (blue > 0) addTeam(b, area, options.teamColors[0], SIZE_ROWS[Math.min(blue, MAX_TEAM_PLAYERS)], 'left', label)
   if (red > 0) addTeam(b, area, options.teamColors[1], SIZE_ROWS[Math.min(red, MAX_TEAM_PLAYERS)], 'right', label)
-  if (options.playerShape !== 'arrow') {
-    for (const item of b.items) {
-      if (item.type === 'player') Object.assign(item, { shape: options.playerShape, facing: false })
-    }
+  for (const item of b.items) {
+    if (item.type !== 'player') continue
+    if (options.playerShape === 'arrow') delete item.facing
+    else Object.assign(item, { shape: options.playerShape, facing: false })
   }
   addBall(b, area.length / 2, area.width / 2)
   const meters = (v: number) => `${v.toLocaleString('de-DE')} m`
   // The labels read along their side on screen in both orientations.
   const portrait = orientation === 'portrait'
   if (options.labelOpacity > 0) {
-    const firstLabel = b.items.length
-    addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0)
-    addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90)
-    if (options.labelOpacity < 1) {
-      // The size labels are the last texts and the only lines of the drawn-in field.
-      for (const item of b.items.slice(firstLabel)) item.alpha = options.labelOpacity
-      for (const line of b.lines) line.alpha = options.labelOpacity
-    }
+    addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0, options.labelOpacity)
+    addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90, options.labelOpacity)
   }
   if (options.lockField) lockFieldParts(b)
   return { items: b.items, lines: b.lines, zones: b.zones, format }

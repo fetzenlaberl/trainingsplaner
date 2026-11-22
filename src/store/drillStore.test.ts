@@ -639,7 +639,7 @@ describe('pitch style', () => {
     store().undo()
     expect(store().pitch.grid).toBe('none')
     store().undo()
-    expect(store().pitch.color).toBe('grass')
+    expect(store().pitch.color).toBe('darkGreenPlain')
   })
 
   it('switches between landscape and portrait with undo', () => {
@@ -650,7 +650,7 @@ describe('pitch style', () => {
   })
 
   it('ignores setting the same value again', () => {
-    store().setPitchColor('grass')
+    store().setPitchColor('darkGreenPlain')
     store().setGrid('none')
     expect(store().past).toEqual([])
   })

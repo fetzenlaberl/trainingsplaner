@@ -10,7 +10,8 @@ import {
   DEFAULT_FIELD_DRAW_OPTIONS,
   formatName,
   isFieldPart,
-  LABEL_OPACITIES,
+  isLabelOpacity,
+  SIZE_LABEL_OPACITY,
   MAX_SIDE_CONES,
   MAX_SIDE_GOALS,
   MAX_TEAM_PLAYERS,
@@ -90,7 +91,7 @@ function loadDrawOptions(): FieldDrawOptions {
       goals,
       goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
       lockField: v.lockField !== false,
-      labelOpacity: LABEL_OPACITIES.some((o) => o.value === v.labelOpacity) ? (v.labelOpacity as number) : d.labelOpacity,
+      labelOpacity: isLabelOpacity(v.labelOpacity) ? v.labelOpacity : d.labelOpacity,
     }
   } catch {
     return d
@@ -488,18 +489,31 @@ function AreaInputs() {
           </div>
           <div className={row}>
             <span className={rowLabel}>Maße</span>
-            {LABEL_OPACITIES.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                aria-pressed={options.labelOpacity === o.value}
-                className={choice(options.labelOpacity === o.value)}
-                onClick={() => changeOptions({ labelOpacity: o.value })}
-                title="Deckkraft der Maßangaben (Länge und Breite mit Pfeilen)"
-              >
-                {o.label}
-              </button>
-            ))}
+            <button
+              type="button"
+              aria-pressed={options.labelOpacity > 0}
+              className={choice(options.labelOpacity > 0)}
+              onClick={() => changeOptions((c) => ({ labelOpacity: c.labelOpacity > 0 ? 0 : SIZE_LABEL_OPACITY }))}
+              title="Maßangaben (Länge und Breite mit Pfeilen) zeigen oder weglassen"
+            >
+              {options.labelOpacity > 0 ? 'An' : 'Aus'}
+            </button>
+            {options.labelOpacity > 0 && (
+              <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Deckkraft der Maßangaben">
+                Deckkraft
+                <input
+                  type="range"
+                  aria-label="Deckkraft der Maßangaben"
+                  className="w-24 accent-emerald-500"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={options.labelOpacity}
+                  onChange={(e) => changeOptions({ labelOpacity: Number(e.target.value) })}
+                />
+                <span className="w-9 text-right tabular-nums">{Math.round(options.labelOpacity * 100)} %</span>
+              </label>
+            )}
           </div>
           <div className={row}>
             <span className={rowLabel}>Hütchen</span>

@@ -1,5 +1,6 @@
 import type { LinePattern } from '../lines/styles'
 import type { Point, Zone, ZoneGoals, ZoneShape } from '../model/types'
+import { NEON_COLORS } from '../lines/styles'
 
 export interface ZoneTemplate {
   key: string
@@ -206,6 +207,7 @@ export const ZONE_COLORS: { value: string; name: string }[] = [
   { value: '#2563eb', name: 'Blau' },
   { value: '#16a34a', name: 'Grün' },
   { value: '#f97316', name: 'Orange' },
+  ...NEON_COLORS,
 ]
 
 export const DEFAULT_ZONE_COLOR = ZONE_COLORS[0].value
