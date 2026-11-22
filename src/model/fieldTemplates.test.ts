@@ -211,6 +211,9 @@ describe('field templates', () => {
     expect(players(null).every((p) => p.symbol === undefined)).toBe(true)
     expect(players('outline').every((p) => p.symbol === 'outline')).toBe(true)
     expect(players('flat').every((p) => p.symbol === 'flat')).toBe(true)
+    const cones = customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, cones: true, coneSymbol: 'outline' }).items.filter((i) => i.type === 'cone')
+    expect(cones.length).toBe(4)
+    expect(cones.every((c) => c.symbol === 'outline')).toBe(true)
   })
 
   it('divides the field with lines in the outline style', () => {

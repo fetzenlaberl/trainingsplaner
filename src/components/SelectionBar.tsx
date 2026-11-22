@@ -368,8 +368,8 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {item.type === 'player' && (
-        <div role="group" aria-label="Darstellung" className="flex gap-1 rounded-lg bg-slate-800 p-1" title="Bleibt für die nächsten Spieler, bis du es änderst">
+      {(item.type === 'player' || item.type === 'cone') && (
+        <div role="group" aria-label="Darstellung" className="flex gap-1 rounded-lg bg-slate-800 p-1" title="Bleibt für die nächsten, bis du es änderst">
           {SYMBOL_STYLES.map((o) => (
             <button
               key={o.label}

@@ -833,6 +833,8 @@ export interface FieldDrawOptions {
   division: FieldDivision
   /** Players filled with a white border (null), filled without border, or only their outline */
   playerSymbol: SymbolStyle | null
+  /** Cones as usual (null), fully colored, or only their outline */
+  coneSymbol: SymbolStyle | null
 }
 
 /** none, center line, thirds, quarters 2 × 2, or four strips from goal to goal */
@@ -902,6 +904,7 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   labelOpacity: 0.5,
   division: 'none',
   playerSymbol: null,
+  coneSymbol: null,
 }
 
 /**
@@ -1000,7 +1003,8 @@ export function customFieldScene(
   }
   const format = standardFormat(area)
   const coneSize = clampItemSize(b.k * (CONE_SIZES.find((c) => c.value === options.coneSize)?.factor ?? 1))
-  const cone = (x: number, y: number) => addItem(b, 'cone', x, y, { color: options.coneColor, size: coneSize })
+  const cone = (x: number, y: number) =>
+    addItem(b, 'cone', x, y, { color: options.coneColor, size: coneSize, ...(options.coneSymbol ? { symbol: options.coneSymbol } : {}) })
   if (options.cones) {
     // On rounded corners the cones sit on the middle of the curve (45°).
     const r = options.rounded

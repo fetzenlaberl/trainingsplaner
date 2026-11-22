@@ -86,6 +86,7 @@ function loadDrawOptions(): FieldDrawOptions {
       playerShape: v.playerShape === 'circle' || v.playerShape === 'triangle' ? v.playerShape : 'arrow',
       numbers: v.numbers !== false,
       playerSymbol: v.playerSymbol === 'flat' || v.playerSymbol === 'outline' ? v.playerSymbol : null,
+      coneSymbol: v.coneSymbol === 'flat' || v.coneSymbol === 'outline' ? v.coneSymbol : null,
       teamColors: [colors[0], colors[1]],
       cones: v.cones === true,
       sideCones: isCount(v.sideCones, MAX_SIDE_CONES) ? v.sideCones : d.sideCones,
@@ -119,6 +120,12 @@ const PLAYER_SHAPES: { value: FieldDrawOptions['playerShape']; label: string }[]
 const PLAYER_SYMBOLS: { value: FieldDrawOptions['playerSymbol']; label: string; title: string }[] = [
   { value: null, label: 'Mit Rand', title: 'Ausgefüllt mit weißem Rand' },
   { value: 'flat', label: 'Vollfarbe', title: 'Ausgefüllt ohne Rand' },
+  { value: 'outline', label: 'Umriss', title: 'Nur farbiger Rand, innen durchsichtig' },
+]
+
+const CONE_SYMBOLS: { value: FieldDrawOptions['coneSymbol']; label: string; title: string }[] = [
+  { value: null, label: 'Mit Rand', title: 'Hütchen mit Rand und Öffnung' },
+  { value: 'flat', label: 'Vollfarbe', title: 'Ganz ausgefüllt' },
   { value: 'outline', label: 'Umriss', title: 'Nur farbiger Rand, innen durchsichtig' },
 ]
 
@@ -580,6 +587,18 @@ function AreaInputs() {
                   ))}
                 </div>
                 <ColorSwatches label="Farbe" colors={CONE_COLORS} value={options.coneColor} onSelect={(coneColor) => changeOptions({ coneColor })} />
+                {CONE_SYMBOLS.map((o) => (
+                  <button
+                    key={o.label}
+                    type="button"
+                    aria-pressed={options.coneSymbol === o.value}
+                    className={choice(options.coneSymbol === o.value)}
+                    onClick={() => changeOptions({ coneSymbol: o.value })}
+                    title={o.title}
+                  >
+                    {o.label}
+                  </button>
+                ))}
               </>
             )}
           </div>

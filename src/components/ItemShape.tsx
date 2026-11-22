@@ -98,9 +98,21 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       )
     case 'cone':
       return (
+        // Usual cone with edge and opening, fully colored, or only the colored outline.
         <Group rotation={rotation}>
-          <Circle radius={CONE_RADIUS} fill={color} stroke="#9a3412" strokeWidth={0.06} />
-          <Circle radius={CONE_RADIUS * 0.45} fill="#fed7aa" />
+          {symbol === 'outline' ? (
+            <>
+              <Circle radius={CONE_RADIUS - 0.05} fill="rgba(0,0,0,0)" stroke={color} strokeWidth={0.12} />
+              <Circle radius={CONE_RADIUS * 0.4} stroke={color} strokeWidth={0.06} />
+            </>
+          ) : symbol === 'flat' ? (
+            <Circle radius={CONE_RADIUS} fill={color} />
+          ) : (
+            <>
+              <Circle radius={CONE_RADIUS} fill={color} stroke="#9a3412" strokeWidth={0.06} />
+              <Circle radius={CONE_RADIUS * 0.45} fill="#fed7aa" />
+            </>
+          )}
         </Group>
       )
     case 'pole':

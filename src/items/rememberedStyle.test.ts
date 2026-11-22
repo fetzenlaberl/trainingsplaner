@@ -44,6 +44,12 @@ describe('remembered object style', () => {
     expect(withRememberedStyle(template('player-blue')).symbol).toBeUndefined()
   })
 
+  it('keeps the look of cones for the next cone', () => {
+    rememberStyle(item('cone'), { symbol: 'flat' })
+    expect(withRememberedStyle(template('cone')).symbol).toBe('flat')
+    expect(withRememberedStyle(template('player-red')).symbol).toBeUndefined()
+  })
+
   it('remembers per entry when a type has several entries, by where the object came from', () => {
     rememberStyle(item('discPole', 'x'), { color: '#dc2626' })
     expect(withRememberedStyle(template('disc-pole-left')).color).toBe(template('disc-pole-left').item.color)

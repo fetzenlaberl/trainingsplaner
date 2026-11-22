@@ -11,7 +11,7 @@ const PLAYER_SYMBOL_KEY = 'players'
 export interface RememberedStyle {
   color?: string
   size?: number
-  /** Player symbol look (stored for all players together); null = with border */
+  /** Look of players (stored for all players together) or cones; null = with border */
   symbol?: SymbolStyle | null
 }
 
@@ -58,7 +58,7 @@ function keepsColor(template: ItemTemplate): boolean {
 /** The template item with the remembered color and size. */
 export function withRememberedStyle(template: ItemTemplate): NewItem {
   const style = load()[template.key]
-  const symbol = template.item.type === 'player' ? load()[PLAYER_SYMBOL_KEY]?.symbol : undefined
+  const symbol = template.item.type === 'player' ? load()[PLAYER_SYMBOL_KEY]?.symbol : style?.symbol
   if (!style && !symbol) return template.item
   return {
     ...template.item,
@@ -86,6 +86,7 @@ export function rememberStyle(item: Item, change: RememberedStyle): void {
   if (change.symbol !== undefined && item.type === 'player') {
     load()[PLAYER_SYMBOL_KEY] = { symbol: change.symbol }
     save()
+    return
   }
   const template = templateOf(item)
   if (!template) return
@@ -93,6 +94,7 @@ export function rememberStyle(item: Item, change: RememberedStyle): void {
   const next = { ...all[template.key] }
   if (change.color !== undefined && keepsColor(template)) next.color = change.color
   if (change.size !== undefined) next.size = clampItemSize(change.size)
+  if (change.symbol !== undefined) next.symbol = change.symbol
   all[template.key] = next
   save()
 }
