@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ELLIPSE_POINTS, baseCorners, hasDirectCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon } from './zones'
+import { ELLIPSE_POINTS, baseCorners, hasDirectCorners, edgeMidpoints, insertCorner, MAX_CORNERS, removeCorner, ZONE_TEMPLATES, zoneCorners, zoneExtent, zoneGoalPositions, MAX_POLYGON_CORNERS, MIN_POLYGON_CORNERS, regularPolygon, zoneCornerRadius, zonePattern } from './zones'
 
 const rect = (width: number, height: number) => baseCorners('rect', width, height)
 
@@ -150,5 +150,22 @@ describe('hasDirectCorners', () => {
     expect(hasDirectCorners({ shape: 'triangle', corners: null })).toBe(true)
     expect(hasDirectCorners({ shape: 'ellipse', corners: null })).toBe(false)
     expect(hasDirectCorners({ shape: 'ellipse', corners: [{ x: 0, y: 0 }] })).toBe(true)
+  })
+})
+
+describe('zone outline', () => {
+  it('falls back to dashed or solid for older zones', () => {
+    expect(zonePattern({ dashed: true })).toBe('dashed')
+    expect(zonePattern({ dashed: false })).toBe('solid')
+    expect(zonePattern({ dashed: true, pattern: 'dotted' })).toBe('dotted')
+  })
+
+  it('rounds only plain rectangles', () => {
+    const rect = { shape: 'rect' as const, width: 30, height: 12, corners: null, rounded: true }
+    expect(zoneCornerRadius(rect)).toBe(2)
+    expect(zoneCornerRadius({ ...rect, width: 60, height: 40 })).toBe(3)
+    expect(zoneCornerRadius({ ...rect, rounded: false })).toBe(0)
+    expect(zoneCornerRadius({ ...rect, shape: 'triangle' })).toBe(0)
+    expect(zoneCornerRadius({ ...rect, corners: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 0, y: 1 }] })).toBe(0)
   })
 })

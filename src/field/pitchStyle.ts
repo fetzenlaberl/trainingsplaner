@@ -1,5 +1,6 @@
 import { PITCH, type FieldArea } from './dimensions'
 import type { Orientation } from './orientation'
+import type { SurfaceTexture } from './surfaceTextures'
 
 export type PitchColor =
   | 'grass'
@@ -18,6 +19,10 @@ export type PitchColor =
   | 'purple'
   | 'tartan'
   | 'sand'
+  | 'redClay'
+  | 'wood'
+  | 'asphalt'
+  | 'concrete'
 
 /** Thickness of the pitch markings */
 export type PitchLineWidth = 'extraThin' | 'thin' | 'normal' | 'thick' | 'extraThick'
@@ -323,8 +328,8 @@ interface ColorScheme {
   stripe: string | null
   /** How the stripes are mown (default: wide stripes) */
   pattern?: 'stripes' | 'fineStripes' | 'check'
-  /** Fine grass texture on top */
-  texture?: boolean
+  /** Texture drawn on top (grass blades, planks, grain …) */
+  texture?: SurfaceTexture
   /** Soft floodlight: lighter in the middle, darker at the edges */
   lighting?: boolean
   line: string
@@ -346,7 +351,7 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     base: '#2b7631',
     stripe: '#33833a',
     pattern: 'fineStripes',
-    texture: true,
+    texture: 'grass',
     line: '#ffffff',
     grid: 'rgba(255,255,255,0.6)',
     goalFill: 'rgba(255,255,255,0.25)',
@@ -356,7 +361,7 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     base: '#2d7a32',
     stripe: '#368a3c',
     pattern: 'check',
-    texture: true,
+    texture: 'grass',
     line: '#ffffff',
     grid: 'rgba(255,255,255,0.6)',
     goalFill: 'rgba(255,255,255,0.25)',
@@ -365,7 +370,7 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     label: 'Stadion (Flutlicht)',
     base: '#28702e',
     stripe: '#318037',
-    texture: true,
+    texture: 'grass',
     lighting: true,
     line: '#ffffff',
     grid: 'rgba(255,255,255,0.6)',
@@ -459,6 +464,42 @@ export const PITCH_COLORS: Record<PitchColor, ColorScheme> = {
     grid: 'rgba(255,255,255,0.75)',
     goalFill: 'rgba(255,255,255,0.3)',
   },
+  redClay: {
+    label: 'Rote Erde (Tenne)',
+    base: '#a4502f',
+    stripe: null,
+    texture: 'clay',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.65)',
+    goalFill: 'rgba(255,255,255,0.25)',
+  },
+  wood: {
+    label: 'Holz (Hallenboden)',
+    base: '#c99a5e',
+    stripe: null,
+    texture: 'wood',
+    line: '#1e293b',
+    grid: 'rgba(30,41,59,0.5)',
+    goalFill: 'rgba(30,41,59,0.1)',
+  },
+  asphalt: {
+    label: 'Asphalt',
+    base: '#404347',
+    stripe: null,
+    texture: 'asphalt',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.55)',
+    goalFill: 'rgba(255,255,255,0.22)',
+  },
+  concrete: {
+    label: 'Beton',
+    base: '#9b9d9a',
+    stripe: null,
+    texture: 'concrete',
+    line: '#ffffff',
+    grid: 'rgba(255,255,255,0.75)',
+    goalFill: 'rgba(255,255,255,0.3)',
+  },
   white: {
     label: 'Weiß (druckfreundlich)',
     base: '#ffffff',
@@ -482,6 +523,10 @@ export const PITCH_COLOR_ORDER: PitchColor[] = [
   'purple',
   'tartan',
   'sand',
+  'redClay',
+  'wood',
+  'asphalt',
+  'concrete',
   'grey',
   'anthracite',
   'black',

@@ -22,8 +22,10 @@ import {
   regularPolygon,
   ZONE_COLORS,
   ZONE_GOAL_OPTIONS,
+  canRoundZone,
   zoneCorners,
   zoneExtent,
+  zonePattern,
 } from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
@@ -575,14 +577,23 @@ function ZoneControls({ zone }: { zone: Zone }) {
         value={zone.color}
         onSelect={(color) => updateZone(zone.id, { color })}
       />
-      <button
-        type="button"
-        className={buttonClass}
-        title="Rand umschalten"
-        onClick={() => updateZone(zone.id, { dashed: !zone.dashed })}
-      >
-        {zone.dashed ? 'Rand durchgezogen' : 'Rand gestrichelt'}
-      </button>
+      <LineStylePicker
+        pattern={zonePattern(zone)}
+        weight={zone.weight ?? 'medium'}
+        onPattern={(pattern) => pattern !== 'auto' && updateZone(zone.id, { pattern, dashed: pattern !== 'solid' })}
+        onWeight={(weight) => updateZone(zone.id, { weight })}
+      />
+      {canRoundZone(zone) && (
+        <button
+          type="button"
+          aria-pressed={zone.rounded === true}
+          title="Ecken der Zone abrunden"
+          onClick={() => updateZone(zone.id, { rounded: !zone.rounded })}
+          className={`${buttonClass} ${zone.rounded ? 'bg-emerald-600 text-white hover:bg-emerald-500' : ''}`}
+        >
+          Ecken rund
+        </button>
+      )}
       {zone.shape === 'rect' && (
         <div role="group" aria-label="Minitore" className="flex items-center gap-1">
           <span className="text-sm text-slate-400">Tore</span>

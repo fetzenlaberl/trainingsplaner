@@ -78,6 +78,8 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
               color={SELECTION_COLOR}
               fillOpacity={0}
               dashed
+              pattern="dashed"
+              weight="medium"
               label=""
               goals={0}
               scale={scale / 2}

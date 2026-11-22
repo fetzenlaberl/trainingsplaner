@@ -1,10 +1,11 @@
 import { useContext } from 'react'
-import { Ellipse, Group, Line } from 'react-konva'
+import { Ellipse, Group, Line, Rect } from 'react-konva'
 import { MeterText } from './MeterText'
 import { displayColor } from '../field/pitchStyle'
 import { MINIGOAL } from '../items/equipment'
-import { ELLIPSE_TENSION, zoneCorners, zoneExtent, zoneGoalPositions } from '../items/zones'
+import { ELLIPSE_TENSION, zoneCorners, zoneCornerRadius, zoneExtent, zoneGoalPositions, zonePattern } from '../items/zones'
 import { flatten } from '../lines/geometry'
+import { dashStyle, weightFactor } from '../lines/styles'
 import type { Zone } from '../model/types'
 import { GoalShape } from './EquipmentShapes'
 import { PitchColorContext } from './pitchColorContext'
@@ -13,7 +14,8 @@ import { ViewRotationContext } from './viewRotationContext'
 type ZoneShapeProps = Pick<
   Zone,
   'shape' | 'width' | 'height' | 'corners' | 'color' | 'fillColor' | 'fillOpacity' | 'dashed' | 'label' | 'goals'
-> & {
+> &
+  Partial<Pick<Zone, 'pattern' | 'weight' | 'rounded'>> & {
   /** Pixels per meter, keeps the outline visible at small sizes */
   scale: number
 }
@@ -28,6 +30,9 @@ export function ZoneShape({
   fillColor: chosenFill,
   fillOpacity,
   dashed,
+  pattern: chosenPattern,
+  weight,
+  rounded,
   label,
   goals,
   scale,
@@ -39,13 +44,18 @@ export function ZoneShape({
   // In portrait the label turns back upright; its box then spans the zone's height.
   const upright = -useContext(ViewRotationContext)
   const labelWidth = upright === 0 ? extent.width : extent.height
-  const strokeWidth = Math.max(0.15, 1.5 / scale)
+  const strokeWidth = Math.max(0.15, 1.5 / scale) * weightFactor(weight ?? 'medium')
+  const pattern = zonePattern({ dashed, pattern: chosenPattern })
+  const { dash, lineCap } = dashStyle(pattern, strokeWidth)
   // Fill and outline are separate shapes: only the fill is see-through.
   const outline = {
     stroke: color,
     strokeWidth,
-    dash: dashed ? [strokeWidth * 5, strokeWidth * 3] : undefined,
+    // The usual dashes of a zone are a little longer than those of a line.
+    dash: pattern === 'dashed' ? [strokeWidth * 5, strokeWidth * 3] : dash,
+    lineCap,
   }
+  const radius = zoneCornerRadius({ shape, width, height, corners, rounded })
   // A reshaped circle is a smooth curve through its points.
   const smooth = shape === 'ellipse' ? ELLIPSE_TENSION : 0
   const outlinePoints = flatten(zoneCorners({ shape, width, height, corners }))
@@ -57,7 +67,12 @@ export function ZoneShape({
 
   return (
     <>
-      {shape === 'ellipse' && !corners ? (
+      {radius > 0 ? (
+        <>
+          <Rect x={-width / 2} y={-height / 2} width={width} height={height} cornerRadius={radius} fill={fill} opacity={fillOpacity} />
+          <Rect x={-width / 2} y={-height / 2} width={width} height={height} cornerRadius={radius} {...outline} />
+        </>
+      ) : shape === 'ellipse' && !corners ? (
         <>
           <Ellipse radiusX={width / 2} radiusY={height / 2} fill={fill} opacity={fillOpacity} />
           <Ellipse radiusX={width / 2} radiusY={height / 2} {...outline} />

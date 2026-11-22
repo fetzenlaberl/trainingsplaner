@@ -1,3 +1,4 @@
+import type { LinePattern } from '../lines/styles'
 import type { Point, Zone, ZoneGoals, ZoneShape } from '../model/types'
 
 export interface ZoneTemplate {
@@ -219,4 +220,20 @@ export function clampFillOpacity(value: number): number {
 export function clampZoneSize(value: number): number {
   if (!Number.isFinite(value)) return MIN_ZONE_SIZE
   return Math.min(Math.max(value, MIN_ZONE_SIZE), MAX_ZONE_SIZE)
+}
+
+/** Outline pattern of a zone; older zones only know dashed or solid. */
+export function zonePattern(zone: Pick<Zone, 'dashed' | 'pattern'>): LinePattern {
+  return zone.pattern ?? (zone.dashed ? 'dashed' : 'solid')
+}
+
+/** Rounded corners only work on plain rectangles (no free corners). */
+export function canRoundZone(zone: Pick<Zone, 'shape' | 'corners'>): boolean {
+  return zone.shape === 'rect' && !zone.corners
+}
+
+/** Corner radius in meters (0 = sharp corners): about a sixth of the shorter side, at most 3 m. */
+export function zoneCornerRadius(zone: Pick<Zone, 'shape' | 'width' | 'height' | 'corners' | 'rounded'>): number {
+  if (!zone.rounded || !canRoundZone(zone)) return 0
+  return Math.min(3, Math.min(zone.width, zone.height) / 6)
 }

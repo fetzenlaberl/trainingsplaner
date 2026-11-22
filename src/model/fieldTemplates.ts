@@ -2,7 +2,7 @@
 // different goal setups, and Y-pass patterns. Everything is built from the app's own
 // items, zones and lines on an empty field of the right size, so it stays editable.
 
-import { areaRunoff, type FieldArea } from '../field/dimensions'
+import { areaRunoff, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
 import type { LinePattern, LineWeight } from '../lines/styles'
 import { MINIGOAL } from '../items/equipment'
 import { clampItemSize } from '../items/palette'
@@ -69,7 +69,7 @@ function addLine(
 }
 
 /** The playing field: white outline over the whole area, optionally dashed. */
-function addOutline(b: Builder, area: FieldArea, dashed = false): void {
+function addOutline(b: Builder, area: FieldArea, dashed = false, style: Partial<Zone> = {}): void {
   b.zones.push({
     id: 'zone-tpl-field',
     shape: 'rect',
@@ -85,6 +85,7 @@ function addOutline(b: Builder, area: FieldArea, dashed = false): void {
     label: '',
     goals: 0,
     corners: null,
+    ...style,
   })
 }
 
@@ -224,6 +225,8 @@ const SIZE_ROWS: Record<number, number[]> = {
   7: [3, 3, 1],
   8: [3, 3, 2],
   9: [3, 4, 2],
+  10: [4, 4, 2],
+  11: [4, 4, 3],
 }
 
 const range = ([a, b]: [number, number]) => `${a}–${b}`
@@ -672,20 +675,92 @@ export function standardFormat(area: FieldArea): SizeFormat {
   )
 }
 
+/** Most players per team for a field from the player count */
+export const MAX_TEAM_PLAYERS = 11
+
+/** How the drawn-in field looks: outline, fill, corners and players. */
+export interface FieldDrawOptions {
+  pattern: LinePattern
+  weight: LineWeight
+  color: string
+  /** Fill color inside the outline, null = no fill */
+  fill: string | null
+  fillOpacity: number
+  rounded: boolean
+  /** Players as circle with facing arrow, or plain circles / triangles */
+  playerShape: 'arrow' | 'circle' | 'triangle'
+}
+
+export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
+  pattern: 'dashed',
+  weight: 'medium',
+  color: WHITE,
+  fill: null,
+  fillOpacity: 0.25,
+  rounded: false,
+  playerShape: 'arrow',
+}
+
 /**
- * Scene content for an own-size empty field: dashed outline with the entered size, size
- * labels and the usual number of players for that size (two teams and a ball).
+ * Field size for a player count, e.g. 6 against 3: the usual space per player of the
+ * small-sided formats (in between two formats it is interpolated) and their shape.
+ */
+export function areaForPlayers(teamA: number, teamB: number): FieldArea {
+  const perTeam = Math.max(0.5, (teamA + teamB) / 2)
+  const usualArea = (f: SizeFormat) => middle(f.length) * middle(f.width)
+  const ratio = (f: SizeFormat) => middle(f.length) / middle(f.width)
+  const perPlayer = (f: SizeFormat) => usualArea(f) / (2 * f.players)
+  const first = SIZE_FORMATS[0]
+  const last = SIZE_FORMATS[SIZE_FORMATS.length - 1]
+  let spacePerPlayer: number
+  let shape: number
+  if (perTeam <= first.players) {
+    spacePerPlayer = perPlayer(first)
+    shape = ratio(first)
+  } else if (perTeam >= last.players) {
+    spacePerPlayer = perPlayer(last)
+    shape = ratio(last)
+  } else {
+    const upper = SIZE_FORMATS.findIndex((f) => f.players >= perTeam)
+    const a = SIZE_FORMATS[upper - 1]
+    const b = SIZE_FORMATS[upper]
+    const t = (perTeam - a.players) / (b.players - a.players)
+    spacePerPlayer = perPlayer(a) + (perPlayer(b) - perPlayer(a)) * t
+    shape = ratio(a) + (ratio(b) - ratio(a)) * t
+  }
+  const total = spacePerPlayer * perTeam * 2
+  const clamp = (v: number) => Math.min(MAX_AREA, Math.max(MIN_AREA, Math.round(v)))
+  return { length: clamp(Math.sqrt(total * shape)), width: clamp(Math.sqrt(total / shape)) }
+}
+
+/**
+ * Scene content for an own-size empty field: outline with the entered size, size labels and
+ * the players (the usual number for that size, or `teams` = players of blue and red).
  */
 export function customFieldScene(
   area: FieldArea,
   orientation: 'landscape' | 'portrait',
+  options: FieldDrawOptions = DEFAULT_FIELD_DRAW_OPTIONS,
+  teams?: [number, number],
 ): { items: Item[]; lines: Line[]; zones: Zone[]; format: SizeFormat } {
   const b = builder(area)
-  addOutline(b, area, true)
+  addOutline(b, area, options.pattern !== 'solid', {
+    pattern: options.pattern,
+    weight: options.weight,
+    color: options.color,
+    fillColor: options.fill ?? options.color,
+    fillOpacity: options.fill ? options.fillOpacity : 0,
+    ...(options.rounded ? { rounded: true } : {}),
+  })
   const format = standardFormat(area)
-  const rows = SIZE_ROWS[format.players]
-  addTeam(b, area, BLUE, rows, 'left')
-  addTeam(b, area, RED, rows, 'right')
+  const [blue, red] = teams ?? [format.players, format.players]
+  if (blue > 0) addTeam(b, area, BLUE, SIZE_ROWS[Math.min(blue, MAX_TEAM_PLAYERS)], 'left')
+  if (red > 0) addTeam(b, area, RED, SIZE_ROWS[Math.min(red, MAX_TEAM_PLAYERS)], 'right')
+  if (options.playerShape !== 'arrow') {
+    for (const item of b.items) {
+      if (item.type === 'player') Object.assign(item, { shape: options.playerShape, facing: false })
+    }
+  }
   addBall(b, area.length / 2, area.width / 2)
   const meters = (v: number) => `${v.toLocaleString('de-DE')} m`
   // The labels read along their side on screen in both orientations.

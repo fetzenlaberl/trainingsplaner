@@ -326,6 +326,17 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'line', pattern: 'dashdot' })
   })
 
+  it('round-trips zone outline pattern, thickness and rounded corners', () => {
+    const text = tamper((d) => {
+      Object.assign(d.scenes[0].zones[0], { pattern: 'dotted', weight: 'thick', rounded: true })
+    })
+    expect(parseDrill(text).scenes[0].zones[0]).toMatchObject({ pattern: 'dotted', weight: 'thick', rounded: true })
+    const broken = tamper((d) => {
+      d.scenes[0].zones[0].pattern = 'wavy'
+    })
+    expect(() => parseDrill(broken)).toThrow()
+  })
+
   it('reads outlines with any number of corners', () => {
     const text = tamper((d) => {
       d.scenes[0].zones[0].corners.push({ x: 0, y: 12 })

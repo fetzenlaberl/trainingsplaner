@@ -4,7 +4,7 @@ import { MeterText } from './MeterText'
 import { PitchBackground } from './PictureShapes'
 import { fieldSize, PITCH, type FieldType, type Rect as ViewRect } from '../field/dimensions'
 import { BOARDS, getFieldBoards, getFieldGoals, getFieldMarkings, type Goal, type Marking } from '../field/markings'
-import { grassTextureTile, TEXTURE_TILE_METERS, TEXTURE_TILE_PX } from '../field/grassTexture'
+import { surfaceTexture } from '../field/surfaceTextures'
 import {
   fitGridLabel,
   fitGridToField,
@@ -67,7 +67,7 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
   const spotRadius = Math.max(PITCH.spotRadius, 2.5 / scale)
   const gridWidth = Math.max(0.08, 1.2 / scale)
   const stroke = { stroke: lineColor, strokeWidth: lineWidth }
-  const texture = colors.texture ? grassTextureTile() : null
+  const texture = colors.texture ? surfaceTexture(colors.texture) : null
   const mowing = resolveMowing(pitch)
   const lighting = resolveLighting(pitch)
   // Zone numbers stay upright in portrait.
@@ -107,10 +107,10 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         <Rect
           {...viewport}
           // Konva accepts any canvas image source here; its type only names HTMLImageElement.
-          fillPatternImage={texture as unknown as HTMLImageElement}
+          fillPatternImage={texture.image as unknown as HTMLImageElement}
           fillPatternRepeat="repeat"
-          fillPatternScaleX={TEXTURE_TILE_METERS / TEXTURE_TILE_PX}
-          fillPatternScaleY={TEXTURE_TILE_METERS / TEXTURE_TILE_PX}
+          fillPatternScaleX={texture.meters / texture.px}
+          fillPatternScaleY={texture.meters / texture.px}
         />
       )}
       {pitch.background && (

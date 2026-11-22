@@ -84,7 +84,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 24: player figures with poses.
 // Version 25: number and letter markers.
 // Version 26: own size of the empty field (small-sided training fields).
-export const FILE_VERSION = 26
+export const FILE_VERSION = 27
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -470,11 +470,18 @@ function parseZone(value: unknown): Zone {
     !(value.goals === undefined || ZONE_GOAL_OPTIONS.includes(value.goals as ZoneGoals)) ||
     // Free corners were added in version 6.
     !(value.corners === undefined || value.corners === null || Array.isArray(value.corners)) ||
-    typeof value.label !== 'string'
+    typeof value.label !== 'string' ||
+    // Outline pattern, thickness and rounded corners were added in version 27.
+    !(value.pattern === undefined || LINE_PATTERNS.includes(value.pattern as LinePattern)) ||
+    !(value.weight === undefined || LINE_WEIGHTS.includes(value.weight as LineWeight)) ||
+    !(value.rounded === undefined || typeof value.rounded === 'boolean')
   ) {
     throw corrupt()
   }
   return {
+    ...(value.pattern !== undefined ? { pattern: value.pattern as LinePattern } : {}),
+    ...(value.weight !== undefined ? { weight: value.weight as LineWeight } : {}),
+    ...(value.rounded === true ? { rounded: true } : {}),
     id: value.id,
     shape: value.shape as ZoneShape,
     x: value.x,

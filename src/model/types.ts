@@ -105,8 +105,14 @@ export interface Zone {
   fillColor: string
   /** 0 = no fill, 1 = solid */
   fillOpacity: number
-  /** Dashed instead of solid outline */
+  /** Dashed instead of solid outline (kept in step with `pattern`) */
   dashed: boolean
+  /** Outline pattern (missing = dashed or solid as `dashed` says) */
+  pattern?: LinePattern
+  /** Outline thickness (missing = medium, the usual width) */
+  weight?: LineWeight
+  /** Rounded corners (rectangles without free corners only) */
+  rounded?: boolean
   label: string
   goals: ZoneGoals
   /**
