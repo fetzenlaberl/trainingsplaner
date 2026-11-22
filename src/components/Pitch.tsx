@@ -9,7 +9,9 @@ import {
   fitGridLabel,
   fitGridToField,
   pitchGridLabels,
+  gridFills,
   gridLines,
+  COLOR_GRID_OPACITY,
   LIGHT_SOURCES,
   lightingStops,
   screenToField,
@@ -34,6 +36,30 @@ const CORNER_LABEL_SIZE = 2.2
 const CORNER_LABEL_PADDING = 0.8
 /** Bigger corner labels keep a little more distance to the lines. */
 const cornerPadding = (label: GridLabel) => CORNER_LABEL_PADDING * Math.sqrt((label.size ?? CORNER_LABEL_SIZE) / CORNER_LABEL_SIZE)
+
+/** Zone name or number on a light badge (colored grids), centered on its point and kept upright. */
+function GridBadge({ label, size, upright }: { label: GridLabel; size: number; upright: number }) {
+  const font = size * 0.8
+  const width = label.text.length * font * 0.6 + font * 1.1
+  const height = font * 1.5
+  return (
+    <Group x={label.x} y={label.y} rotation={upright}>
+      <Rect x={-width / 2} y={-height / 2} width={width} height={height} cornerRadius={height * 0.25} fill="rgba(255,255,255,0.85)" />
+      <MeterText
+        text={label.text}
+        x={-width / 2}
+        y={-height / 2}
+        width={width}
+        height={height}
+        align="center"
+        verticalAlign="middle"
+        fontSize={font}
+        fontStyle="bold"
+        fill="#0f172a"
+      />
+    </Group>
+  )
+}
 
 /** Lines and goals per field type, computed once. */
 const LAYOUTS = new Map<FieldType, { markings: Marking[]; goals: Goal[] }>()
@@ -120,6 +146,13 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
         <LightOverlay viewport={viewport} upright={upright} lighting={lighting} source={pitch.lightSource} kind={pitch.lightKind} />
       )}
 
+      {/* Colored grid zones lie under the pitch markings */}
+      {gridFills(pitch.grid).map((f, i) => {
+        const a = fit.point(f.x1, f.y1)
+        const b = fit.point(f.x2, f.y2)
+        return <Rect key={`fill-${i}`} x={a.x} y={a.y} width={b.x - a.x} height={b.y - a.y} fill={f.color} opacity={COLOR_GRID_OPACITY} />
+      })}
+
       {boards && (
         <Rect
           {...boards}
@@ -188,7 +221,9 @@ export function Pitch({ fieldType, pitch, viewport, scale }: PitchProps) {
       {pitchGridLabels(pitch, upright, size)
         .map((label) => fitGridLabel(label, fit, label.cell ? CORNER_LABEL_SIZE : labelSize))
         .map((label) =>
-        label.cell ? (
+        label.badge ? (
+          <GridBadge key={`zone-${label.text}-${label.x}-${label.y}`} label={label} size={label.size ?? labelSize} upright={upright} />
+        ) : label.cell ? (
           // Small number in the top left corner of the cell as seen on screen (portrait turns the pitch).
           <MeterText
             key={`zone-${label.text}`}

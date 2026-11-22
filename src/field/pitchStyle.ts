@@ -234,6 +234,10 @@ export type GridType =
   | 'positional'
   | 'zones20'
   | 'zones20Plain'
+  | 'pressThirds'
+  | 'pressLanes'
+  | 'zones12'
+  | 'zones18'
   | 'lettersLong'
   | 'lettersAcross'
   | 'letters3x2'
@@ -614,6 +618,10 @@ export const GRID_LABELS: Record<GridType, string> = {
   positional: 'Positionsspiel-Raster (20 Zonen)',
   zones20: 'Zonenraster 1–20 (nummeriert)',
   zones20Plain: 'Zonenraster 20 Zonen (ohne Nummern)',
+  pressThirds: 'Farbig: 3 Drittel (Pressinghöhe)',
+  pressLanes: 'Farbig: 5 Längskorridore (Außen, Halbraum, Zentrum)',
+  zones12: 'Farbig: 12 Zonen (3 Drittel × 4 Korridore)',
+  zones18: 'Farbig: 18 Zonen (3 Drittel × 6 Korridore)',
   lettersLong: 'Zonen A–F: 6 Längsstreifen',
   lettersAcross: 'Zonen A–F: 6 Querstreifen',
   letters3x2: 'Zonen A–F: 3 × 2 Felder',
@@ -641,6 +649,10 @@ export const GRID_ORDER: GridType[] = [
   'positional',
   'zones20',
   'zones20Plain',
+  'pressThirds',
+  'pressLanes',
+  'zones12',
+  'zones18',
   'lettersLong',
   'lettersAcross',
   'letters3x2',
@@ -753,6 +765,78 @@ export interface GridLabel {
   size?: number
   /** Grid cell of the label: then it is drawn small in the cell's top left corner (as seen on screen) */
   cell?: { x1: number; y1: number; x2: number; y2: number }
+  /** Drawn on a light badge (colored grids) */
+  badge?: boolean
+}
+
+type ColorGrid = 'pressThirds' | 'pressLanes' | 'zones12' | 'zones18'
+
+export function isColorGrid(grid: GridType): grid is ColorGrid {
+  return grid === 'pressThirds' || grid === 'pressLanes' || grid === 'zones12' || grid === 'zones18'
+}
+
+/** Own colors of the thirds (from the own goal) and of the lanes (wing, half-space, centre). */
+const THIRD_COLORS = ['#2f80ed', '#f2c94c', '#eb3b3b']
+const LANE_COLORS = { wing: '#22c55e', half: '#06b6d4', centre: '#eab308' }
+/** Opacity of the colored zones */
+export const COLOR_GRID_OPACITY = 0.5
+
+export interface GridFill {
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  color: string
+}
+
+/**
+ * Colored grids for pressing and match analysis: the three thirds from goal to goal
+ * (defensive, middle, attacking), five lanes along the length (wing, half-space, centre,
+ * along the penalty and goal area sides) and 12 or 18 numbered zones (thirds × 4 or 6 lanes),
+ * counted from the own goal like the club grid.
+ */
+function colorGridLayout(grid: ColorGrid): { lines: number[][]; fills: GridFill[]; labels: GridLabel[] } {
+  const { length, width, penaltyAreaWidth, goalAreaWidth } = PITCH
+  const thirds = [0, length / 3, (2 * length) / 3, length]
+  const vertical = (x: number) => [x, 0, x, width]
+  const horizontal = (y: number) => [0, y, length, y]
+  if (grid === 'pressThirds') {
+    const names = ['Defensivdrittel', 'Mitteldrittel', 'Angriffsdrittel']
+    return {
+      lines: [thirds[1], thirds[2]].map(vertical),
+      fills: names.map((_, i) => ({ x1: thirds[i], y1: 0, x2: thirds[i + 1], y2: width, color: THIRD_COLORS[i] })),
+      labels: names.map((text, i) => ({ text, x: (thirds[i] + thirds[i + 1]) / 2, y: width / 2, badge: true })),
+    }
+  }
+  if (grid === 'pressLanes') {
+    const mid = width / 2
+    const ys = [0, mid - penaltyAreaWidth / 2, mid - goalAreaWidth / 2, mid + goalAreaWidth / 2, mid + penaltyAreaWidth / 2, width]
+    const names = ['Außen', 'Halbraum', 'Zentrum', 'Halbraum', 'Außen']
+    const colors = [LANE_COLORS.wing, LANE_COLORS.half, LANE_COLORS.centre, LANE_COLORS.half, LANE_COLORS.wing]
+    return {
+      lines: ys.slice(1, -1).map(horizontal),
+      fills: names.map((_, i) => ({ x1: 0, y1: ys[i], x2: length, y2: ys[i + 1], color: colors[i] })),
+      // Labels in the first quarter, so they stay clear of the centre circle.
+      labels: names.map((text, i) => ({ text, x: length / 4, y: (ys[i] + ys[i + 1]) / 2, badge: true })),
+    }
+  }
+  const lanes = grid === 'zones12' ? 4 : 6
+  const ys = Array.from({ length: lanes + 1 }, (_, i) => (i / lanes) * width)
+  const fills: GridFill[] = []
+  const labels: GridLabel[] = []
+  for (let t = 0; t < 3; t++) {
+    for (let l = 0; l < lanes; l++) {
+      const cell = { x1: thirds[t], y1: ys[l], x2: thirds[t + 1], y2: ys[l + 1] }
+      fills.push({ ...cell, color: THIRD_COLORS[t] })
+      labels.push({ text: String(t * lanes + l + 1), x: (cell.x1 + cell.x2) / 2, y: (cell.y1 + cell.y2) / 2, badge: true })
+    }
+  }
+  return { lines: [...[thirds[1], thirds[2]].map(vertical), ...ys.slice(1, -1).map(horizontal)], fills, labels }
+}
+
+/** Colored areas of a grid (empty for the plain grids), relative to the big pitch. */
+export function gridFills(grid: GridType): GridFill[] {
+  return isColorGrid(grid) ? colorGridLayout(grid).fills : []
 }
 
 /** Distance of the letters outside the pitch lines (meters), inside the grass margin */
@@ -829,6 +913,7 @@ export function gridLabels(grid: GridType): GridLabel[] {
   if (grid === 'zones20')
     return zones20Layout().labels.map((l) => ({ text: String(l.number), x: l.x, y: l.y, cell: l.cell }))
   if (grid === 'lettersLong' || grid === 'lettersAcross' || grid === 'letters3x2') return letterLayout(grid).labels
+  if (isColorGrid(grid)) return colorGridLayout(grid).labels
   return []
 }
 
@@ -845,6 +930,8 @@ export function gridCells(
 ): { cells: Cell[]; fixedOrder: boolean } {
   if (grid === 'none') return { cells: [], fixedOrder: false }
   if (grid === 'zones20' || grid === 'zones20Plain') return { cells: zones20Layout().labels.map((l) => l.cell), fixedOrder: true }
+  // Numbered zones keep their count from the own goal.
+  if (grid === 'zones12' || grid === 'zones18') return { cells: colorGridLayout(grid).fills.map(({ color: _c, ...cell }) => cell), fixedOrder: true }
   const bounds =
     grid === 'custom'
       ? customGridLayout(custom).bounds
@@ -999,6 +1086,11 @@ export function gridLines(grid: GridType, custom: CustomGrid = DEFAULT_CUSTOM_GR
     case 'zones20':
     case 'zones20Plain':
       return zones20Layout().lines
+    case 'pressThirds':
+    case 'pressLanes':
+    case 'zones12':
+    case 'zones18':
+      return colorGridLayout(grid).lines
     case 'lettersLong':
     case 'lettersAcross':
     case 'letters3x2':

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PITCH } from './dimensions'
-import { fitGridToField, gridCells, letterName, pitchGridLabels, lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
+import { fitGridToField, gridCells, gridFills, letterName, pitchGridLabels, lightingStops, screenToField, DEFAULT_PITCH_STYLE, displayColor, GRID_ORDER, resolveLighting, resolveMowing, stripeColor, customGridLayout, gridLabels, gridLines, parseGridSizes, ON_WHITE_PITCH_COLOR, PITCH_COLORS } from './pitchStyle'
 
 const verticalXs = (lines: number[][]) => lines.filter((l) => l[0] === l[2]).map((l) => l[0])
 const horizontalYs = (lines: number[][]) => lines.filter((l) => l[1] === l[3]).map((l) => l[1])
@@ -252,5 +252,34 @@ describe('fitGridToField', () => {
     const custom = fitGridToField('custom', { length: 40, width: 20 })
     expect(custom.point(52.5, 34)).toEqual({ x: 20, y: 10 })
     expect(fitGridToField('thirds', { length: 105, width: 68 }).textScale).toBe(1)
+  })
+})
+
+describe('colored grids', () => {
+  it('colors the thirds from goal to goal and names them', () => {
+    const fills = gridFills('pressThirds')
+    expect(fills).toHaveLength(3)
+    expect(fills[0]).toMatchObject({ x1: 0, y1: 0, y2: PITCH.width })
+    expect(fills[2].x2).toBe(PITCH.length)
+    expect(gridLabels('pressThirds').map((l) => l.text)).toEqual(['Defensivdrittel', 'Mitteldrittel', 'Angriffsdrittel'])
+    expect(gridLines('pressThirds')).toHaveLength(2)
+  })
+
+  it('lays the five lanes along the penalty and goal area sides', () => {
+    expect(gridLabels('pressLanes').map((l) => l.text)).toEqual(['Außen', 'Halbraum', 'Zentrum', 'Halbraum', 'Außen'])
+    expect(gridLines('pressLanes')).toEqual(gridLines('lanes'))
+  })
+
+  it('numbers 12 and 18 zones from the own goal, lane by lane', () => {
+    expect(gridFills('zones12')).toHaveLength(12)
+    expect(gridFills('zones18')).toHaveLength(18)
+    const labels = gridLabels('zones12')
+    expect(labels[0]).toMatchObject({ text: '1', badge: true })
+    expect(labels[0].x).toBeLessThan(PITCH.length / 3)
+    expect(labels[4].x).toBeGreaterThan(PITCH.length / 3)
+    const { cells, fixedOrder } = gridCells('zones18')
+    expect(fixedOrder).toBe(true)
+    expect(cells).toHaveLength(18)
+    expect(gridFills('none')).toEqual([])
   })
 })
