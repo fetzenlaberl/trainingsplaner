@@ -556,7 +556,12 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         return next
       }
       return {
-        scenes: s.scenes.map((scene) => ({ ...scene, items: scene.items.map(change), lines: scene.lines.map(change) })),
+        scenes: s.scenes.map((scene) => ({
+          ...scene,
+          items: scene.items.map(change),
+          lines: scene.lines.map(change),
+          zones: scene.zones.map(change),
+        })),
       }
     }),
 

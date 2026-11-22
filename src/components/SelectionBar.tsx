@@ -91,7 +91,7 @@ export function SelectionBar() {
       >
         Löschen
       </button>
-      {!isZone(selected) && <AlphaSlider ids={[selected.id]} value={selected.alpha ?? 1} />}
+      <AlphaSlider ids={[selected.id]} value={selected.alpha ?? 1} />
       <OrderButtons ids={[selected.id]} />
       <LockButton ids={[selected.id]} locked={selected.locked === true} />
     </div>
@@ -112,7 +112,7 @@ function AlphaSlider({ ids, value }: { ids: string[]; value: number }) {
     beforeRef.current = null
   }
   return (
-    <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Deckkraft: wie durchsichtig das Objekt bzw. die Linie ist">
+    <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Deckkraft: wie durchsichtig Objekt, Linie oder Zone sind">
       Deckkraft
       <input
         type="range"
@@ -195,7 +195,7 @@ function MultiControls() {
   const items = elements.filter((el): el is Item => !isLine(el) && !isZone(el))
   const colorable = items.filter((i) => COLORABLE_TYPES.includes(i.type))
   // Objects and lines have an own opacity; zones have their fill opacity instead.
-  const alphaTargets = elements.filter((el): el is Item | Line => !isZone(el))
+  const alphaTargets = elements
 
   return (
     <div role="group" aria-label="Mehrere bearbeiten" className="flex flex-wrap items-center gap-1.5">
@@ -565,10 +565,11 @@ function OpacitySlider({ zone }: { zone: Zone }) {
   }
 
   return (
-    <label className="flex items-center gap-1.5 text-sm text-slate-400">
-      Deckkraft
+    <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Deckkraft nur der Füllung">
+      Füllung
       <input
         type="range"
+        aria-label="Deckkraft der Füllung"
         className="w-24 accent-emerald-500"
         min={0}
         max={MAX_ZONE_FILL_OPACITY}

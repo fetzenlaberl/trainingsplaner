@@ -67,7 +67,10 @@ export function FieldZones({ zones, viewport, scale, interactive }: FieldZonesPr
             updateZone(zone.id, pos)
           }}
         >
-          <ZoneShape {...zone} scale={scale} />
+          {/* Own opacity fades the zone, not its handles or selection outline */}
+          <Group opacity={zone.alpha ?? 1}>
+            <ZoneShape {...zone} scale={scale} />
+          </Group>
           {interactive &&
             selectedIds.length === 1 &&
             selectedIds[0] === zone.id &&

@@ -925,4 +925,10 @@ describe('own opacity', () => {
     store().setAlphaLive([id], 1)
     expect('alpha' in store().scenes[1].items[0]).toBe(false)
   })
+
+  it('sets the opacity of whole zones too', () => {
+    const id = store().addZone(RECT, 30, 20)
+    store().setAlphaLive([id], 0.3)
+    expect(store().scenes[0].zones[0].alpha).toBe(0.3)
+  })
 })

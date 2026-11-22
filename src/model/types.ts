@@ -123,6 +123,8 @@ export interface Zone {
   rounded?: boolean
   /** Fixed: cannot be selected or moved on the pitch (missing = free) */
   locked?: boolean
+  /** Own opacity of the whole zone (outline, fill, label), 0.1–1 (missing = 1) */
+  alpha?: number
   label: string
   goals: ZoneGoals
   /**

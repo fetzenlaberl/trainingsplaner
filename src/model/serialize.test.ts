@@ -337,6 +337,11 @@ describe('serializeDrill / parseDrill', () => {
     expect(() => parseDrill(tamper((d) => (d.scenes[0].items[0].alpha = 'half')))).toThrow()
   })
 
+  it('round-trips the own opacity of zones', () => {
+    expect(parseDrill(tamper((d) => (d.scenes[0].zones[0].alpha = 0.4))).scenes[0].zones[0].alpha).toBe(0.4)
+    expect('alpha' in parseDrill(serializeDrill(drill)).scenes[0].zones[0]).toBe(false)
+  })
+
   it('round-trips fixed items, lines and zones', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].locked = true

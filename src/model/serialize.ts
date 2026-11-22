@@ -85,7 +85,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 24: player figures with poses.
 // Version 25: number and letter markers.
 // Version 26: own size of the empty field (small-sided training fields).
-export const FILE_VERSION = 29
+// Version 30: own opacity of zones.
+export const FILE_VERSION = 30
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -500,6 +501,7 @@ function parseZone(value: unknown): Zone {
   }
   return {
     ...lockedOf(value),
+    ...alphaOf(value),
     ...(value.pattern !== undefined ? { pattern: value.pattern as LinePattern } : {}),
     ...(value.weight !== undefined ? { weight: value.weight as LineWeight } : {}),
     ...(value.rounded === true ? { rounded: true } : {}),
