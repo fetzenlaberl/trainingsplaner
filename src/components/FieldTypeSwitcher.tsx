@@ -1,3 +1,4 @@
+import { NEON_COLORS } from '../lines/styles'
 import { useEffect, useRef, useState } from 'react'
 import { FIELD_TYPE_LABELS, FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
 import { isHexColor } from '../field/pitchStyle'
@@ -123,6 +124,7 @@ const CONE_COLORS = [
   { value: '#2563eb', name: 'Blau' },
   { value: '#22c55e', name: 'Grün' },
   { value: '#ffffff', name: 'Weiß' },
+  ...NEON_COLORS,
 ]
 
 const TEAM_COLORS = [
@@ -134,6 +136,7 @@ const TEAM_COLORS = [
   { value: '#7c3aed', name: 'Lila' },
   { value: '#ffffff', name: 'Weiß' },
   { value: '#111827', name: 'Schwarz' },
+  ...NEON_COLORS,
 ]
 
 /** Players per team from an input, or null when it is not a valid count. */

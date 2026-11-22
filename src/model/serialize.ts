@@ -62,6 +62,7 @@ import type {
   FigurePose,
   PoleLean,
   GoalView,
+  SymbolStyle,
 } from './types'
 
 export const FILE_FORMAT = 'trainingsplaner-drill'
@@ -92,10 +93,12 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 31: text box shapes, fonts and speech bubbles.
 // Version 32: flag with pole, leaning poles on discs, goal seen from the front, new figure poses.
 // Version 33: full-size goal seen from behind or the side.
-export const FILE_VERSION = 33
+// Version 34: mini goal seen from the front, behind or the side; player symbols flat or as outline.
+export const FILE_VERSION = 34
 const FIGURE_POSES: FigurePose[] = ['stand', 'front', 'run', 'sprint', 'pass', 'shoot', 'keeper', 'demand']
 const POLE_LEANS: PoleLean[] = ['left', 'right', 'front', 'back']
 const GOAL_VIEWS: GoalView[] = ['front', 'back', 'left', 'right']
+const SYMBOL_STYLES: SymbolStyle[] = ['flat', 'outline']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
 
@@ -114,6 +117,7 @@ const ITEM_TYPES: ItemType[] = [
   'flagPole',
   'discPole',
   'goalFront',
+  'minigoalFront',
   'marker',
   'wall',
   'ladder',
@@ -417,6 +421,8 @@ function parseItem(value: unknown): Item {
   if (!(value.lean === undefined || POLE_LEANS.includes(value.lean as PoleLean))) throw corrupt()
   // Goal seen from behind or the side came in version 33.
   if (!(value.view === undefined || GOAL_VIEWS.includes(value.view as GoalView))) throw corrupt()
+  // Player symbols without border or as outline came in version 34.
+  if (!(value.symbol === undefined || SYMBOL_STYLES.includes(value.symbol as SymbolStyle))) throw corrupt()
   return {
     ...alphaOf(value),
     ...lockedOf(value),
@@ -436,6 +442,7 @@ function parseItem(value: unknown): Item {
     ...(box && Object.keys(box).length > 0 ? { box } : {}),
     ...(value.lean !== undefined ? { lean: value.lean as PoleLean } : {}),
     ...(value.view !== undefined && value.view !== 'front' ? { view: value.view as GoalView } : {}),
+    ...(value.symbol !== undefined ? { symbol: value.symbol as SymbolStyle } : {}),
   }
 }
 

@@ -28,6 +28,7 @@ export function ItemPreview({ item, scale }: ItemPreviewProps) {
             box={item.box}
             lean={item.lean}
             view={item.view}
+            symbol={item.symbol}
           />
         </Group>
       </Layer>

@@ -3,7 +3,7 @@ import { useContext, useMemo } from 'react'
 import { Circle, Ellipse, Group, Line, Rect, RegularPolygon, Shape, Wedge } from 'react-konva'
 import { MeterText, TEXT_SCALE } from './MeterText'
 import { FigureDummyShape, PoleDummyShape } from './PerspectiveDummies'
-import { DiscPoleShape, FlagPoleShape, GoalPerspectiveShape } from './PerspectiveEquipment'
+import { BIG_GOAL, DiscPoleShape, FlagPoleShape, GoalPerspectiveShape, MINI_GOAL } from './PerspectiveEquipment'
 import { figureMirrored, PlayerFigureShape } from './PlayerFigures'
 import { CrestItem, PictureItem } from './PictureShapes'
 import { displayColor } from '../field/pitchStyle'
@@ -53,7 +53,7 @@ const TEXTBOX_FONT_SIZE = 1.1
 const NAME_FONT_SIZE = 0.8
 const GLOW_COLOR = '#fde047'
 
-type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing' | 'pose' | 'box' | 'lean' | 'view'> & {
+type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' | 'facing' | 'pose' | 'box' | 'lean' | 'view' | 'symbol'> & {
   /** Player name tag (empty = none) */
   name?: string
   /** Highlight ring strength 0..1 */
@@ -61,7 +61,7 @@ type ShapeProps = Pick<Item, 'type' | 'color' | 'label' | 'rotation' | 'shape' |
 }
 
 /** Draws an item centered at (0, 0) in meter units. */
-export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0, pose, box, lean, view }: ShapeProps) {
+export function ItemShape({ type, color, label, rotation, shape, facing = true, name = '', glow = 0, pose, box, lean, view, symbol }: ShapeProps) {
   const pitchColor = useContext(PitchColorContext)
   const upright = -useContext(ViewRotationContext)
   const onWhite = pitchColor === 'white'
@@ -70,7 +70,7 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       return (
         <Group>
           {glow > 0 && <HighlightRing strength={glow} />}
-          <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} facing={facing} />
+          <PlayerShapeView color={color} label={label} rotation={rotation} shape={shape} facing={facing} symbol={symbol} />
           {name && <NameTag name={name} />}
         </Group>
       )
@@ -131,9 +131,10 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
         </Group>
       )
     case 'goalFront':
+    case 'minigoalFront':
       return (
         <Group rotation={upright}>
-          <GoalPerspectiveShape color={color} view={view ?? 'front'} />
+          <GoalPerspectiveShape color={color} view={view ?? 'front'} dims={type === 'goalFront' ? BIG_GOAL : MINI_GOAL} />
         </Group>
       )
     case 'figure':
@@ -275,8 +276,14 @@ function FacingMarker({ color, rotation, distance }: { color: string; rotation: 
   )
 }
 
-function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<ShapeProps, 'type'>) {
+function PlayerShapeView({ color, label, rotation, shape, facing = true, symbol }: Omit<ShapeProps, 'type'>) {
   const upright = -useContext(ViewRotationContext)
+  // Filled with a white border (usual), filled without border, or only the colored outline.
+  const outline = symbol === 'outline'
+  const body = outline
+    ? { fill: 'rgba(0,0,0,0)', stroke: color, strokeWidth: 0.24 }
+    : { fill: color, stroke: symbol === 'flat' ? undefined : '#ffffff', strokeWidth: symbol === 'flat' ? 0 : 0.15 }
+  const textColor = outline ? color : contrastTextColor(color)
   if (shape === 'triangle') {
     // The tip of the triangle shows the facing direction, so no extra marker.
     return (
@@ -285,13 +292,11 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
           sides={3}
           radius={TRIANGLE_RADIUS}
           rotation={rotation + 90}
-          fill={color}
-          stroke="#ffffff"
-          strokeWidth={0.15}
+          {...body}
           lineJoin="round"
         />
         <Group rotation={upright}>
-          <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 1.6} />
+          <PlayerLabel label={label} color={textColor} box={PLAYER_RADIUS * 1.6} outlined={outline} />
         </Group>
       </Group>
     )
@@ -304,11 +309,10 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
     return (
       <Group>
         {facing && <FacingMarker color={color} rotation={rotation} distance={CROSS_HALF + 0.6} />}
+        {symbol === undefined &&
+          arms.map((points, i) => <Line key={`outline-${i}`} points={points} stroke="#ffffff" strokeWidth={0.6} lineCap="round" />)}
         {arms.map((points, i) => (
-          <Line key={`outline-${i}`} points={points} stroke="#ffffff" strokeWidth={0.6} lineCap="round" />
-        ))}
-        {arms.map((points, i) => (
-          <Line key={`arm-${i}`} points={points} stroke={color} strokeWidth={0.36} lineCap="round" />
+          <Line key={`arm-${i}`} points={points} stroke={color} strokeWidth={outline ? 0.18 : 0.36} lineCap="round" />
         ))}
         {/* The number sits on the crossing point; a white outline keeps it readable on the arms. */}
         <Group rotation={upright}>
@@ -340,14 +344,13 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
           <Line
             points={SHIRT_OUTLINE.map((v) => v * SHIRT_SIZE)}
             closed
-            fill={color}
-            stroke="#ffffff"
-            strokeWidth={0.13}
+            {...body}
+            strokeWidth={outline ? 0.2 : body.strokeWidth * 0.87}
             lineJoin="round"
           />
           <Line
             points={SHIRT_COLLAR.map((v) => v * SHIRT_SIZE)}
-            stroke="#ffffff"
+            stroke={outline ? color : '#ffffff'}
             strokeWidth={0.1}
             lineJoin="round"
             lineCap="round"
@@ -362,7 +365,8 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
             verticalAlign="middle"
             fontSize={0.95}
             fontStyle="bold"
-            fill={contrastTextColor(color)}
+            fill={textColor}
+            {...(outline ? { stroke: 'rgba(15,23,42,0.75)', strokeWidth: 0.1, fillAfterStrokeEnabled: true } : {})}
           />
         </Group>
       </Group>
@@ -371,15 +375,16 @@ function PlayerShapeView({ color, label, rotation, shape, facing = true }: Omit<
   return (
     <Group>
       {facing && <FacingMarker color={color} rotation={rotation} distance={PLAYER_RADIUS + 0.3} />}
-      <Circle radius={PLAYER_RADIUS} fill={color} stroke="#ffffff" strokeWidth={0.15} />
+      <Circle radius={outline ? PLAYER_RADIUS - 0.06 : PLAYER_RADIUS} {...body} />
       <Group rotation={upright}>
-        <PlayerLabel label={label} color={contrastTextColor(color)} box={PLAYER_RADIUS * 2} />
+        <PlayerLabel label={label} color={textColor} box={PLAYER_RADIUS * 2} outlined={outline} />
       </Group>
     </Group>
   )
 }
 
-function PlayerLabel({ label, color, box }: { label: string; color: string; box: number }) {
+/** Number or letter on a player; on an outline-only symbol it gets a dark edge so it stays readable on any pitch. */
+function PlayerLabel({ label, color, box, outlined = false }: { label: string; color: string; box: number; outlined?: boolean }) {
   return (
     <MeterText
       text={label}
@@ -392,6 +397,7 @@ function PlayerLabel({ label, color, box }: { label: string; color: string; box:
       fontSize={1.05}
       fontStyle="bold"
       fill={color}
+      {...(outlined ? { stroke: 'rgba(15,23,42,0.75)', strokeWidth: 0.1, fillAfterStrokeEnabled: true } : {})}
     />
   )
 }

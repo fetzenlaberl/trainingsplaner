@@ -1,3 +1,4 @@
+import { noteOrigin, withRememberedStyle } from '../items/rememberedStyle'
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { ITEM_EXTENT, ITEM_TEMPLATES, type ItemTemplate } from '../items/palette'
 import { ZONE_TEMPLATES, type ZoneTemplate } from '../items/zones'
@@ -109,10 +110,13 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
       usePlaybackStore.getState().stop()
       // Switch to the select tool so the new item can be adjusted right away.
       setTool('select')
-      const id =
-        dragged.kind === 'item'
-          ? addItem(dragged.template.item, pos.x, pos.y)
-          : addZone(dragged.template, pos.x, pos.y)
+      let id: string
+      if (dragged.kind === 'item') {
+        id = addItem(withRememberedStyle(dragged.template), pos.x, pos.y)
+        noteOrigin(id, dragged.template.key)
+      } else {
+        id = addZone(dragged.template, pos.x, pos.y)
+      }
       select(id)
       // A new text asks for its words, a crest for its picture, right away.
       if (dragged.kind === 'item' && ['text', 'textbox', 'crest'].includes(dragged.template.item.type)) {
@@ -213,7 +217,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           style={{ left: drag.clientX, top: drag.clientY, rotate: `${drag.rotation}deg` }}
         >
           {drag.dragged.kind === 'item' ? (
-            <ItemPreview item={drag.dragged.template.item} scale={drag.scale} />
+            <ItemPreview item={withRememberedStyle(drag.dragged.template)} scale={drag.scale} />
           ) : (
             <ZonePreview template={drag.dragged.template} scale={drag.scale} />
           )}

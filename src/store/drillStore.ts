@@ -1,4 +1,5 @@
 import { changeTextBoxStyle, type TextBoxStyle } from '../items/textBoxStyle'
+import { rememberStyle } from '../items/rememberedStyle'
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import { MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
@@ -25,7 +26,7 @@ import {
 } from '../items/zones'
 import type { DrillInfo } from '../model/drillInfo'
 import { emptyDrill } from '../model/serialize'
-import type { Category, Drill, DrillArea, FigurePose, GoalView, Item, PoleLean, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
+import type { Category, Drill, DrillArea, FigurePose, GoalView, Item, PoleLean, SymbolStyle, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
 /** Faintest own opacity of items and lines that can be set (stays visible). */
@@ -143,6 +144,8 @@ export interface DrillState extends DrillContent {
   setItemLean: (id: string, lean: PoleLean) => void
   /** From where the full-size goal is seen. */
   setGoalView: (id: string, view: GoalView) => void
+  /** Player symbol with border (null), without border or as outline; remembered for the next player of that kind. */
+  setSymbolStyle: (id: string, symbol: SymbolStyle | null) => void
   /** Shows or hides the facing arrow of a player. */
   setItemFacing: (id: string, facing: boolean) => void
   /** Gives every item of the current scene the same size. */
@@ -518,19 +521,28 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     return copies.map((c) => c.id)
   },
   resizeItems: (ids, step) =>
-    set((s) => ({
-      ...recorded(s),
-      scenes: editScene(s, (scene) => ({
-        items: scene.items.map((i) => (ids.includes(i.id) ? { ...i, size: clampItemSize(i.size + step) } : i)),
-      })),
-    })),
+    set((s) => {
+      // The next object of the same kind starts with this size.
+      for (const item of currentScene(s).items) if (ids.includes(item.id)) rememberStyle(item, { size: item.size + step })
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: scene.items.map((i) => (ids.includes(i.id) ? { ...i, size: clampItemSize(i.size + step) } : i)),
+        })),
+      }
+    }),
   setItemsColor: (ids, color) =>
-    set((s) => ({
-      ...recorded(s),
-      scenes: editScene(s, (scene) => ({
-        items: scene.items.map((i) => (ids.includes(i.id) && COLORABLE_TYPES.includes(i.type) ? { ...i, color } : i)),
-      })),
-    })),
+    set((s) => {
+      for (const item of currentScene(s).items) {
+        if (ids.includes(item.id) && COLORABLE_TYPES.includes(item.type)) rememberStyle(item, { color })
+      }
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: scene.items.map((i) => (ids.includes(i.id) && COLORABLE_TYPES.includes(i.type) ? { ...i, color } : i)),
+        })),
+      }
+    }),
 
   setLocked: (ids, locked) =>
     set((s) => {
@@ -649,6 +661,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         ...(item.box ? { box: { ...item.box } } : {}),
         ...(item.lean ? { lean: item.lean } : {}),
         ...(item.view ? { view: item.view } : {}),
+        ...(item.symbol ? { symbol: item.symbol } : {}),
       }
       // Later items of the same call see the earlier ones when numbering.
       items.push(newItem)
@@ -695,22 +708,30 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     })),
 
   setItemSize: (id, size) =>
-    set((s) => ({
-      ...recorded(s),
-      scenes: editScene(s, (scene) => ({
-        items: updateItem(scene.items, id, { size: clampItemSize(size) }),
-      })),
-    })),
+    set((s) => {
+      const item = currentScene(s).items.find((i) => i.id === id)
+      if (item) rememberStyle(item, { size })
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: updateItem(scene.items, id, { size: clampItemSize(size) }),
+        })),
+      }
+    }),
   setItemShape: (id, shape) =>
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { shape }) })),
     })),
   setItemColor: (id, color) =>
-    set((s) => ({
-      ...recorded(s),
-      scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
-    })),
+    set((s) => {
+      const item = currentScene(s).items.find((i) => i.id === id)
+      if (item) rememberStyle(item, { color })
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
+      }
+    }),
   setTextBoxStyle: (id, change) =>
     set((s) => ({
       ...recorded(s),
@@ -724,6 +745,21 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         }),
       })),
     })),
+  setSymbolStyle: (id, symbol) =>
+    set((s) => {
+      const item = currentScene(s).items.find((i) => i.id === id)
+      if (item) rememberStyle(item, { symbol })
+      return {
+        ...recorded(s),
+        scenes: editScene(s, (scene) => ({
+          items: scene.items.map((i) => {
+            if (i.id !== id) return i
+            const { symbol: _old, ...rest } = i
+            return symbol ? { ...rest, symbol } : rest
+          }),
+        })),
+      }
+    }),
   setGoalView: (id, view) =>
     set((s) => ({
       ...recorded(s),

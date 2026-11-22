@@ -1,7 +1,8 @@
+import { NEON_COLORS } from '../lines/styles'
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box' | 'lean' | 'view'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box' | 'lean' | 'view' | 'symbol'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -97,6 +98,7 @@ export const PLAYER_COLORS: { value: string; name: string }[] = [
   { value: '#06b6d4', name: 'Türkis' },
   { value: '#ffffff', name: 'Weiß' },
   { value: '#111827', name: 'Schwarz' },
+  ...NEON_COLORS,
 ]
 
 export const TEAM_COLORS = {
@@ -189,6 +191,9 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'goal-front', name: 'Großtor von vorne', item: { type: 'goalFront', color: '#ffffff' } },
   { key: 'goal-back', name: 'Großtor von hinten', item: { type: 'goalFront', color: '#ffffff', view: 'back' } },
   { key: 'goal-side', name: 'Großtor von der Seite', item: { type: 'goalFront', color: '#ffffff', view: 'right' } },
+  { key: 'minigoal-front', name: 'Minitor von vorne', item: { type: 'minigoalFront', color: '#ffffff', size: 1.6 } },
+  { key: 'minigoal-back', name: 'Minitor von hinten', item: { type: 'minigoalFront', color: '#ffffff', size: 1.6, view: 'back' } },
+  { key: 'minigoal-side', name: 'Minitor von der Seite', item: { type: 'minigoalFront', color: '#ffffff', size: 1.6, view: 'right' } },
   { key: 'marker-number', name: 'Nummer 1–30', item: { type: 'marker', color: '#ffffff', label: NEXT_NUMBER_LABEL } },
   { key: 'marker-letter', name: 'Buchstabe A–Z', item: { type: 'marker', color: '#facc15', label: NEXT_LETTER_LABEL } },
   { key: 'wall', name: 'Freistoßmauer', item: { type: 'wall', color: '#2563eb' } },
@@ -227,6 +232,7 @@ export const ITEM_EXTENT: Record<ItemType, number> = {
   flagPole: 2.8,
   discPole: 2.6,
   goalFront: 8,
+  minigoalFront: 1.6,
   marker: 1.6,
   wall: 2.6,
   ladder: 4.2,
@@ -256,6 +262,7 @@ export const COLORABLE_TYPES: ItemType[] = [
   'flagPole',
   'discPole',
   'goalFront',
+  'minigoalFront',
   'marker',
   'wall',
   'ladder',
@@ -296,6 +303,7 @@ export const TEXTBOX_COLORS: { value: string; name: string }[] = [
   { value: '#2563eb', name: 'Blau' },
   { value: '#16a34a', name: 'Grün' },
   { value: '#f97316', name: 'Orange' },
+  ...NEON_COLORS,
 ]
 
 /** Crest pictures fit into a square of this size (meters) at size 1 */

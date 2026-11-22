@@ -27,7 +27,13 @@ import {
   zoneExtent,
   zonePattern,
 } from '../items/zones'
-import type { GoalView, Item, Line, PlayerShape, PoleLean, Zone } from '../model/types'
+import type { GoalView, Item, Line, PlayerShape, PoleLean, SymbolStyle, Zone } from '../model/types'
+
+const SYMBOL_STYLES: { value: SymbolStyle | null; label: string }[] = [
+  { value: null, label: 'Mit Rand' },
+  { value: 'flat', label: 'Vollfarbe' },
+  { value: 'outline', label: 'Umriss' },
+]
 
 const GOAL_VIEWS: { value: GoalView; label: string }[] = [
   { value: 'front', label: 'Von vorne' },
@@ -362,6 +368,24 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
+      {item.type === 'player' && (
+        <div role="group" aria-label="Darstellung" className="flex gap-1 rounded-lg bg-slate-800 p-1" title="Bleibt für die nächsten Spieler, bis du es änderst">
+          {SYMBOL_STYLES.map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              aria-pressed={(item.symbol ?? null) === o.value}
+              onClick={() => useDrillStore.getState().setSymbolStyle(item.id, o.value)}
+              className={`min-h-8 rounded-md px-2 text-sm ${
+                (item.symbol ?? null) === o.value ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {item.type === 'figure' && (
         <div role="group" aria-label="Haltung" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
           {FIGURE_POSE_ORDER.map((pose) => (
@@ -380,7 +404,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {item.type === 'goalFront' && (
+      {(item.type === 'goalFront' || item.type === 'minigoalFront') && (
         <div role="group" aria-label="Ansicht" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
           <span className="px-1 text-sm text-slate-400">Ansicht</span>
           {GOAL_VIEWS.map((o) => (

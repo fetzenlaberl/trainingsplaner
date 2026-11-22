@@ -23,6 +23,7 @@ export const STANDING_TYPES: readonly ItemType[] = [
   'flagPole',
   'discPole',
   'goalFront',
+  'minigoalFront',
   'marker',
   'text',
   'textbox',
