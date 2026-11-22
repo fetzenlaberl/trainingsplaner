@@ -1,7 +1,7 @@
 import type { Item, ItemType, PlayerShape } from '../model/types'
 
 export type NewItem = Pick<Item, 'type' | 'color'> &
-  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose'>>
+  Partial<Pick<Item, 'label' | 'rotation' | 'size' | 'shape' | 'name' | 'highlight' | 'facing' | 'pose' | 'box'>>
 
 export const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 
@@ -184,6 +184,11 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
   { key: 'rebounder', name: 'Rebounder', item: { type: 'rebounder', color: '#111827' } },
   { key: 'text', name: 'Text', item: { type: 'text', color: '#ffffff', label: 'Text' } },
   { key: 'textbox', name: 'Textfeld', item: { type: 'textbox', color: '#fde047', label: 'Anweisung' } },
+  {
+    key: 'bubble',
+    name: 'Sprechblase (Coaching)',
+    item: { type: 'textbox', color: '#ffffff', label: 'Kopf hoch!', box: { shape: 'oval', width: 'narrow', bold: true, border: '#111827', tail: 'sw' } },
+  },
   // Empty crest: the picture is chosen right after dropping it (picture id in the label).
   { key: 'crest', name: 'Wappen', item: { type: 'crest', color: '#ffffff', label: '' } },
 ]

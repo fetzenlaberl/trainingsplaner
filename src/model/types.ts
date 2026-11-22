@@ -1,3 +1,4 @@
+import type { TextBoxStyle } from '../items/textBoxStyle'
 import type { FieldType } from '../field/dimensions'
 import type { PitchStyle } from '../field/pitchStyle'
 import type { LinePattern, LineWeight } from '../lines/styles'
@@ -63,6 +64,8 @@ export interface Item {
   locked?: boolean
   /** Own opacity 0.05–1, e.g. for faint size labels (missing = fully visible) */
   alpha?: number
+  /** Look of a text box / speech bubble (only type 'textbox'; missing = plain rounded box) */
+  box?: TextBoxStyle
 }
 
 export interface Point {

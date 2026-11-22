@@ -1,3 +1,4 @@
+import { changeTextBoxStyle, type TextBoxStyle } from '../items/textBoxStyle'
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import { MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
@@ -133,6 +134,8 @@ export interface DrillState extends DrillContent {
   setItemSize: (id: string, size: number) => void
   setItemShape: (id: string, shape: PlayerShape) => void
   setItemColor: (id: string, color: string) => void
+  /** Look of a text box or speech bubble, in every scene. */
+  setTextBoxStyle: (id: string, change: Partial<TextBoxStyle>) => void
   setItemHighlight: (id: string, highlight: boolean) => void
   /** Pose of a player figure. */
   setItemPose: (id: string, pose: FigurePose) => void
@@ -639,6 +642,7 @@ export const useDrillStore = create<DrillState>((set, get) => ({
         label,
         ...(item.facing === false ? { facing: false } : {}),
         ...(item.pose ? { pose: item.pose } : {}),
+        ...(item.box ? { box: { ...item.box } } : {}),
       }
       // Later items of the same call see the earlier ones when numbering.
       items.push(newItem)
@@ -700,6 +704,19 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     set((s) => ({
       ...recorded(s),
       scenes: editScene(s, (scene) => ({ items: updateItem(scene.items, id, { color }) })),
+    })),
+  setTextBoxStyle: (id, change) =>
+    set((s) => ({
+      ...recorded(s),
+      scenes: s.scenes.map((scene) => ({
+        ...scene,
+        items: scene.items.map((item) => {
+          if (item.id !== id) return item
+          const { box, ...rest } = item
+          const next = changeTextBoxStyle(box, change)
+          return next ? { ...rest, box: next } : rest
+        }),
+      })),
     })),
   setItemPose: (id, pose) =>
     set((s) => ({

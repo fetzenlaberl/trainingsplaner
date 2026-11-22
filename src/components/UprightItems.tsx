@@ -51,6 +51,7 @@ export function UprightItems({ items, project, pitchColor, images = NO_IMAGES }:
                   shape={item.shape}
                   facing={item.facing}
                   pose={item.pose}
+                  box={item.box}
                   name={item.name}
                   glow={item.glow ?? (item.highlight ? 1 : 0)}
                 />

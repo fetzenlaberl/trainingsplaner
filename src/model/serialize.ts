@@ -1,3 +1,4 @@
+import { parseTextBoxStyle } from '../items/textBoxStyle'
 import { FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
 import type { Orientation } from '../field/orientation'
 import {
@@ -86,7 +87,8 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 25: number and letter markers.
 // Version 26: own size of the empty field (small-sided training fields).
 // Version 30: own opacity of zones.
-export const FILE_VERSION = 30
+// Version 31: text box shapes, fonts and speech bubbles.
+export const FILE_VERSION = 31
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -399,6 +401,9 @@ function parseItem(value: unknown): Item {
   ) {
     throw corrupt()
   }
+  // Text box shapes and speech bubbles came in version 31.
+  const box = value.box === undefined ? undefined : parseTextBoxStyle(value.box)
+  if (box === null) throw corrupt()
   return {
     ...alphaOf(value),
     ...lockedOf(value),
@@ -415,6 +420,7 @@ function parseItem(value: unknown): Item {
     highlight: (value.highlight as boolean | undefined) ?? false,
     ...(value.facing === false ? { facing: false } : {}),
     ...(value.pose !== undefined ? { pose: value.pose as FigurePose } : {}),
+    ...(box && Object.keys(box).length > 0 ? { box } : {}),
   }
 }
 

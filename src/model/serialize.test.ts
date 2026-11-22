@@ -337,6 +337,13 @@ describe('serializeDrill / parseDrill', () => {
     expect(() => parseDrill(tamper((d) => (d.scenes[0].items[0].alpha = 'half')))).toThrow()
   })
 
+  it('round-trips the look of text boxes and rejects broken ones', () => {
+    const box = { shape: 'cloud', tail: 'sw', tailKind: 'thought', bold: true }
+    expect(parseDrill(tamper((d) => (d.scenes[0].items[0].box = box))).scenes[0].items[0].box).toEqual(box)
+    expect(() => parseDrill(tamper((d) => (d.scenes[0].items[0].box = { shape: 'star' })))).toThrow()
+    expect('box' in parseDrill(tamper((d) => (d.scenes[0].items[0].box = {}))).scenes[0].items[0]).toBe(false)
+  })
+
   it('round-trips the own opacity of zones', () => {
     expect(parseDrill(tamper((d) => (d.scenes[0].zones[0].alpha = 0.4))).scenes[0].zones[0].alpha).toBe(0.4)
     expect('alpha' in parseDrill(serializeDrill(drill)).scenes[0].zones[0]).toBe(false)

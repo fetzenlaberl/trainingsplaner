@@ -29,6 +29,18 @@ import {
 } from '../items/zones'
 import type { Item, Line, PlayerShape, Zone } from '../model/types'
 import {
+  BORDER_COLORS,
+  TAIL_ARROWS,
+  TAIL_PICKER,
+  TEXTBOX_FONTS,
+  TEXTBOX_SHAPES,
+  TEXTBOX_WIDTHS,
+  type TextBoxFont,
+  type TextBoxShape,
+  type TextBoxStyle,
+  type TextBoxWidth,
+} from '../items/textBoxStyle'
+import {
   currentScene,
   findElement,
   isLine,
@@ -132,7 +144,7 @@ function AlphaSlider({ ids, value }: { ids: string[]; value: number }) {
         onKeyUp={finish}
         onBlur={finish}
       />
-      <span className="w-9 text-right tabular-nums">{Math.round(value * 100)} %</span>
+      <span className="w-10 whitespace-nowrap text-right tabular-nums">{Math.round(value * 100)} %</span>
     </label>
   )
 }
@@ -481,8 +493,109 @@ function ItemControls({ item }: { item: Item }) {
           >
             Text bearbeiten
           </button>
+          <TextBoxControls item={item} />
         </>
       )}
+    </>
+  )
+}
+
+const selectClass = 'min-h-10 rounded-md bg-slate-800 px-2 text-sm text-slate-200'
+
+/** Shape, width, font, border and tail of a text box or speech bubble. */
+function TextBoxControls({ item }: { item: Item }) {
+  const setTextBoxStyle = useDrillStore((s) => s.setTextBoxStyle)
+  const box = item.box
+  const change = (c: Partial<TextBoxStyle>) => setTextBoxStyle(item.id, c)
+  const toggle = (active: boolean) =>
+    active ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600') : buttonClass
+  return (
+    <>
+      <label className="flex items-center gap-1 text-sm text-slate-400">
+        Form
+        <select className={selectClass} value={box?.shape ?? 'rounded'} onChange={(e) => change({ shape: e.target.value as TextBoxShape })}>
+          {TEXTBOX_SHAPES.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-1 text-sm text-slate-400">
+        Breite
+        <select className={selectClass} value={box?.width ?? 'normal'} onChange={(e) => change({ width: e.target.value as TextBoxWidth })}>
+          {TEXTBOX_WIDTHS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-1 text-sm text-slate-400">
+        Schrift
+        <select className={selectClass} value={box?.font ?? 'medium'} onChange={(e) => change({ font: e.target.value as TextBoxFont })}>
+          {TEXTBOX_FONTS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button type="button" aria-pressed={!!box?.bold} className={`${toggle(!!box?.bold)} font-bold`} title="Fett" onClick={() => change({ bold: !box?.bold })}>
+        F
+      </button>
+      <button type="button" aria-pressed={!!box?.italic} className={`${toggle(!!box?.italic)} italic`} title="Kursiv" onClick={() => change({ italic: !box?.italic })}>
+        K
+      </button>
+      <ColorSwatches
+        label="Rand"
+        colors={[{ value: '', name: 'Schwach', swatch: 'linear-gradient(135deg, #475569 45%, #94a3b8 55%)' }, ...BORDER_COLORS]}
+        value={box?.border ?? ''}
+        onSelect={(border) => change({ border: border || undefined })}
+      />
+      <div role="group" aria-label="Zipfel" className="flex items-center gap-1">
+        <span className="text-sm text-slate-400" title="Sprechblase: Richtung des Zipfels">
+          Zipfel
+        </span>
+        <div className="grid grid-cols-3 gap-0.5">
+          {TAIL_PICKER.map((dir) => {
+            const active = (box?.tail ?? null) === dir
+            return (
+              <button
+                key={dir ?? 'none'}
+                type="button"
+                aria-pressed={active}
+                aria-label={dir ? `Zipfel ${TAIL_ARROWS[dir]}` : 'Kein Zipfel'}
+                title={dir ? `Zipfel ${TAIL_ARROWS[dir]}` : 'Kein Zipfel'}
+                className={`h-5 w-6 rounded text-xs leading-none ${active ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                onClick={() => change({ tail: dir ?? undefined })}
+              >
+                {dir ? TAIL_ARROWS[dir] : '·'}
+              </button>
+            )
+          })}
+        </div>
+        {box?.tail && (
+          <>
+            <button
+              type="button"
+              aria-pressed={box.tailKind !== 'thought'}
+              className={toggle(box.tailKind !== 'thought')}
+              onClick={() => change({ tailKind: 'speech' })}
+            >
+              Sprechen
+            </button>
+            <button
+              type="button"
+              aria-pressed={box.tailKind === 'thought'}
+              className={toggle(box.tailKind === 'thought')}
+              onClick={() => change({ tailKind: 'thought' })}
+            >
+              Denken
+            </button>
+          </>
+        )}
+      </div>
     </>
   )
 }

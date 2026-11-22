@@ -926,6 +926,20 @@ describe('own opacity', () => {
     expect('alpha' in store().scenes[1].items[0]).toBe(false)
   })
 
+  it('changes the look of a text box in every scene and drops default values', () => {
+    const id = store().addItem({ type: 'textbox', color: '#ffffff', label: 'Los', box: { shape: 'oval', tail: 'sw' } }, 5, 5)
+    store().addScene()
+    store().setTextBoxStyle(id, { font: 'large', tail: undefined })
+    expect(store().scenes.map((s) => s.items[0].box)).toEqual([
+      { shape: 'oval', font: 'large' },
+      { shape: 'oval', font: 'large' },
+    ])
+    store().setTextBoxStyle(id, { shape: 'rounded', font: 'medium' })
+    expect('box' in store().scenes[0].items[0]).toBe(false)
+    store().undo()
+    expect(store().scenes[0].items[0].box).toEqual({ shape: 'oval', font: 'large' })
+  })
+
   it('sets the opacity of whole zones too', () => {
     const id = store().addZone(RECT, 30, 20)
     store().setAlphaLive([id], 0.3)
