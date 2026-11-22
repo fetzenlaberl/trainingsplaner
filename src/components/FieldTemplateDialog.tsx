@@ -5,6 +5,7 @@ import {
   formatName,
   SIZE_FORMATS,
   sizeFormatDrill,
+  sizeOverviewDrill,
   Y_PASS_VARIANTS,
   yPassDrill,
 } from '../model/fieldTemplates'
@@ -57,6 +58,10 @@ export function FieldTemplateDialog({ onChoose, onClose }: { onChoose: (drill: D
                 </span>
               </button>
             ))}
+            <button type="button" className={tileClass} onClick={() => onChoose(sizeOverviewDrill())}>
+              <span className="font-semibold">Übersicht</span>
+              <span className="text-xs text-slate-400">1:1 bis 8:8 auf einem Blatt</span>
+            </button>
           </div>
         </section>
 

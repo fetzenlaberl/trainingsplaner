@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { getViewport } from '../field/dimensions'
-import { areaForPlayers, customFieldScene, DEFAULT_FIELD_DRAW_OPTIONS, FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
+import { areaForPlayers, customFieldScene, DEFAULT_FIELD_DRAW_OPTIONS, FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, sizeOverviewDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
 import { parseDrill, serializeDrill } from './serialize'
 import type { Drill } from './types'
 
@@ -8,6 +8,7 @@ const all: Drill[] = [
   ...SIZE_FORMATS.map(sizeFormatDrill),
   ...FIELD_VARIANTS.map((v) => fieldVariantDrill(v.key)),
   ...Y_PASS_VARIANTS.map((v) => yPassDrill(v.key)),
+  sizeOverviewDrill(),
 ]
 
 describe('field templates', () => {
@@ -214,6 +215,19 @@ describe('field templates', () => {
     const quarters = lines('quarters')
     expect(quarters[1].points).toEqual([{ x: 0, y: 15 }, { x: 40, y: 15 }])
     expect(quarters.every((l) => l.type === 'line' && l.pattern === 'dashed' && l.locked)).toBe(true)
+  })
+
+  it('shows the fields 1:1 to 8:8 side by side on the overview sheet', () => {
+    const scene = sizeOverviewDrill().scenes[0]
+    expect(scene.zones).toHaveLength(8)
+    expect(new Set(scene.zones.map((z) => z.id)).size).toBe(8)
+    expect(scene.zones.some((z) => z.id.startsWith('zone-tpl-field-'))).toBe(false)
+    const players = scene.items.filter((i) => i.type === 'player')
+    expect(players).toHaveLength(2 * (1 + 2 + 3 + 4 + 5 + 6 + 7 + 8))
+    expect(scene.items.filter((i) => i.type === 'minigoal')).toHaveLength(16)
+    expect(scene.items.filter((i) => i.type === 'text').map((t) => t.label)).toContain('8:8')
+    // Every field fits in its own box of the sheet.
+    for (const zone of scene.zones) expect(Math.max(zone.width / 23, zone.height / 17)).toBeCloseTo(1)
   })
 
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {

@@ -291,6 +291,91 @@ export function sizeFormatDrill(format: SizeFormat): Drill {
   })
 }
 
+/** Formats on the overview sheet */
+export const OVERVIEW_FORMATS = SIZE_FORMATS.filter((f) => f.players <= 8)
+
+/**
+ * Overview sheet: the fields 1:1 to 8:8 side by side, each shrunk to the same box (goals at
+ * the top and bottom, cones on the corners, blue against red) with its format and size.
+ */
+export function sizeOverviewDrill(): Drill {
+  const columns = 4
+  const cellWidth = 30
+  const cellHeight = 33
+  const rows = Math.ceil(OVERVIEW_FORMATS.length / columns)
+  const sheet = { length: columns * cellWidth, width: rows * cellHeight }
+  const b = builder(sheet)
+  const boxWidth = 23
+  const boxHeight = 17
+  OVERVIEW_FORMATS.forEach((format, i) => {
+    const cx = (i % columns) * cellWidth + cellWidth / 2
+    const top = Math.floor(i / columns) * cellHeight
+    const cy = top + 15.5
+    const field = { length: middle(format.length), width: middle(format.width) }
+    // Goal to goal runs up the sheet: field x → sheet y (own goal at the bottom), field y → sheet x.
+    const s = Math.min(boxWidth / field.width, boxHeight / field.length)
+    const w = field.width * s
+    const h = field.length * s
+    b.zones.push({
+      id: `zone-tpl-overview-${i + 1}`,
+      shape: 'rect',
+      x: cx,
+      y: cy,
+      width: w,
+      height: h,
+      rotation: 0,
+      color: WHITE,
+      fillColor: WHITE,
+      fillOpacity: 0,
+      dashed: false,
+      label: '',
+      goals: 0,
+      corners: null,
+    })
+    for (const [dx, dy] of [
+      [-1, -1],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+    ]) {
+      addItem(b, 'cone', cx + (dx * w) / 2, cy + (dy * h) / 2, { color: CONE, size: 0.7 })
+    }
+    addGoal(b, 'minigoal', cx, cy + h / 2, -90, 1.2)
+    addGoal(b, 'minigoal', cx, cy - h / 2, 90, 1.2)
+    const first = b.items.length
+    const rowsOfTeam = SIZE_ROWS[format.players]
+    addTeam(b, field, BLUE, rowsOfTeam, 'left', () => '')
+    addTeam(b, field, RED, rowsOfTeam, 'right', () => '')
+    for (const item of b.items.slice(first)) {
+      const fx = item.x
+      const fy = item.y
+      item.x = cx + (fy - field.width / 2) * s
+      item.y = cy + (field.length / 2 - fx) * s
+      item.rotation -= 90
+      item.size = 0.8
+    }
+    addBall(b, cx, cy)
+    b.items[b.items.length - 1].size = clampItemSize(0.6)
+    addItem(b, 'text', cx, top + 3.4, { label: formatName(format), size: 1.4 })
+    const lo = format.length[0] * format.width[0]
+    const hi = format.length[1] * format.width[1]
+    addItem(b, 'text', cx, top + 27.5, { label: `${range(format.width)} × ${range(format.length)} m`, size: 0.9 })
+    addItem(b, 'text', cx, top + 30.3, {
+      label: `${lo.toLocaleString('de-DE')}–${hi.toLocaleString('de-DE')} m²`,
+      size: 0.75,
+      alpha: 0.75,
+    })
+  })
+  return fieldDrill('Übersicht Feldgrößen 1:1–8:8', sheet, b, {
+    players: null,
+    fieldSize: '',
+    description:
+      'Empfohlene Feldgrößen von 1:1 bis 8:8 im Vergleich (Breite × Tor zu Tor, Fläche).\n' +
+      'Alle Felder sind auf dieselbe Größe verkleinert; die echten Maße stehen darunter.\n' +
+      'Kleinere Felder = mehr Aktionen und höhere Intensität; größere Felder = mehr Zeit und Raum.',
+  })
+}
+
 // ---------------------------------------------------------------------------------------
 // Field variants with different goal setups
 
