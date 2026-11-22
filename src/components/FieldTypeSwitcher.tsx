@@ -197,6 +197,7 @@ function AreaInputs() {
   const [message, setMessage] = useState<string | null>(null)
   const [options, setOptions] = useState<FieldDrawOptions>(loadDrawOptions)
   const [showOptions, setShowOptions] = useState(false)
+  const showNotes = useDrillStore((s) => s.pitch.showNotes === true)
   // Look changes by the user (not the first render) redraw the field after a short pause.
   const changedByUser = useRef(false)
   // Fixing or freeing the field changes it directly, without a redraw.
@@ -457,6 +458,15 @@ function AreaInputs() {
         title="Aussehen des eingezeichneten Felds: Rand, Füllung, Ecken, Hütchen, Tore, Spieler"
       >
         Aussehen {showOptions ? '▴' : '▾'}
+      </button>
+      <button
+        type="button"
+        className={showNotes ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600') : buttonClass}
+        aria-pressed={showNotes}
+        onClick={() => useDrillStore.getState().setPitchLines({ showNotes: !showNotes })}
+        title="Notizen unter dem Feld zeigen oder ausblenden (kommen beim Export als PNG und PDF mit)"
+      >
+        📝 Notizen
       </button>
       {message && <span className="text-xs text-emerald-300">{message}</span>}
 
