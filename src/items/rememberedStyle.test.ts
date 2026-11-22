@@ -47,6 +47,9 @@ describe('remembered object style', () => {
   it('keeps the look of cones for the next cone', () => {
     rememberStyle(item('cone'), { symbol: 'flat' })
     expect(withRememberedStyle(template('cone')).symbol).toBe('flat')
+    rememberStyle(item('ring'), { symbol: 'outline' })
+    expect(withRememberedStyle(template('ring')).symbol).toBe('outline')
+    expect(withRememberedStyle(template('disc')).symbol).toBeUndefined()
     expect(withRememberedStyle(template('player-red')).symbol).toBeUndefined()
   })
 

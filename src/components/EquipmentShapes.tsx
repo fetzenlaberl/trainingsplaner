@@ -1,3 +1,4 @@
+import type { SymbolStyle } from '../model/types'
 import { useContext } from 'react'
 import { Circle, Ellipse, Group, Line, Rect } from 'react-konva'
 import { displayColor } from '../field/pitchStyle'
@@ -139,7 +140,10 @@ export function HurdleShape({ color, rotation }: { color: string; rotation: numb
 }
 
 /** Agility ring lying on the ground. */
-export function RingShape({ color }: { color: string }) {
+/** Ring as usual, fully colored inside, or as a thin outline. */
+export function RingShape({ color, symbol }: { color: string; symbol?: SymbolStyle }) {
+  if (symbol === 'flat') return <Circle radius={0.39} fill={color} />
+  if (symbol === 'outline') return <Circle radius={0.36} fill="rgba(0,0,0,0)" stroke={color} strokeWidth={0.035} />
   return <Circle radius={0.35} stroke={color} strokeWidth={0.08} />
 }
 
@@ -154,7 +158,16 @@ export function FlagShape({ color, rotation }: { color: string; rotation: number
 }
 
 /** Flat marker disc. */
-export function DiscShape({ color }: { color: string }) {
+export function DiscShape({ color, symbol }: { color: string; symbol?: SymbolStyle }) {
+  if (symbol === 'flat') return <Circle radius={0.22} fill={color} />
+  if (symbol === 'outline') {
+    return (
+      <Group>
+        <Circle radius={0.2} fill="rgba(0,0,0,0)" stroke={color} strokeWidth={0.05} />
+        <Circle radius={0.07} stroke={color} strokeWidth={0.025} />
+      </Group>
+    )
+  }
   return (
     <Group>
       <Circle radius={0.22} fill={color} stroke="rgba(0,0,0,0.35)" strokeWidth={0.03} />

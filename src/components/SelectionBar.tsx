@@ -29,6 +29,9 @@ import {
 } from '../items/zones'
 import type { GoalView, Item, Line, PlayerShape, PoleLean, SymbolStyle, Zone } from '../model/types'
 
+/** Objects that can be drawn with border, fully colored or as outline */
+const SYMBOL_TYPES: Item['type'][] = ['player', 'cone', 'disc', 'ring']
+
 const SYMBOL_STYLES: { value: SymbolStyle | null; label: string }[] = [
   { value: null, label: 'Mit Rand' },
   { value: 'flat', label: 'Vollfarbe' },
@@ -368,7 +371,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {(item.type === 'player' || item.type === 'cone') && (
+      {SYMBOL_TYPES.includes(item.type) && (
         <div role="group" aria-label="Darstellung" className="flex gap-1 rounded-lg bg-slate-800 p-1" title="Bleibt für die nächsten, bis du es änderst">
           {SYMBOL_STYLES.map((o) => (
             <button

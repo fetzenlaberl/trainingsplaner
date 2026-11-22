@@ -197,11 +197,11 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
     case 'hurdle':
       return <HurdleShape color={color} rotation={rotation} />
     case 'ring':
-      return <RingShape color={color} />
+      return <RingShape color={color} symbol={symbol} />
     case 'flag':
       return <FlagShape color={color} rotation={rotation} />
     case 'disc':
-      return <DiscShape color={color} />
+      return <DiscShape color={color} symbol={symbol} />
     case 'image':
       // Pictures stay upright on screen in portrait, plus their own rotation.
       return (
