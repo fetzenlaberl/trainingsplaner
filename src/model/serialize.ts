@@ -84,7 +84,7 @@ export const FILE_FORMAT = 'trainingsplaner-drill'
 // Version 24: player figures with poses.
 // Version 25: number and letter markers.
 // Version 26: own size of the empty field (small-sided training fields).
-export const FILE_VERSION = 28
+export const FILE_VERSION = 29
 const FIGURE_POSES: FigurePose[] = ['stand', 'run', 'shoot', 'keeper', 'demand']
 export const DEFAULT_SCENE_DURATION_MS = 2000
 export const DEFAULT_TITLE = 'Unbenannte Übung'
@@ -365,6 +365,14 @@ function lockedOf(value: Record<string, unknown>): { locked?: true } {
   return value.locked ? { locked: true } : {}
 }
 
+/** Own opacity of items and lines (version 29), kept between 0.05 and 1. */
+function alphaOf(value: Record<string, unknown>): { alpha?: number } {
+  if (value.alpha === undefined) return {}
+  if (!isNumber(value.alpha)) throw corrupt()
+  const alpha = Math.min(1, Math.max(0.05, value.alpha))
+  return alpha < 1 ? { alpha } : {}
+}
+
 function parseItem(value: unknown): Item {
   if (
     !isRecord(value) ||
@@ -390,6 +398,7 @@ function parseItem(value: unknown): Item {
     throw corrupt()
   }
   return {
+    ...alphaOf(value),
     ...lockedOf(value),
     id: value.id,
     type: value.type as ItemType,
@@ -437,6 +446,7 @@ function parseLine(value: unknown): Line {
   }
   const type = value.type as LineType
   return {
+    ...alphaOf(value),
     ...lockedOf(value),
     id: value.id,
     type,

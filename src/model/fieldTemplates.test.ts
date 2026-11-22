@@ -170,6 +170,20 @@ describe('field templates', () => {
     expect([...free.items, ...free.lines, ...free.zones].some((e) => e.locked)).toBe(false)
   })
 
+  it('draws the size labels at half opacity, full or not at all', () => {
+    const area = { length: 30, width: 20 }
+    const half = customFieldScene(area, 'landscape')
+    const labels = half.items.filter((i) => i.type === 'text')
+    expect(labels).toHaveLength(2)
+    expect([...labels, ...half.lines].every((e) => e.alpha === 0.5)).toBe(true)
+    expect(half.items.filter((i) => i.type === 'player').some((p) => p.alpha !== undefined)).toBe(false)
+    const full = customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, labelOpacity: 1 })
+    expect(full.lines.some((l) => l.alpha !== undefined)).toBe(false)
+    const none = customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, labelOpacity: 0 })
+    expect(none.items.filter((i) => i.type === 'text')).toHaveLength(0)
+    expect(none.lines).toHaveLength(0)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

@@ -90,8 +90,34 @@ export function SelectionBar() {
       >
         Löschen
       </button>
+      <OrderButtons ids={[selected.id]} />
       <LockButton ids={[selected.id]} locked={selected.locked === true} />
     </div>
+  )
+}
+
+/** Brings the selection to the front or sends it to the back. */
+function OrderButtons({ ids }: { ids: string[] }) {
+  const reorder = useDrillStore((s) => s.reorder)
+  return (
+    <>
+      <button
+        type="button"
+        className={buttonClass}
+        title="In den Vordergrund: über die anderen Objekte legen (Zonen bleiben immer unter Linien und Objekten)"
+        onClick={() => reorder(ids, 'front')}
+      >
+        ⬆ Vordergrund
+      </button>
+      <button
+        type="button"
+        className={buttonClass}
+        title="In den Hintergrund: unter die anderen Objekte legen"
+        onClick={() => reorder(ids, 'back')}
+      >
+        ⬇ Hintergrund
+      </button>
+    </>
   )
 }
 
@@ -173,6 +199,7 @@ function MultiControls() {
       >
         Löschen
       </button>
+      <OrderButtons ids={selectedIds} />
       <LockButton ids={selectedIds} locked={elements.length > 0 && elements.every((el) => el.locked === true)} />
       <button type="button" className={buttonClass} title="Auswahl aufheben (Esc)" onClick={() => select(null)}>
         Aufheben

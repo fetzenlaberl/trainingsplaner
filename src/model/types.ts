@@ -61,6 +61,8 @@ export interface Item {
   pose?: FigurePose
   /** Fixed: cannot be selected or moved on the pitch (missing = free) */
   locked?: boolean
+  /** Own opacity 0.05–1, e.g. for faint size labels (missing = fully visible) */
+  alpha?: number
 }
 
 export interface Point {
@@ -86,6 +88,8 @@ export interface Line {
   step: number | null
   /** Fixed: cannot be selected or moved on the pitch (missing = free) */
   locked?: boolean
+  /** Own opacity 0.05–1, e.g. for faint size labels (missing = fully visible) */
+  alpha?: number
 }
 
 export type ZoneShape = 'rect' | 'triangle' | 'ellipse'

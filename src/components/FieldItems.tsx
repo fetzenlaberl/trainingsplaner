@@ -58,7 +58,7 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             listening={!item.locked || showLocked}
             x={item.x}
             y={item.y}
-            opacity={item.opacity ?? 1}
+            opacity={(item.opacity ?? 1) * (item.alpha ?? 1)}
             draggable={interactive && !item.locked}
             onPointerDown={(e) => {
               selectOnPointerDown(e, item.id)

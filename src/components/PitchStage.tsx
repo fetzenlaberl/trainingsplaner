@@ -29,6 +29,7 @@ import { QuickMenu } from './QuickMenu'
 import { CrestDialog } from './CrestDialog'
 import { TextBoxDialog } from './TextBoxDialog'
 import { TrashBin } from './TrashBin'
+import { FieldQuickButtons } from './FieldQuickButtons'
 import { groundItems, UprightItems } from './UprightItems'
 import { makeProjector } from '../perspective/upright'
 import { ZoomControls } from './ZoomControls'
@@ -587,6 +588,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
         </div>
       )}
       {showTrash && layout.scale > 0 && !locked && <TrashBin />}
+      {showTrash && layout.scale > 0 && !locked && <FieldQuickButtons onStandardMode={() => setZoomAreaMode(false)} />}
       {layout.scale > 0 && perspective === null && (
         <ZoomControls
           zoom={view.zoom}

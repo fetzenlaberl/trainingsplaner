@@ -898,3 +898,18 @@ describe('fixing elements', () => {
     expect(store().scenes[0].items[0].locked).toBe(true)
   })
 })
+
+describe('front and back', () => {
+  it('moves elements to the front or back in every scene, as one undo step', () => {
+    const a = store().addItem({ type: 'cone', color: ORANGE }, 1, 1)
+    const b = store().addItem({ type: 'cone', color: ORANGE }, 2, 2)
+    const c = store().addItem({ type: 'cone', color: ORANGE }, 3, 3)
+    store().addScene()
+    store().reorder([a], 'front')
+    expect(store().scenes.map((s) => s.items.map((i) => i.id))).toEqual([[b, c, a], [b, c, a]])
+    store().reorder([c], 'back')
+    expect(store().scenes[1].items.map((i) => i.id)).toEqual([c, b, a])
+    store().undo()
+    expect(store().scenes[1].items.map((i) => i.id)).toEqual([b, c, a])
+  })
+})

@@ -97,6 +97,11 @@ export interface DrillState extends DrillContent {
   setItemsColor: (ids: string[], color: string) => void
   /** Fixes or frees items, lines and zones (in every scene, since they keep their id), as one undo step. */
   setLocked: (ids: string[], locked: boolean) => void
+  /**
+   * Brings elements to the front or sends them to the back among their kind (zones always lie
+   * under lines, lines under items), in every scene, as one undo step.
+   */
+  reorder: (ids: string[], where: 'front' | 'back') => void
 
   selectScene: (index: number) => void
   /** Adds the follow-up scene after the current one (lines applied) and shows it. */
@@ -528,6 +533,25 @@ export const useDrillStore = create<DrillState>((set, get) => ({
           items: scene.items.map(change),
           lines: scene.lines.map(change),
           zones: scene.zones.map(change),
+        })),
+      }
+    }),
+
+  reorder: (ids, where) =>
+    set((s) => {
+      const move = <T extends { id: string }>(list: T[]): T[] => {
+        const chosen = list.filter((e) => ids.includes(e.id))
+        if (chosen.length === 0) return list
+        const rest = list.filter((e) => !ids.includes(e.id))
+        return where === 'front' ? [...rest, ...chosen] : [...chosen, ...rest]
+      }
+      return {
+        ...recorded(s),
+        scenes: s.scenes.map((scene) => ({
+          ...scene,
+          items: move(scene.items),
+          lines: move(scene.lines),
+          zones: move(scene.zones),
         })),
       }
     }),

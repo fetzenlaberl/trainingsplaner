@@ -326,6 +326,17 @@ describe('serializeDrill / parseDrill', () => {
     expect(parseDrill(text).scenes[0].lines[0]).toMatchObject({ type: 'line', pattern: 'dashdot' })
   })
 
+  it('round-trips the own opacity of items and lines, kept between 0.05 and 1', () => {
+    const text = tamper((d) => {
+      d.scenes[0].items[0].alpha = 0.5
+      d.scenes[0].lines[0].alpha = 0
+    })
+    const scene = parseDrill(text).scenes[0]
+    expect(scene.items[0].alpha).toBe(0.5)
+    expect(scene.lines[0].alpha).toBe(0.05)
+    expect(() => parseDrill(tamper((d) => (d.scenes[0].items[0].alpha = 'half')))).toThrow()
+  })
+
   it('round-trips fixed items, lines and zones', () => {
     const text = tamper((d) => {
       d.scenes[0].items[0].locked = true

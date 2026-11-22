@@ -39,7 +39,7 @@ export function UprightItems({ items, project, pitchColor, images = NO_IMAGES }:
                 y={at.y}
                 scaleX={at.scale * item.size}
                 scaleY={at.scale * item.size}
-                opacity={item.opacity ?? 1}
+                opacity={(item.opacity ?? 1) * (item.alpha ?? 1)}
               >
                 <ItemShape
                   type={item.type}

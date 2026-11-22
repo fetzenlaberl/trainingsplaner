@@ -54,7 +54,7 @@ export const useToolStore = create<ToolState>((set) => ({
   tool: 'select',
   lineColor: '#ffffff',
   linePattern: 'auto',
-  lineWeight: 'medium',
+  lineWeight: 'extraThin',
   numberSteps: false,
   multiSelect: false,
   penOnly: typeof localStorage === 'undefined' ? false : loadPenOnly(),

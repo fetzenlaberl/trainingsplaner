@@ -720,7 +720,15 @@ export interface FieldDrawOptions {
   goalType: 'minigoal' | 'goal'
   /** Outline, size labels, cones and goals fixed (players and ball stay movable) */
   lockField: boolean
+  /** Opacity of the size labels: 0 = none, 0.5 = faint, 1 = full */
+  labelOpacity: number
 }
+
+export const LABEL_OPACITIES: { value: number; label: string }[] = [
+  { value: 0, label: 'Aus' },
+  { value: 0.5, label: '50 %' },
+  { value: 1, label: '100 %' },
+]
 
 export type ConeSize = 'normal' | 'large' | 'xlarge'
 export const CONE_SIZES: { value: ConeSize; label: string; factor: number }[] = [
@@ -751,6 +759,7 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   goals: { top: 0, bottom: 0, left: 0, right: 0 },
   goalType: 'minigoal',
   lockField: true,
+  labelOpacity: 0.5,
 }
 
 /**
@@ -885,8 +894,16 @@ export function customFieldScene(
   const meters = (v: number) => `${v.toLocaleString('de-DE')} m`
   // The labels read along their side on screen in both orientations.
   const portrait = orientation === 'portrait'
-  addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0)
-  addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90)
+  if (options.labelOpacity > 0) {
+    const firstLabel = b.items.length
+    addSizeLabel(b, area, 'bottom', meters(area.length), portrait ? -90 : 0)
+    addSizeLabel(b, area, 'left', meters(area.width), portrait ? 0 : -90)
+    if (options.labelOpacity < 1) {
+      // The size labels are the last texts and the only lines of the drawn-in field.
+      for (const item of b.items.slice(firstLabel)) item.alpha = options.labelOpacity
+      for (const line of b.lines) line.alpha = options.labelOpacity
+    }
+  }
   if (options.lockField) lockFieldParts(b)
   return { items: b.items, lines: b.lines, zones: b.zones, format }
 }

@@ -10,6 +10,7 @@ import {
   DEFAULT_FIELD_DRAW_OPTIONS,
   formatName,
   isFieldPart,
+  LABEL_OPACITIES,
   MAX_SIDE_CONES,
   MAX_SIDE_GOALS,
   MAX_TEAM_PLAYERS,
@@ -89,6 +90,7 @@ function loadDrawOptions(): FieldDrawOptions {
       goals,
       goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
       lockField: v.lockField !== false,
+      labelOpacity: LABEL_OPACITIES.some((o) => o.value === v.labelOpacity) ? (v.labelOpacity as number) : d.labelOpacity,
     }
   } catch {
     return d
@@ -483,6 +485,21 @@ function AreaInputs() {
             <button type="button" aria-pressed={options.rounded} className={choice(options.rounded)} onClick={() => changeOptions({ rounded: true })}>
               Abgerundet
             </button>
+          </div>
+          <div className={row}>
+            <span className={rowLabel}>Maße</span>
+            {LABEL_OPACITIES.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                aria-pressed={options.labelOpacity === o.value}
+                className={choice(options.labelOpacity === o.value)}
+                onClick={() => changeOptions({ labelOpacity: o.value })}
+                title="Deckkraft der Maßangaben (Länge und Breite mit Pfeilen)"
+              >
+                {o.label}
+              </button>
+            ))}
           </div>
           <div className={row}>
             <span className={rowLabel}>Hütchen</span>

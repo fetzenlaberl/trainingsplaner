@@ -76,7 +76,7 @@ export function FieldLines({ lines, scale, interactive }: FieldLinesProps) {
                 listening={false}
               />
             )}
-            <LineShape {...line} scale={scale} />
+            <LineShape {...line} scale={scale} opacity={line.alpha ?? 1} />
           </Group>
         )
       })}
