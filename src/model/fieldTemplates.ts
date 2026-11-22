@@ -8,7 +8,7 @@ import { MINIGOAL } from '../items/equipment'
 import { zoneCornerRadius } from '../items/zones'
 import { clampItemSize } from '../items/palette'
 import { emptyDrill } from './serialize'
-import type { Drill, Item, ItemType, Line, LineType, Point, Zone } from './types'
+import type { Drill, Item, ItemType, Line, LineType, Point, SymbolStyle, Zone } from './types'
 
 const WHITE = '#ffffff'
 const RED = '#dc2626'
@@ -831,6 +831,8 @@ export interface FieldDrawOptions {
   labelOpacity: number
   /** Lines dividing the field (in the outline's style) */
   division: FieldDivision
+  /** Players filled with a white border (null), filled without border, or only their outline */
+  playerSymbol: SymbolStyle | null
 }
 
 /** none, center line, thirds, quarters 2 × 2, or four strips from goal to goal */
@@ -899,6 +901,7 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   lockField: true,
   labelOpacity: 0.5,
   division: 'none',
+  playerSymbol: null,
 }
 
 /**
@@ -1031,6 +1034,7 @@ export function customFieldScene(
     if (item.type !== 'player') continue
     if (options.playerShape === 'arrow') delete item.facing
     else Object.assign(item, { shape: options.playerShape, facing: false })
+    if (options.playerSymbol) item.symbol = options.playerSymbol
   }
   addBall(b, area.length / 2, area.width / 2)
   const meters = (v: number) => `${v.toLocaleString('de-DE')} m`

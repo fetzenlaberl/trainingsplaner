@@ -85,6 +85,7 @@ function loadDrawOptions(): FieldDrawOptions {
       rounded: v.rounded === true,
       playerShape: v.playerShape === 'circle' || v.playerShape === 'triangle' ? v.playerShape : 'arrow',
       numbers: v.numbers !== false,
+      playerSymbol: v.playerSymbol === 'flat' || v.playerSymbol === 'outline' ? v.playerSymbol : null,
       teamColors: [colors[0], colors[1]],
       cones: v.cones === true,
       sideCones: isCount(v.sideCones, MAX_SIDE_CONES) ? v.sideCones : d.sideCones,
@@ -113,6 +114,12 @@ const PLAYER_SHAPES: { value: FieldDrawOptions['playerShape']; label: string }[]
   { value: 'arrow', label: 'Kreis mit Pfeil' },
   { value: 'circle', label: 'Kreis' },
   { value: 'triangle', label: 'Dreieck' },
+]
+
+const PLAYER_SYMBOLS: { value: FieldDrawOptions['playerSymbol']; label: string; title: string }[] = [
+  { value: null, label: 'Mit Rand', title: 'Ausgefüllt mit weißem Rand' },
+  { value: 'flat', label: 'Vollfarbe', title: 'Ausgefüllt ohne Rand' },
+  { value: 'outline', label: 'Umriss', title: 'Nur farbiger Rand, innen durchsichtig' },
 ]
 
 const SIDE_LABELS: Record<ScreenSide, string> = { top: 'Oben', bottom: 'Unten', left: 'Links', right: 'Rechts' }
@@ -648,6 +655,19 @@ function AreaInputs() {
               value={options.teamColors[1]}
               onSelect={(c) => changeOptions((current) => ({ teamColors: [current.teamColors[0], c] }))}
             />
+            <span className="ml-2 text-sm text-slate-400">Darstellung</span>
+            {PLAYER_SYMBOLS.map((o) => (
+              <button
+                key={o.label}
+                type="button"
+                aria-pressed={options.playerSymbol === o.value}
+                className={choice(options.playerSymbol === o.value)}
+                onClick={() => changeOptions({ playerSymbol: o.value })}
+                title={o.title}
+              >
+                {o.label}
+              </button>
+            ))}
           </div>
           <div className={`${row} border-t border-slate-700 pt-2`}>
             <button type="button" className={buttonClass} disabled={!canUndo} onClick={() => useDrillStore.getState().undo()} title="Letzte Änderung zurücknehmen">

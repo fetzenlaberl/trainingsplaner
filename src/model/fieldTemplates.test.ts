@@ -204,6 +204,15 @@ describe('field templates', () => {
     expect(arrow.items.filter((i) => i.type === 'text').every((t) => t.alpha === 0.3)).toBe(true)
   })
 
+  it('draws the players flat or as outline when chosen', () => {
+    const area = { length: 30, width: 20 }
+    const players = (playerSymbol: typeof DEFAULT_FIELD_DRAW_OPTIONS.playerSymbol) =>
+      customFieldScene(area, 'landscape', { ...DEFAULT_FIELD_DRAW_OPTIONS, playerSymbol }).items.filter((i) => i.type === 'player')
+    expect(players(null).every((p) => p.symbol === undefined)).toBe(true)
+    expect(players('outline').every((p) => p.symbol === 'outline')).toBe(true)
+    expect(players('flat').every((p) => p.symbol === 'flat')).toBe(true)
+  })
+
   it('divides the field with lines in the outline style', () => {
     const area = { length: 40, width: 30 }
     const lines = (division: typeof DEFAULT_FIELD_DRAW_OPTIONS.division) =>
