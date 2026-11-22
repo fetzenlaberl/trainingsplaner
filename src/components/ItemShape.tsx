@@ -162,7 +162,14 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
       return (
         <Group rotation={upright}>
           {glow > 0 && <HighlightRing strength={glow * 0.6} />}
-          <Circle radius={0.78} fill={color} stroke="rgba(15,23,42,0.75)" strokeWidth={0.09} shadowColor="#000" shadowOpacity={0.3} shadowBlur={0.15} shadowOffsetY={0.06} />
+          {/* As usual with dark edge and shadow, fully colored without edge, or only the colored ring */}
+          {symbol === 'outline' ? (
+            <Circle radius={0.72} fill="rgba(0,0,0,0)" stroke={color} strokeWidth={0.16} />
+          ) : symbol === 'flat' ? (
+            <Circle radius={0.78} fill={color} />
+          ) : (
+            <Circle radius={0.78} fill={color} stroke="rgba(15,23,42,0.75)" strokeWidth={0.09} shadowColor="#000" shadowOpacity={0.3} shadowBlur={0.15} shadowOffsetY={0.06} />
+          )}
           <MeterText
             text={label}
             x={-0.78}
@@ -173,7 +180,8 @@ export function ItemShape({ type, color, label, rotation, shape, facing = true, 
             verticalAlign="middle"
             fontSize={label.length > 1 ? 0.78 : 0.95}
             fontStyle="bold"
-            fill={contrastTextColor(color)}
+            fill={symbol === 'outline' ? color : contrastTextColor(color)}
+            {...(symbol === 'outline' ? { stroke: 'rgba(15,23,42,0.75)', strokeWidth: 0.1, fillAfterStrokeEnabled: true } : {})}
             wrap="none"
           />
         </Group>

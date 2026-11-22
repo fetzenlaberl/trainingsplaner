@@ -50,6 +50,10 @@ describe('remembered object style', () => {
     rememberStyle(item('ring'), { symbol: 'outline' })
     expect(withRememberedStyle(template('ring')).symbol).toBe('outline')
     expect(withRememberedStyle(template('disc')).symbol).toBeUndefined()
+    noteOrigin('mk', 'marker-letter')
+    rememberStyle(item('marker', 'mk'), { symbol: 'flat' })
+    expect(withRememberedStyle(template('marker-letter')).symbol).toBe('flat')
+    expect(withRememberedStyle(template('marker-number')).symbol).toBeUndefined()
     expect(withRememberedStyle(template('player-red')).symbol).toBeUndefined()
   })
 
