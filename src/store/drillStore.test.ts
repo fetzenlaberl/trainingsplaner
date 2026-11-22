@@ -913,3 +913,16 @@ describe('front and back', () => {
     expect(store().scenes[1].items.map((i) => i.id)).toEqual([b, c, a])
   })
 })
+
+describe('own opacity', () => {
+  it('sets the opacity of items in every scene, 100 % removes it, never below the minimum', () => {
+    const id = store().addItem({ type: 'cone', color: ORANGE }, 1, 1)
+    store().addScene()
+    store().setAlphaLive([id], 0.5)
+    expect(store().scenes.map((s) => s.items[0].alpha)).toEqual([0.5, 0.5])
+    store().setAlphaLive([id], 0)
+    expect(store().scenes[0].items[0].alpha).toBe(0.1)
+    store().setAlphaLive([id], 1)
+    expect('alpha' in store().scenes[1].items[0]).toBe(false)
+  })
+})

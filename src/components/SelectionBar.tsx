@@ -33,6 +33,7 @@ import {
   findElement,
   isLine,
   isZone,
+  MIN_ALPHA,
   useDrillStore,
   type DrillContent,
 } from '../store/drillStore'
@@ -90,9 +91,49 @@ export function SelectionBar() {
       >
         Löschen
       </button>
+      {!isZone(selected) && <AlphaSlider ids={[selected.id]} value={selected.alpha ?? 1} />}
       <OrderButtons ids={[selected.id]} />
       <LockButton ids={[selected.id]} locked={selected.locked === true} />
     </div>
+  )
+}
+
+/** Own opacity of objects and lines (one undo step per slider move). */
+function AlphaSlider({ ids, value }: { ids: string[]; value: number }) {
+  const setAlphaLive = useDrillStore((s) => s.setAlphaLive)
+  const snapshot = useDrillStore((s) => s.snapshot)
+  const pushHistory = useDrillStore((s) => s.pushHistory)
+  const beforeRef = useRef<DrillContent | null>(null)
+  const begin = () => {
+    beforeRef.current ??= snapshot()
+  }
+  const finish = () => {
+    if (beforeRef.current) pushHistory(beforeRef.current)
+    beforeRef.current = null
+  }
+  return (
+    <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Deckkraft: wie durchsichtig das Objekt bzw. die Linie ist">
+      Deckkraft
+      <input
+        type="range"
+        aria-label="Deckkraft"
+        className="w-24 accent-emerald-500"
+        min={MIN_ALPHA}
+        max={1}
+        step={0.05}
+        value={value}
+        onPointerDown={begin}
+        onKeyDown={begin}
+        onChange={(e) => {
+          begin()
+          setAlphaLive(ids, Number(e.target.value))
+        }}
+        onPointerUp={finish}
+        onKeyUp={finish}
+        onBlur={finish}
+      />
+      <span className="w-9 text-right tabular-nums">{Math.round(value * 100)} %</span>
+    </label>
   )
 }
 
@@ -153,6 +194,8 @@ function MultiControls() {
   const elements = selectedIds.map((id) => findElement(scene, id)).filter((el) => el !== undefined)
   const items = elements.filter((el): el is Item => !isLine(el) && !isZone(el))
   const colorable = items.filter((i) => COLORABLE_TYPES.includes(i.type))
+  // Objects and lines have an own opacity; zones have their fill opacity instead.
+  const alphaTargets = elements.filter((el): el is Item | Line => !isZone(el))
 
   return (
     <div role="group" aria-label="Mehrere bearbeiten" className="flex flex-wrap items-center gap-1.5">
@@ -199,6 +242,12 @@ function MultiControls() {
       >
         Löschen
       </button>
+      {alphaTargets.length > 0 && (
+        <AlphaSlider
+          ids={alphaTargets.map((e) => e.id)}
+          value={alphaTargets.every((e) => (e.alpha ?? 1) === (alphaTargets[0].alpha ?? 1)) ? (alphaTargets[0].alpha ?? 1) : 1}
+        />
+      )}
       <OrderButtons ids={selectedIds} />
       <LockButton ids={selectedIds} locked={elements.length > 0 && elements.every((el) => el.locked === true)} />
       <button type="button" className={buttonClass} title="Auswahl aufheben (Esc)" onClick={() => select(null)}>

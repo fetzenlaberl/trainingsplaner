@@ -27,6 +27,9 @@ import { emptyDrill } from '../model/serialize'
 import type { Category, Drill, DrillArea, FigurePose, Item, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
+/** Faintest own opacity of items and lines that can be set (stays visible). */
+export const MIN_ALPHA = 0.1
+
 export interface DrillContent {
   fieldType: FieldType
   pitch: PitchStyle
@@ -102,6 +105,11 @@ export interface DrillState extends DrillContent {
    * under lines, lines under items), in every scene, as one undo step.
    */
   reorder: (ids: string[], where: 'front' | 'back') => void
+  /**
+   * Own opacity (0.1–1) of items and lines, in every scene, without an undo step (for a
+   * slider: take a snapshot() before and call pushHistory when done).
+   */
+  setAlphaLive: (ids: string[], alpha: number) => void
 
   selectScene: (index: number) => void
   /** Adds the follow-up scene after the current one (lines applied) and shows it. */
@@ -534,6 +542,21 @@ export const useDrillStore = create<DrillState>((set, get) => ({
           lines: scene.lines.map(change),
           zones: scene.zones.map(change),
         })),
+      }
+    }),
+
+  setAlphaLive: (ids, alpha) =>
+    set((s) => {
+      const value = Math.round(Math.min(1, Math.max(MIN_ALPHA, alpha)) * 100) / 100
+      const change = <T extends { id: string; alpha?: number }>(element: T): T => {
+        if (!ids.includes(element.id)) return element
+        const next = { ...element }
+        if (value < 1) next.alpha = value
+        else delete next.alpha
+        return next
+      }
+      return {
+        scenes: s.scenes.map((scene) => ({ ...scene, items: scene.items.map(change), lines: scene.lines.map(change) })),
       }
     }),
 
