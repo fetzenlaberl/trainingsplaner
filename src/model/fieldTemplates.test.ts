@@ -145,6 +145,19 @@ describe('field templates', () => {
     }
   })
 
+  it('puts cones along the sides, bigger if chosen, and none where a goal stands', () => {
+    const area = { length: 30, width: 20 }
+    const look = { ...DEFAULT_FIELD_DRAW_OPTIONS, sideCones: 3 }
+    const cones = (o: typeof look) => customFieldScene(area, 'landscape', o).items.filter((i) => i.type === 'cone')
+    expect(cones(look)).toHaveLength(12)
+    expect(cones({ ...look, cones: true })).toHaveLength(16)
+    // A goal in the middle of the left side replaces the middle cone there.
+    expect(cones({ ...look, goals: { top: 0, bottom: 0, left: 1, right: 0 } })).toHaveLength(11)
+    const normal = cones({ ...look, coneSize: 'normal' })[0].size
+    const large = cones({ ...look, coneSize: 'xlarge' })[0].size
+    expect(large).toBeCloseTo(normal * 2.2)
+  })
+
   it('numbers the Y-pass steps 1–3 between A, B and C', () => {
     for (const v of Y_PASS_VARIANTS) {
       const scene = yPassDrill(v.key).scenes[0]

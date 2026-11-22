@@ -696,11 +696,22 @@ export interface FieldDrawOptions {
   teamColors: [string, string]
   /** Cones on the four corners */
   cones: boolean
+  /** Cones spread along each side between the corners (0–5; none where a goal stands) */
+  sideCones: number
   coneColor: string
+  coneSize: ConeSize
   /** Goals on each side as seen on screen (0–4, spread evenly) */
   goals: Record<ScreenSide, number>
   goalType: 'minigoal' | 'goal'
 }
+
+export type ConeSize = 'normal' | 'large' | 'xlarge'
+export const CONE_SIZES: { value: ConeSize; label: string; factor: number }[] = [
+  { value: 'normal', label: 'Normal', factor: 1 },
+  { value: 'large', label: 'Groß', factor: 1.6 },
+  { value: 'xlarge', label: 'Sehr groß', factor: 2.2 },
+]
+export const MAX_SIDE_CONES = 5
 
 export type ScreenSide = 'top' | 'bottom' | 'left' | 'right'
 export const SCREEN_SIDES: ScreenSide[] = ['top', 'bottom', 'left', 'right']
@@ -717,7 +728,9 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
   numbers: true,
   teamColors: [BLUE, RED],
   cones: false,
+  sideCones: 0,
   coneColor: CONE,
+  coneSize: 'large',
   goals: { top: 0, bottom: 0, left: 0, right: 0 },
   goalType: 'minigoal',
 }
@@ -726,30 +739,39 @@ export const DEFAULT_FIELD_DRAW_OPTIONS: FieldDrawOptions = {
  * Field side for a side as seen on screen; portrait turns the view by -90°, so the
  * field's start (x = 0) is at the bottom there.
  */
-function fieldSide(side: ScreenSide, orientation: 'landscape' | 'portrait'): 'start' | 'end' | 'near' | 'far' {
+function fieldSide(side: ScreenSide, orientation: 'landscape' | 'portrait'): FieldSide {
   if (orientation === 'landscape') return { left: 'start', right: 'end', top: 'near', bottom: 'far' }[side] as 'start'
   return { bottom: 'start', top: 'end', left: 'near', right: 'far' }[side] as 'start'
 }
 
-/** `count` goals spread evenly along one side, opening into the field. */
-function addSideGoals(
-  b: Builder,
-  area: FieldArea,
-  side: 'start' | 'end' | 'near' | 'far',
-  count: number,
-  type: 'minigoal' | 'goal',
-): void {
+type FieldSide = 'start' | 'end' | 'near' | 'far'
+
+/** Size and places (meters along the side) of `count` goals spread evenly along one side. */
+function sideGoalLayout(area: FieldArea, side: FieldSide, count: number, type: 'minigoal' | 'goal') {
   const n = Math.min(MAX_SIDE_GOALS, Math.max(0, Math.round(count)))
-  if (n === 0) return
   const along = side === 'start' || side === 'end' ? area.width : area.length
   // Big goals (5 m wide at size 1) shrink when several share a short side.
   const size = type === 'goal' ? clampItemSize(Math.min(1, along / (n + 1) / 6)) : miniGoalSize(area)
-  for (let i = 1; i <= n; i++) {
-    const t = (i / (n + 1)) * along
-    if (side === 'start') addGoal(b, type, 0, t, 0, size)
-    else if (side === 'end') addGoal(b, type, area.length, t, 180, size)
-    else if (side === 'near') addGoal(b, type, t, 0, 90, size)
-    else addGoal(b, type, t, area.width, -90, size)
+  const width = (type === 'goal' ? 5 : MINIGOAL.width) * size
+  return { size, width, places: Array.from({ length: n }, (_, i) => ((i + 1) / (n + 1)) * along) }
+}
+
+/** Point on a side, `t` meters along it. */
+function sidePoint(area: FieldArea, side: FieldSide, t: number): Point {
+  if (side === 'start') return { x: 0, y: t }
+  if (side === 'end') return { x: area.length, y: t }
+  if (side === 'near') return { x: t, y: 0 }
+  return { x: t, y: area.width }
+}
+
+const SIDE_FACING: Record<FieldSide, number> = { start: 0, end: 180, near: 90, far: -90 }
+
+/** Goals spread evenly along one side, opening into the field. */
+function addSideGoals(b: Builder, area: FieldArea, side: FieldSide, count: number, type: 'minigoal' | 'goal'): void {
+  const { size, places } = sideGoalLayout(area, side, count, type)
+  for (const t of places) {
+    const p = sidePoint(area, side, t)
+    addGoal(b, type, p.x, p.y, SIDE_FACING[side], size)
   }
 }
 
@@ -805,21 +827,33 @@ export function customFieldScene(
     ...(options.rounded ? { rounded: true } : {}),
   })
   const format = standardFormat(area)
+  const coneSize = clampItemSize(b.k * (CONE_SIZES.find((c) => c.value === options.coneSize)?.factor ?? 1))
+  const cone = (x: number, y: number) => addItem(b, 'cone', x, y, { color: options.coneColor, size: coneSize })
   if (options.cones) {
-    addCornerCones(b, area)
     // On rounded corners the cones sit on the middle of the curve (45°).
     const r = options.rounded
       ? zoneCornerRadius({ shape: 'rect', width: area.length, height: area.width, corners: null, rounded: true })
       : 0
     const inset = r - r / Math.SQRT2
-    for (const item of b.items) {
-      if (item.type !== 'cone') continue
-      item.color = options.coneColor
-      item.x += item.x < area.length / 2 ? inset : -inset
-      item.y += item.y < area.width / 2 ? inset : -inset
-    }
+    cone(inset, inset)
+    cone(area.length - inset, inset)
+    cone(area.length - inset, area.width - inset)
+    cone(inset, area.width - inset)
   }
-  for (const side of SCREEN_SIDES) addSideGoals(b, area, fieldSide(side, orientation), options.goals[side], options.goalType)
+  const sideCones = Math.min(MAX_SIDE_CONES, Math.max(0, Math.round(options.sideCones)))
+  for (const side of SCREEN_SIDES) {
+    const fs = fieldSide(side, orientation)
+    const goals = sideGoalLayout(area, fs, options.goals[side], options.goalType)
+    const along = fs === 'start' || fs === 'end' ? area.width : area.length
+    for (let i = 1; i <= sideCones; i++) {
+      const t = (i / (sideCones + 1)) * along
+      // No cone where a goal stands.
+      if (goals.places.some((g) => Math.abs(g - t) < goals.width / 2 + 0.8)) continue
+      const p = sidePoint(area, fs, t)
+      cone(p.x, p.y)
+    }
+    addSideGoals(b, area, fs, options.goals[side], options.goalType)
+  }
   const [blue, red] = teams ?? [format.players, format.players]
   const label = options.numbers ? undefined : () => ''
   if (blue > 0) addTeam(b, area, options.teamColors[0], SIZE_ROWS[Math.min(blue, MAX_TEAM_PLAYERS)], 'left', label)

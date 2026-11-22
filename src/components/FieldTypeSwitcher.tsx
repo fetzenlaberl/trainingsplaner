@@ -5,12 +5,15 @@ import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS } from '../items/zones'
 import { LINE_COLORS, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import {
   areaForPlayers,
+  CONE_SIZES,
   customFieldScene,
   DEFAULT_FIELD_DRAW_OPTIONS,
   formatName,
+  MAX_SIDE_CONES,
   MAX_SIDE_GOALS,
   MAX_TEAM_PLAYERS,
   SCREEN_SIDES,
+  type ConeSize,
   type FieldDrawOptions,
   type ScreenSide,
 } from '../model/fieldTemplates'
@@ -79,6 +82,8 @@ function loadDrawOptions(): FieldDrawOptions {
       numbers: v.numbers !== false,
       teamColors: [colors[0], colors[1]],
       cones: v.cones === true,
+      sideCones: isCount(v.sideCones, MAX_SIDE_CONES) ? v.sideCones : d.sideCones,
+      coneSize: CONE_SIZES.some((c) => c.value === v.coneSize) ? (v.coneSize as ConeSize) : d.coneSize,
       coneColor: isHexColor(v.coneColor) ? v.coneColor : d.coneColor,
       goals,
       goalType: v.goalType === 'goal' ? 'goal' : 'minigoal',
@@ -430,14 +435,43 @@ function AreaInputs() {
           </div>
           <div className={row}>
             <span className={rowLabel}>Hütchen</span>
-            <button type="button" aria-pressed={!options.cones} className={choice(!options.cones)} onClick={() => changeOptions({ cones: false })}>
-              Keine
-            </button>
-            <button type="button" aria-pressed={options.cones} className={choice(options.cones)} onClick={() => changeOptions({ cones: true })}>
+            <button type="button" aria-pressed={options.cones} className={choice(options.cones)} onClick={() => changeOptions((c) => ({ cones: !c.cones }))}>
               An den Ecken
             </button>
-            {options.cones && (
-              <ColorSwatches label="Farbe" colors={CONE_COLORS} value={options.coneColor} onSelect={(coneColor) => changeOptions({ coneColor })} />
+            <div role="group" aria-label="Hütchen je Seite" className="flex items-center gap-0.5 rounded-lg bg-slate-800 p-1">
+              <span className="px-1 text-xs text-slate-400">je Seite</span>
+              {Array.from({ length: MAX_SIDE_CONES + 1 }, (_, n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-label={`${n} Hütchen je Seite`}
+                  aria-pressed={options.sideCones === n}
+                  className={`min-h-8 min-w-7 rounded-md text-sm ${
+                    options.sideCones === n ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+                  }`}
+                  onClick={() => changeOptions({ sideCones: n })}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+            {(options.cones || options.sideCones > 0) && (
+              <>
+                <div role="group" aria-label="Größe der Hütchen" className="flex items-center gap-1">
+                  {CONE_SIZES.map((size) => (
+                    <button
+                      key={size.value}
+                      type="button"
+                      aria-pressed={options.coneSize === size.value}
+                      className={choice(options.coneSize === size.value)}
+                      onClick={() => changeOptions({ coneSize: size.value })}
+                    >
+                      {size.label}
+                    </button>
+                  ))}
+                </div>
+                <ColorSwatches label="Farbe" colors={CONE_COLORS} value={options.coneColor} onSelect={(coneColor) => changeOptions({ coneColor })} />
+              </>
             )}
           </div>
           <div className={row}>
