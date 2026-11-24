@@ -2,6 +2,7 @@ import { noteOrigin, withRememberedStyle } from '../items/rememberedStyle'
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from 'react'
 import { ITEM_EXTENT, ITEM_TEMPLATES, type ItemTemplate } from '../items/palette'
 import { ZONE_TEMPLATES, type ZoneTemplate } from '../items/zones'
+import { DEFAULT_OPEN_GROUPS, matchesSearch, PALETTE_GROUPS, paletteGroup, type PaletteGroup } from '../items/paletteGroups'
 import { useDrillStore } from '../store/drillStore'
 import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore } from '../store/toolStore'
@@ -10,6 +11,18 @@ import { ItemPreview } from './ItemPreview'
 import { SquadPanel } from './SquadPanel'
 import { ZonePreview } from './ZonePreview'
 import type { DropTarget } from './PitchStage'
+
+const OPEN_GROUPS_KEY = 'trainingsplaner.sidebarGroups'
+
+function loadOpenGroups(): PaletteGroup[] {
+  try {
+    const data: unknown = JSON.parse(localStorage.getItem(OPEN_GROUPS_KEY) ?? 'null')
+    if (Array.isArray(data)) return data.filter((g): g is PaletteGroup => PALETTE_GROUPS.some((p) => p.key === g))
+  } catch {
+    // Fall back to the usual groups.
+  }
+  return DEFAULT_OPEN_GROUPS
+}
 
 const ICON_SIZE_PX = 36
 const ZONE_ICON_SIZE_PX = 34
@@ -43,6 +56,19 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
   const setTool = useToolStore((s) => s.setTool)
   const [drag, setDrag] = useState<DragState | null>(null)
   const [mode, setMode] = useState<'items' | 'squad'>('items')
+  const [query, setQuery] = useState('')
+  const searching = query.trim() !== ''
+  const [openGroups, setOpenGroups] = useState<PaletteGroup[]>(loadOpenGroups)
+  const toggleGroup = (key: PaletteGroup) =>
+    setOpenGroups((groups) => {
+      const next = groups.includes(key) ? groups.filter((g) => g !== key) : [...groups, key]
+      try {
+        localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(next))
+      } catch {
+        // Only a convenience.
+      }
+      return next
+    })
   const cleanupRef = useRef<(() => void) | null>(null)
 
   useEffect(() => () => cleanupRef.current?.(), [])
@@ -143,7 +169,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36'}`}
+      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:min-h-0 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36 lg:w-52'}`}
     >
       <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
         {([
@@ -170,44 +196,82 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
           <SquadPanel onStartDrag={(e, template) => startDrag(e, { kind: 'item', template }, true)} />
         </div>
       ) : (
-        <ul className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-y-auto">
-          {ITEM_TEMPLATES.map((template) => (
-            <li key={template.key} className="shrink-0">
-              <button
-                type="button"
-                title={`${template.name} aufs Feld ziehen`}
-                onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
-                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-xs leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
-              >
-                <span className="pointer-events-none flex h-10 items-center justify-center">
-                  <ItemPreview
-                    item={template.item}
-                    scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
-                  />
-                </span>
-                {template.name}
-              </button>
-            </li>
-          ))}
-          <li className="flex shrink-0 items-center px-1 text-xs font-semibold tracking-wide text-slate-500 uppercase md:pt-2">
-            Zonen
-          </li>
-          {ZONE_TEMPLATES.map((template) => (
-            <li key={template.key} className="shrink-0">
-              <button
-                type="button"
-                title={`Zone ${template.name} aufs Feld ziehen`}
-                onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
-                className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-xs leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
-              >
-                <span className="pointer-events-none flex h-10 items-center justify-center">
-                  <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />
-                </span>
-                {template.name}
-              </button>
-            </li>
-          ))}
-        </ul>
+        <>
+          <div className="px-2 pt-2">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Suchen …"
+              aria-label="Objekte suchen"
+              className="min-h-9 w-full rounded-md border border-slate-700 bg-slate-800 px-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none"
+            />
+          </div>
+          <div className="flex min-h-0 flex-1 gap-1 overflow-x-auto p-2 md:flex-col md:overflow-x-hidden md:overflow-y-auto">
+            {PALETTE_GROUPS.map((group) => {
+              const items = group.key === 'zones' ? [] : ITEM_TEMPLATES.filter((t) => paletteGroup(t) === group.key && (!searching || matchesSearch(t.name, query)))
+              const zones = group.key === 'zones' ? ZONE_TEMPLATES.filter((t) => !searching || matchesSearch(`Zone ${t.name}`, query)) : []
+              const count = items.length + zones.length
+              if (count === 0) return null
+              const open = searching || openGroups.includes(group.key)
+              return (
+                <section key={group.key} className="flex shrink-0 md:flex-col">
+                  <button
+                    type="button"
+                    aria-expanded={open}
+                    onClick={() => toggleGroup(group.key)}
+                    disabled={searching}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md px-1.5 py-1.5 text-left text-xs font-semibold tracking-wide text-slate-400 uppercase hover:bg-slate-800 hover:text-slate-200 disabled:hover:bg-transparent"
+                  >
+                    <span aria-hidden className="w-2.5">{open ? '▾' : '▸'}</span>
+                    <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                    <span className="font-normal text-slate-500">{count}</span>
+                  </button>
+                  {open && (
+                    <ul className="flex gap-1 md:grid md:grid-cols-1 lg:grid-cols-2">
+                      {items.map((template) => (
+                        <li key={template.key} className="shrink-0">
+                          <button
+                            type="button"
+                            title={`${template.name} aufs Feld ziehen`}
+                            onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
+                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                          >
+                            <span className="pointer-events-none flex h-10 items-center justify-center">
+                              <ItemPreview
+                                item={template.item}
+                                scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
+                              />
+                            </span>
+                            {template.name}
+                          </button>
+                        </li>
+                      ))}
+                      {zones.map((template) => (
+                        <li key={template.key} className="shrink-0">
+                          <button
+                            type="button"
+                            title={`Zone ${template.name} aufs Feld ziehen`}
+                            onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
+                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                          >
+                            <span className="pointer-events-none flex h-10 items-center justify-center">
+                              <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />
+                            </span>
+                            {template.name}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              )
+            })}
+            {searching && !ITEM_TEMPLATES.some((t) => matchesSearch(t.name, query)) && !ZONE_TEMPLATES.some((t) => matchesSearch(`Zone ${t.name}`, query)) && (
+              <p className="px-1 text-xs text-slate-400">Nichts gefunden.</p>
+            )}
+          </div>
+        </>
       )}
 
       {drag && (
