@@ -55,7 +55,7 @@ Web-App, mit der Trainer Übungen auf einem Spielfeld zeichnen, als Szenenfolge 
 - Nach jeder Phase: `npm run build` und Tests ausführen, dann sagen, wie ich es im Browser prüfe.
 - Nach jeder fertigen Phase einen Git-Commit erstellen.
 - Bedienung muss mit Maus und Touch (Tablet) funktionieren.
-- Handy (schmaler Bildschirm): eigene, abgespeckte Ansicht (`src/phone/PhoneApp.tsx`) mit Bibliothek, Einheiten, Woche, Journal und Übungsansicht mit Abspielen; Zeichenwerkzeuge nur auf Tablet/PC. Zusatz-Bedienelemente sind dort mit `PhoneFold` klappbar (Bibliothek: „Filter“ mit Anzahl aktiver Filter und „Sicherung“; Journal: „Schlagwörter“); Einheiten ohne eigene Liste/Woche-Umschaltung (die Leiste unten hat beides). In der Übungsansicht öffnet „⚽ Feld“ das Feld-Fenster als Blatt unten (60 % Höhe), das Feld darüber wird kleiner und bleibt ganz sichtbar.
+- Handy (schmaler Bildschirm): eigene, abgespeckte Ansicht (`src/phone/PhoneApp.tsx`) mit Bibliothek, Einheiten, Woche, Journal und Übungsansicht mit Abspielen; Zeichenwerkzeuge nur auf Tablet/PC. Zusatz-Bedienelemente sind dort mit `PhoneFold` klappbar (Bibliothek: „Filter“ mit Anzahl aktiver Filter und „Sicherung“; Journal: „Schlagwörter“); Einheiten ohne eigene Liste/Woche-Umschaltung (die Leiste unten hat beides). In der Übungsansicht gibt es „Speichern“ (in die Bibliothek; grün bei Änderungen, sonst ✓); „⚽ Feld“ öffnet das Feld-Fenster als Blatt unten (60 % Höhe), das Feld darüber wird kleiner und bleibt ganz sichtbar.
 - Alle Grafiken (Spieler, Ball, Hütchen, Tore) selbst als SVG/Konva-Formen erzeugen. Keine Grafiken, Figuren oder Layouts fremder Produkte übernehmen.
 
 ## Befehle

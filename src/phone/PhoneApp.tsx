@@ -7,7 +7,10 @@ import { buttonClass } from '../components/ui'
 import { useFullscreen } from '../hooks/useFullscreen'
 import { usePlaybackLoop } from '../hooks/usePlaybackLoop'
 import { locateTime, totalDuration } from '../animation/interpolate'
-import { useDrillStore } from '../store/drillStore'
+import { currentDrill, useDrillStore } from '../store/drillStore'
+import { serializeDrill } from '../model/serialize'
+import { saveToLibraryWithFeedback } from '../library/libraryActions'
+import { useLibraryLink } from '../library/libraryStore'
 import { togglePlayback } from '../store/playbackActions'
 import { SPEEDS, usePlaybackStore } from '../store/playbackStore'
 import { useViewStore } from '../store/viewStore'
@@ -107,6 +110,10 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
   const nextSpeed = SPEEDS[(SPEEDS.indexOf(speed as (typeof SPEEDS)[number]) + 1) % SPEEDS.length]
   const fullscreen = useFullscreen()
   const fieldPanel = useLayoutStore((s) => s.fieldPanel)
+  const drillJson = useDrillStore((s) => serializeDrill(currentDrill(s)))
+  const savedJson = useLibraryLink((s) => s.savedJson)
+  const dirty = drillJson !== savedJson
+  const [saving, setSaving] = useState(false)
   const setFieldPanel = useLayoutStore((s) => s.setFieldPanel)
   const [immersive, setImmersive] = useState(false)
   const [showTip, setShowTip] = useState(false)
@@ -179,6 +186,24 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
           ‹ {backLabel}
         </button>
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{title}</h1>
+        <button
+          type="button"
+          className={
+            dirty
+              ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600')
+              : buttonClass
+          }
+          disabled={saving || !dirty}
+          title={dirty ? 'Änderungen in der Übungsbibliothek speichern' : 'In der Bibliothek gespeichert'}
+          aria-label={dirty ? 'In Bibliothek speichern' : 'In der Bibliothek gespeichert'}
+          onClick={async () => {
+            setSaving(true)
+            await saveToLibraryWithFeedback()
+            setSaving(false)
+          }}
+        >
+          {saving ? '…' : dirty ? 'Speichern' : '✓'}
+        </button>
         <button
           type="button"
           aria-pressed={fieldPanel}
