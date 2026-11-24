@@ -111,7 +111,7 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
       <div
         role="tablist"
         aria-label="Ansicht"
-        hidden={hideModeTabs && mode === 'week'}
+        hidden={hideModeTabs}
         className="flex gap-1 border-b border-slate-700 bg-slate-900 px-3 py-2">
         {(
           [
@@ -194,7 +194,7 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
                 onDelete={handleDelete}
               />
             ) : (
-              sessions && <p className="text-sm text-slate-400">Wähle links eine Einheit oder leg eine neue an.</p>
+              sessions && <p className="hidden text-sm text-slate-400 md:block">Wähle links eine Einheit oder leg eine neue an.</p>
             )}
           </section>
         </div>

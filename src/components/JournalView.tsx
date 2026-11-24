@@ -1,3 +1,4 @@
+import { PhoneFold } from './PhoneFold'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
 import { ImportError, isPdf, readPdfText } from '../import/fileImport'
@@ -225,16 +226,18 @@ export function JournalView() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <div role="group" aria-label="Nach Schlagwort filtern" className="flex flex-wrap gap-1">
-          <button type="button" className={chipClass(tag === null)} onClick={() => setTag(null)}>
-            Alle
-          </button>
-          {JOURNAL_TAGS.map((t) => (
-            <button key={t} type="button" className={chipClass(tag === t)} onClick={() => setTag(tag === t ? null : t)}>
-              {t}
+        <PhoneFold label="Schlagwörter" activeCount={tag ? 1 : 0}>
+          <div role="group" aria-label="Nach Schlagwort filtern" className="flex flex-wrap gap-1">
+            <button type="button" className={chipClass(tag === null)} onClick={() => setTag(null)}>
+              Alle
             </button>
-          ))}
-        </div>
+            {JOURNAL_TAGS.map((t) => (
+              <button key={t} type="button" className={chipClass(tag === t)} onClick={() => setTag(tag === t ? null : t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </PhoneFold>
 
         <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
           {visible.length === 0 && (

@@ -1,3 +1,4 @@
+import { PhoneFold } from './PhoneFold'
 import { listMatches, putMatches } from '../teams/matchDb'
 import { listJournal, putJournalEntries } from '../journal/journalDb'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
@@ -207,6 +208,7 @@ export function LibraryView() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <PhoneFold label="Filter" activeCount={(category ? 1 : 0) + (ageGroup ? 1 : 0) + (players ? 1 : 0)}>
         <div role="group" aria-label="Kategorie" className="flex flex-wrap gap-1">
           {[null, ...CATEGORIES].map((c) => (
             <button
@@ -248,6 +250,8 @@ export function LibraryView() {
             </option>
           ))}
         </select>
+        </PhoneFold>
+        <PhoneFold label="Sicherung">
         <div className="ml-auto flex flex-wrap gap-1.5">
           <button type="button" className={buttonClass} onClick={() => void handleExportBackup()}>
             Sicherung exportieren
@@ -263,6 +267,7 @@ export function LibraryView() {
             onChange={handleImportBackup}
           />
         </div>
+        </PhoneFold>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
