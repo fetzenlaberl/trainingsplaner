@@ -5,6 +5,7 @@ import { usePlaybackStore } from '../store/playbackStore'
 import { useToolStore, type Tool } from '../store/toolStore'
 import { LineStylePicker } from './LineStylePicker'
 import { SelectionBar } from './SelectionBar'
+import { Popover, PopoverSection } from './Popover'
 
 
 /** Small line style samples for the tool buttons. */
@@ -142,7 +143,8 @@ export function LineToolbar() {
   const freehand = tool === 'free' || tool === 'freeArrow'
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
+    <div className="flex flex-col gap-2 border-b border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
+    <div className="flex flex-wrap items-center gap-2">
       <div role="group" aria-label="Werkzeug" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
         {TOOLS.map((t) => {
           const active = t.tool === tool || (t.tool === 'free' && tool === 'freeArrow')
@@ -156,37 +158,87 @@ export function LineToolbar() {
                 usePlaybackStore.getState().stop()
                 if (t.tool !== 'select') select(null)
               }}
-              className={`flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-medium transition-colors ${
+              title={t.name}
+              aria-label={t.name}
+              className={`flex min-h-10 items-center gap-2 rounded-md px-2.5 text-sm font-medium transition-colors ${
                 active ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
               }`}
             >
               {t.icon}
-              {t.name}
+              <span className="hidden lg:inline">{t.name}</span>
             </button>
           )
         })}
       </div>
 
-      <div role="group" aria-label="Linienfarbe" className="flex items-center gap-1.5">
-        <span className="text-sm text-slate-400">Linienfarbe</span>
-        {LINE_COLORS.map((c) => {
-          const active = c.value === lineColor
-          return (
+      {tool !== 'select' && (
+        <Popover
+          title="Farbe, Art und Schritt-Nummern der neuen Linien"
+          label={
+            <>
+              <span aria-hidden className="h-5 w-5 rounded-full border-2 border-slate-500" style={{ background: lineColor }} />
+              Stil
+            </>
+          }
+        >
+          <PopoverSection title="Farbe">
+            <div className="grid w-full grid-cols-9 gap-1.5">
+              {LINE_COLORS.map((c) => {
+                const active = c.value === lineColor
+                return (
+                  <button
+                    key={c.value}
+                    type="button"
+                    title={c.name}
+                    aria-label={`Linienfarbe ${c.name}`}
+                    aria-pressed={active}
+                    onClick={() => setLineColor(c.value)}
+                    className={`aspect-square rounded-full border-2 ${active ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'}`}
+                    style={{ backgroundColor: c.value }}
+                  />
+                )
+              })}
+            </div>
+          </PopoverSection>
+          <PopoverSection title="Art und Stärke">
+            <LineStylePicker allowAuto pattern={linePattern} weight={lineWeight} onPattern={setLinePattern} onWeight={setLineWeight} />
+          </PopoverSection>
+          <PopoverSection title="Schritt-Nummern">
             <button
-              key={c.value}
               type="button"
-              title={c.name}
-              aria-label={c.name}
-              aria-pressed={active}
-              onClick={() => setLineColor(c.value)}
-              className={`h-8 w-8 rounded-full border-2 ${
-                active ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'
+              aria-pressed={numberSteps}
+              title="Neue Linien bekommen automatisch die nächste Schritt-Nummer"
+              onClick={() => setNumberSteps(!numberSteps)}
+              className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+                numberSteps ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
               }`}
-              style={{ backgroundColor: c.value }}
-            />
-          )
-        })}
-      </div>
+            >
+              ①②③ Nummerieren
+            </button>
+            {numberSteps && (
+              <button
+                type="button"
+                aria-pressed={sameStepOn}
+                title="Neue Linien bekommen dieselbe Nummer wie die letzte (gleichzeitige Aktionen); aus = nächste Nummer"
+                onClick={() => setSameStep(!sameStepOn)}
+                className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
+                  sameStepOn ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
+                }`}
+              >
+                ①① Gleiche Nummer
+              </button>
+            )}
+            <button
+              type="button"
+              title="Lücken in den Schritt-Nummern schließen"
+              onClick={renumberLineSteps}
+              className="flex min-h-10 items-center rounded-md bg-slate-700 px-3 text-sm text-slate-200 hover:bg-slate-600"
+            >
+              Neu nummerieren
+            </button>
+          </PopoverSection>
+        </Popover>
+      )}
 
       {freehand && (
         <button
@@ -211,55 +263,9 @@ export function LineToolbar() {
             penOnly ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
         >
-          ✎ Nur Stift zeichnet
+          ✎ <span className="hidden xl:inline">Nur Stift zeichnet</span>
         </button>
       )}
-      {tool !== 'select' && (
-        <LineStylePicker
-          allowAuto
-          pattern={linePattern}
-          weight={lineWeight}
-          onPattern={setLinePattern}
-          onWeight={setLineWeight}
-        />
-      )}
-      {tool !== 'select' && (
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            aria-pressed={numberSteps}
-            title="Neue Linien bekommen automatisch die nächste Schritt-Nummer"
-            onClick={() => setNumberSteps(!numberSteps)}
-            className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
-              numberSteps ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            ①②③ Schritte nummerieren
-          </button>
-          {numberSteps && (
-            <button
-              type="button"
-              aria-pressed={sameStepOn}
-              title="Neue Linien bekommen dieselbe Nummer wie die letzte (gleichzeitige Aktionen); aus = nächste Nummer"
-              onClick={() => setSameStep(!sameStepOn)}
-              className={`flex min-h-10 items-center gap-1.5 rounded-md px-3 text-sm ${
-                sameStepOn ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              ①① Gleiche Nummer
-            </button>
-          )}
-          <button
-            type="button"
-            title="Lücken in den Schritt-Nummern schließen"
-            onClick={renumberLineSteps}
-            className="flex min-h-10 items-center rounded-md bg-slate-800 px-3 text-sm text-slate-300 hover:bg-slate-700"
-          >
-            Neu nummerieren
-          </button>
-        </div>
-      )}
-
       {tool === 'select' && (
         <button
           type="button"
@@ -275,11 +281,8 @@ export function LineToolbar() {
       )}
       {tool === 'select' && <LockedToggle />}
 
-      {tool === 'select' && (
-        <div className="ml-auto">
-          <SelectionBar />
-        </div>
-      )}
+    </div>
+      {tool === 'select' && <SelectionBar />}
     </div>
   )
 }

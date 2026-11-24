@@ -77,9 +77,13 @@ import { useToolStore } from '../store/toolStore'
 import { nextStep } from '../lines/steps'
 import { LineStylePicker } from './LineStylePicker'
 import { ColorSwatches, LabelInput } from './controls'
+import { ColorPopover, Popover, PopoverSection } from './Popover'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
 const ROTATE_STEP = 15
+
+/** Main buttons in the bar, the rest under "Mehr" */
+type Part = 'main' | 'more'
 
 const SHAPE_LABELS: Record<PlayerShape, { icon: string; name: string }> = {
   circle: { icon: '●', name: 'Kreis' },
@@ -102,15 +106,18 @@ export function SelectionBar() {
   if (selectedCount > 1) return <MultiControls />
   if (!selected) return null
 
+  const controls = (part: Part) =>
+    isZone(selected) ? (
+      <ZoneControls zone={selected} part={part} />
+    ) : isLine(selected) ? (
+      <LineControls line={selected} part={part} />
+    ) : (
+      <ItemControls item={selected} part={part} />
+    )
+
   return (
     <div role="group" aria-label="Auswahl bearbeiten" className="flex flex-wrap items-center gap-1.5">
-      {isZone(selected) ? (
-        <ZoneControls zone={selected} />
-      ) : isLine(selected) ? (
-        <LineControls line={selected} />
-      ) : (
-        <ItemControls item={selected} />
-      )}
+      {controls('main')}
       <button
         type="button"
         className={buttonClass}
@@ -127,9 +134,14 @@ export function SelectionBar() {
       >
         Löschen
       </button>
-      <AlphaSlider ids={[selected.id]} value={selected.alpha ?? 1} />
-      <OrderButtons ids={[selected.id]} />
-      <LockButton ids={[selected.id]} locked={selected.locked === true} />
+      <Popover label="Mehr" title="Weitere Einstellungen" align="right" width="w-96">
+        <div className="flex flex-wrap items-center gap-1.5">{controls('more')}</div>
+        <PopoverSection title="Ebene und Sichtbarkeit">
+          <AlphaSlider ids={[selected.id]} value={selected.alpha ?? 1} />
+          <OrderButtons ids={[selected.id]} />
+          <LockButton ids={[selected.id]} locked={selected.locked === true} />
+        </PopoverSection>
+      </Popover>
     </div>
   )
 }
@@ -260,7 +272,7 @@ function MultiControls() {
         </div>
       )}
       {colorable.length > 0 && (
-        <ColorSwatches
+        <ColorPopover
           label="Farbe"
           colors={PLAYER_COLORS}
           value={colorable.every((i) => i.color === colorable[0].color) ? colorable[0].color : ''}
@@ -278,14 +290,18 @@ function MultiControls() {
       >
         Löschen
       </button>
-      {alphaTargets.length > 0 && (
-        <AlphaSlider
-          ids={alphaTargets.map((e) => e.id)}
-          value={alphaTargets.every((e) => (e.alpha ?? 1) === (alphaTargets[0].alpha ?? 1)) ? (alphaTargets[0].alpha ?? 1) : 1}
-        />
-      )}
-      <OrderButtons ids={selectedIds} />
-      <LockButton ids={selectedIds} locked={elements.length > 0 && elements.every((el) => el.locked === true)} />
+      <Popover label="Mehr" title="Weitere Einstellungen" align="right">
+        <PopoverSection title="Ebene und Sichtbarkeit">
+          {alphaTargets.length > 0 && (
+            <AlphaSlider
+              ids={alphaTargets.map((e) => e.id)}
+              value={alphaTargets.every((e) => (e.alpha ?? 1) === (alphaTargets[0].alpha ?? 1)) ? (alphaTargets[0].alpha ?? 1) : 1}
+            />
+          )}
+          <OrderButtons ids={selectedIds} />
+          <LockButton ids={selectedIds} locked={elements.length > 0 && elements.every((el) => el.locked === true)} />
+        </PopoverSection>
+      </Popover>
       <button type="button" className={buttonClass} title="Auswahl aufheben (Esc)" onClick={() => select(null)}>
         Aufheben
       </button>
@@ -293,7 +309,7 @@ function MultiControls() {
   )
 }
 
-function ItemControls({ item }: { item: Item }) {
+function ItemControls({ item, part }: { item: Item; part: Part }) {
   const rotateItem = useDrillStore((s) => s.rotateItem)
   const setItemSize = useDrillStore((s) => s.setItemSize)
   const setAllItemSizes = useDrillStore((s) => s.setAllItemSizes)
@@ -306,6 +322,7 @@ function ItemControls({ item }: { item: Item }) {
 
   return (
     <>
+      {part === 'main' && (
       <div role="group" aria-label="Größe" className="flex items-center gap-1">
         <button
           type="button"
@@ -330,21 +347,24 @@ function ItemControls({ item }: { item: Item }) {
         >
           +
         </button>
+      </div>
+      )}
+      {part === 'more' && (
         <button
           type="button"
           className={buttonClass}
           title="Diese Größe für alle Objekte der aktuellen Szene übernehmen"
           onClick={() => setAllItemSizes(item.size)}
         >
-          Auf alle anwenden
+          Größe auf alle anwenden
         </button>
-      </div>
-
-      {item.type === 'ball' && (
-        <ColorSwatches label="Ball" colors={BALL_STYLES} value={item.color} onSelect={(color) => setItemColor(item.id, color)} />
       )}
-      {COLORABLE_TYPES.includes(item.type) && (
-        <ColorSwatches
+
+      {part === 'main' && item.type === 'ball' && (
+        <ColorPopover label="Ball" colors={BALL_STYLES} value={item.color} onSelect={(color) => setItemColor(item.id, color)} />
+      )}
+      {part === 'main' && COLORABLE_TYPES.includes(item.type) && (
+        <ColorPopover
           label="Farbe"
           colors={PLAYER_COLORS}
           value={item.color}
@@ -352,7 +372,7 @@ function ItemControls({ item }: { item: Item }) {
         />
       )}
 
-      {item.type === 'player' && (
+      {part === 'more' && item.type === 'player' && (
         <div role="group" aria-label="Form" className="flex gap-1 rounded-lg bg-slate-800 p-1">
           {PLAYER_SHAPES.map((shape) => (
             <button
@@ -372,7 +392,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {SYMBOL_TYPES.includes(item.type) && (
+      {part === 'more' && SYMBOL_TYPES.includes(item.type) && (
         <div role="group" aria-label="Darstellung" className="flex gap-1 rounded-lg bg-slate-800 p-1" title="Bleibt für die nächsten, bis du es änderst">
           {SYMBOL_STYLES.map((o) => (
             <button
@@ -390,7 +410,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {item.type === 'figure' && (
+      {part === 'more' && item.type === 'figure' && (
         <div role="group" aria-label="Haltung" className="flex flex-wrap gap-1 rounded-lg bg-slate-800 p-1">
           {FIGURE_POSE_ORDER.map((pose) => (
             <button
@@ -408,7 +428,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {(item.type === 'goalFront' || item.type === 'minigoalFront') && (
+      {part === 'more' && (item.type === 'goalFront' || item.type === 'minigoalFront') && (
         <div role="group" aria-label="Ansicht" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
           <span className="px-1 text-sm text-slate-400">Ansicht</span>
           {GOAL_VIEWS.map((o) => (
@@ -427,7 +447,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {item.type === 'discPole' && (
+      {part === 'more' && item.type === 'discPole' && (
         <div role="group" aria-label="Neigung" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
           <span className="px-1 text-sm text-slate-400">Neigung</span>
           {POLE_LEANS.map((o) => (
@@ -446,7 +466,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {ROTATABLE_TYPES.includes(item.type) && (
+      {part === 'main' && ROTATABLE_TYPES.includes(item.type) && (
         <>
           <button
             type="button"
@@ -467,7 +487,7 @@ function ItemControls({ item }: { item: Item }) {
         </>
       )}
 
-      {item.type === 'marker' && (
+      {part === 'main' && item.type === 'marker' && (
         <div role="group" aria-label="Wert der Marke" className="flex items-center gap-1">
           <button
             type="button"
@@ -509,7 +529,7 @@ function ItemControls({ item }: { item: Item }) {
         </div>
       )}
 
-      {(item.type === 'player' || item.type === 'figure' || item.type === 'text' || item.type === 'coach') && (
+      {part === 'main' && (item.type === 'player' || item.type === 'figure' || item.type === 'text' || item.type === 'coach') && (
         <LabelInput
           caption={item.type === 'player' || item.type === 'figure' ? 'Nummer' : item.type === 'coach' ? 'Kürzel' : 'Beschriftung'}
           value={item.label}
@@ -517,7 +537,7 @@ function ItemControls({ item }: { item: Item }) {
         />
       )}
 
-      {(item.type === 'player' || item.type === 'figure') && (
+      {part === 'more' && (item.type === 'player' || item.type === 'figure') && (
         <>
           <LabelInput
             caption="Name"
@@ -548,7 +568,7 @@ function ItemControls({ item }: { item: Item }) {
         </>
       )}
 
-      {item.type === 'crest' && (
+      {part === 'main' && item.type === 'crest' && (
         <button
           type="button"
           className={buttonClass}
@@ -558,9 +578,9 @@ function ItemControls({ item }: { item: Item }) {
         </button>
       )}
 
-      {item.type === 'textbox' && (
+      {part === 'main' && item.type === 'textbox' && (
         <>
-          <ColorSwatches
+          <ColorPopover
             label="Hintergrund"
             colors={TEXTBOX_COLORS}
             value={item.color}
@@ -573,9 +593,9 @@ function ItemControls({ item }: { item: Item }) {
           >
             Text bearbeiten
           </button>
-          <TextBoxControls item={item} />
         </>
       )}
+      {part === 'more' && item.type === 'textbox' && <TextBoxControls item={item} />}
     </>
   )
 }
@@ -703,12 +723,30 @@ function TextBoxControls({ item }: { item: Item }) {
   )
 }
 
-function LineControls({ line }: { line: Line }) {
+function LineControls({ line, part }: { line: Line; part: Part }) {
   const setLineSmooth = useDrillStore((s) => s.setLineSmooth)
   const clearLineBends = useDrillStore((s) => s.clearLineBends)
   const setLineStyle = useDrillStore((s) => s.setLineStyle)
   const setLineStep = useDrillStore((s) => s.setLineStep)
   const sceneLines = useDrillStore((s) => currentScene(s).lines)
+
+  if (part === 'more') {
+    return line.points.length > 2 && !isFreehand(line.type) ? (
+      <>
+        <button
+          type="button"
+          className={buttonClass}
+          title={line.smooth ? 'Biegungen als Ecken zeigen' : 'Biegungen als weiche Kurve zeigen'}
+          onClick={() => setLineSmooth(line.id, !line.smooth)}
+        >
+          {line.smooth ? 'Biegungen eckig' : 'Biegungen rund'}
+        </button>
+        <button type="button" className={buttonClass} onClick={() => clearLineBends(line.id)}>
+          Alle Biegungen entfernen
+        </button>
+      </>
+    ) : null
+  }
 
   return (
     <>
@@ -747,21 +785,6 @@ function LineControls({ line }: { line: Line }) {
         }}
         onWeight={(weight) => setLineStyle(line.id, { weight })}
       />
-      {line.points.length > 2 && !isFreehand(line.type) && (
-        <>
-          <button
-            type="button"
-            className={buttonClass}
-            title={line.smooth ? 'Biegungen als Ecken zeigen' : 'Biegungen als weiche Kurve zeigen'}
-            onClick={() => setLineSmooth(line.id, !line.smooth)}
-          >
-            {line.smooth ? 'Eckig' : 'Rund'}
-          </button>
-          <button type="button" className={buttonClass} onClick={() => clearLineBends(line.id)}>
-            Alle Biegungen entfernen
-          </button>
-        </>
-      )}
     </>
   )
 }
@@ -806,7 +829,7 @@ function OpacitySlider({ zone }: { zone: Zone }) {
   )
 }
 
-function ZoneControls({ zone }: { zone: Zone }) {
+function ZoneControls({ zone, part }: { zone: Zone; part: Part }) {
   const updateZone = useDrillStore((s) => s.updateZone)
   const setZoneLive = useDrillStore((s) => s.setZoneLive)
   const editingCornersId = useToolStore((s) => s.editingCornersId)
@@ -817,11 +840,21 @@ function ZoneControls({ zone }: { zone: Zone }) {
   // A regular polygon in the current size of the zone; free corners can be moved afterwards.
   const setPolygon = (n: number) => updateZone(zone.id, { corners: regularPolygon(n, extent.width, extent.height) })
 
+  if (part === 'main') {
+    return (
+      <>
+        <span className="text-sm text-slate-300 tabular-nums" title="Größe der Zone">
+          {formatMeters(extent.width)} × {formatMeters(extent.height)} m
+        </span>
+        <ColorPopover label="Füllung" colors={ZONE_COLORS} value={zone.fillColor} onSelect={(fillColor) => updateZone(zone.id, { fillColor })} />
+        <ColorPopover label="Rand" colors={ZONE_COLORS} value={zone.color} onSelect={(color) => updateZone(zone.id, { color })} />
+        <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLive(zone.id, { label })} />
+      </>
+    )
+  }
+
   return (
     <>
-      <span className="text-sm text-slate-300 tabular-nums" title="Größe der Zone">
-        {formatMeters(extent.width)} × {formatMeters(extent.height)} m
-      </span>
       {zone.shape === 'ellipse' ? (
         <>
           <button
@@ -879,19 +912,7 @@ function ZoneControls({ zone }: { zone: Zone }) {
           </div>
         </>
       )}
-      <ColorSwatches
-        label="Füllung"
-        colors={ZONE_COLORS}
-        value={zone.fillColor}
-        onSelect={(fillColor) => updateZone(zone.id, { fillColor })}
-      />
       <OpacitySlider zone={zone} />
-      <ColorSwatches
-        label="Rand"
-        colors={ZONE_COLORS}
-        value={zone.color}
-        onSelect={(color) => updateZone(zone.id, { color })}
-      />
       <LineStylePicker
         pattern={zonePattern(zone)}
         weight={zone.weight ?? 'medium'}
@@ -930,7 +951,6 @@ function ZoneControls({ zone }: { zone: Zone }) {
           )}
         </div>
       )}
-      <LabelInput value={zone.label} placeholder="z. B. Zone A" onChange={(label) => setZoneLive(zone.id, { label })} />
     </>
   )
 }
