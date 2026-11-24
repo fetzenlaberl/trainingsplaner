@@ -64,7 +64,7 @@ const label = 'text-xs font-medium text-slate-400'
  * field type and own size, colour and surface, lines, grid and notes. Sections fold away
  * and stay as they were on this device.
  */
-export function FieldPanel() {
+export function FieldPanel({ fullWidth = false }: { fullWidth?: boolean } = {}) {
   const pitch = useDrillStore((s) => s.pitch)
   const fieldType = useDrillStore((s) => s.fieldType)
   const setFieldType = useDrillStore((s) => s.setFieldType)
@@ -111,7 +111,12 @@ export function FieldPanel() {
     <aside
       aria-label="Feld einstellen"
       // Below 1024 px (iPad upright) it lies over the pitch; wider it sits next to it.
-      className="absolute inset-y-0 right-0 z-30 flex w-80 max-w-[90%] shrink-0 flex-col border-l border-slate-700 bg-slate-900 shadow-2xl lg:static lg:z-auto lg:w-96 lg:max-w-none lg:shadow-none"
+      // On the phone it is a sheet at the bottom; the pitch above shrinks so it stays fully visible.
+      className={
+        fullWidth
+          ? 'flex h-[60%] shrink-0 flex-col rounded-t-2xl border-t border-slate-600 bg-slate-900 shadow-2xl'
+          : 'absolute inset-y-0 right-0 z-30 flex w-80 max-w-[90%] shrink-0 flex-col border-l border-slate-700 bg-slate-900 shadow-2xl lg:static lg:z-auto lg:w-96 lg:max-w-none lg:shadow-none'
+      }
     >
       <div className="flex items-center justify-between border-b border-slate-700 px-3 py-2">
         <h2 className="text-sm font-semibold text-white">Feld</h2>

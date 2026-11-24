@@ -12,6 +12,8 @@ import { togglePlayback } from '../store/playbackActions'
 import { SPEEDS, usePlaybackStore } from '../store/playbackStore'
 import { useViewStore } from '../store/viewStore'
 import { UpdateBanner } from '../pwa/AppBanners'
+import { FieldPanel } from '../components/FieldPanel'
+import { useLayoutStore } from '../store/layoutStore'
 
 type Tab = 'library' | 'sessions' | 'week' | 'journal'
 
@@ -104,10 +106,13 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
   }
   const nextSpeed = SPEEDS[(SPEEDS.indexOf(speed as (typeof SPEEDS)[number]) + 1) % SPEEDS.length]
   const fullscreen = useFullscreen()
+  const fieldPanel = useLayoutStore((s) => s.fieldPanel)
+  const setFieldPanel = useLayoutStore((s) => s.setFieldPanel)
   const [immersive, setImmersive] = useState(false)
   const [showTip, setShowTip] = useState(false)
 
   function enterImmersive() {
+    setFieldPanel(false)
     setImmersive(true)
     // Real fullscreen where the browser allows it (e.g. Android); iPhone Safari does not.
     if (fullscreen.supported && !fullscreen.active) void fullscreen.toggle()
@@ -167,18 +172,31 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
           className={buttonClass}
           onClick={() => {
             stop()
+            setFieldPanel(false)
             onBack()
           }}
         >
           ‹ {backLabel}
         </button>
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{title}</h1>
-        <button type="button" className={buttonClass} title="Nur das Feld zeigen" onClick={enterImmersive}>
-          ⤢ Vollbild
+        <button
+          type="button"
+          aria-pressed={fieldPanel}
+          title="Feldart, Farbe, Linien, Raster und Notizen"
+          className={fieldPanel ? buttonClass.replace('bg-slate-800', 'bg-emerald-700') : buttonClass}
+          onClick={() => setFieldPanel(!fieldPanel)}
+        >
+          ⚽ Feld
+        </button>
+        <button type="button" className={buttonClass} title="Nur das Feld zeigen" aria-label="Vollbild" onClick={enterImmersive}>
+          ⤢
         </button>
       </header>
-      <div className="min-h-0 flex-1">
-        <PitchStage dropTargetRef={dropTargetRef} showTrash={false} />
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1">
+          <PitchStage dropTargetRef={dropTargetRef} showTrash={false} />
+        </div>
+        {fieldPanel && <FieldPanel fullWidth />}
       </div>
       <div className="flex items-center gap-2 border-t border-slate-700 bg-slate-900 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <button
