@@ -110,7 +110,8 @@ export function FieldPanel() {
   return (
     <aside
       aria-label="Feld einstellen"
-      className="flex w-80 shrink-0 flex-col border-l border-slate-700 bg-slate-900 lg:w-96"
+      // Below 1024 px (iPad upright) it lies over the pitch; wider it sits next to it.
+      className="absolute inset-y-0 right-0 z-30 flex w-80 max-w-[90%] shrink-0 flex-col border-l border-slate-700 bg-slate-900 shadow-2xl lg:static lg:z-auto lg:w-96 lg:max-w-none lg:shadow-none"
     >
       <div className="flex items-center justify-between border-b border-slate-700 px-3 py-2">
         <h2 className="text-sm font-semibold text-white">Feld</h2>
