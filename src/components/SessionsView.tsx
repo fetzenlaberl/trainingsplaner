@@ -1,3 +1,5 @@
+import { useIsPhone } from '../hooks/useIsPhone'
+import { SaveButton } from './SaveButton'
 import { useEffect, useState } from 'react'
 import type { LibraryEntry } from '../library/library'
 import { isEditorDirty, openEntryInEditor } from '../library/libraryActions'
@@ -73,11 +75,20 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
   }, [])
 
   const selected = sessions?.find((s) => s.id === selectedId) ?? null
+  // Every change is written at once; the phone shows this with a save button.
+  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved')
 
   /** Stores a changed or new session and keeps the list sorted. */
   function save(session: TrainingSession) {
     setSessions((list) => sortSessions([...(list ?? []).filter((s) => s.id !== session.id), session]))
-    putSession(session).catch(reportSaveError)
+    setSaveState('saving')
+    putSession(session).then(
+      () => setSaveState('saved'),
+      (err) => {
+        setSaveState('failed')
+        reportSaveError(err)
+      },
+    )
   }
 
   function update(change: Partial<TrainingSession>) {
@@ -190,6 +201,8 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
                 session={selected}
                 entries={entries}
                 onChange={update}
+                saveState={saveState}
+                onSave={() => save({ ...selected, updatedAt: Date.now() })}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
               />
@@ -207,11 +220,14 @@ interface SessionEditorProps {
   session: TrainingSession
   entries: LibraryEntry[]
   onChange: (change: Partial<TrainingSession>) => void
+  saveState: 'saved' | 'saving' | 'failed'
+  onSave: () => void
   onDuplicate: () => void
   onDelete: () => void
 }
 
-function SessionEditor({ session, entries, onChange, onDuplicate, onDelete }: SessionEditorProps) {
+function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplicate, onDelete }: SessionEditorProps) {
+  const phone = useIsPhone()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const setView = useViewStore((s) => s.setView)
@@ -250,11 +266,14 @@ function SessionEditor({ session, entries, onChange, onDuplicate, onDelete }: Se
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className={`${inputClass} min-w-0 flex-1 text-lg font-semibold`}
+          className={`${inputClass} min-w-0 flex-1 basis-full text-lg font-semibold sm:basis-auto`}
           aria-label="Titel der Einheit"
           value={session.title}
           onChange={(e) => onChange({ title: e.target.value })}
         />
+        {phone && (
+          <SaveButton dirty={saveState === 'failed'} saving={saveState === 'saving'} onSave={onSave} savedTitle="Einheit gespeichert" />
+        )}
         <button type="button" className={buttonClass} disabled={exporting} onClick={handlePdf}>
           {exporting ? 'PDF wird erstellt …' : 'PDF'}
         </button>

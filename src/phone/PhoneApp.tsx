@@ -1,3 +1,4 @@
+import { SaveButton } from '../components/SaveButton'
 import { useRef, useState } from 'react'
 import { LibraryView } from '../components/LibraryView'
 import { PitchStage, type DropTarget } from '../components/PitchStage'
@@ -186,24 +187,17 @@ function DrillViewer({ onBack, backLabel }: { onBack: () => void; backLabel: str
           ‹ {backLabel}
         </button>
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{title}</h1>
-        <button
-          type="button"
-          className={
-            dirty
-              ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600')
-              : buttonClass
-          }
-          disabled={saving || !dirty}
-          title={dirty ? 'Änderungen in der Übungsbibliothek speichern' : 'In der Bibliothek gespeichert'}
-          aria-label={dirty ? 'In Bibliothek speichern' : 'In der Bibliothek gespeichert'}
-          onClick={async () => {
+        <SaveButton
+          dirty={dirty}
+          saving={saving}
+          savedTitle="In der Bibliothek gespeichert"
+          compact
+          onSave={async () => {
             setSaving(true)
             await saveToLibraryWithFeedback()
             setSaving(false)
           }}
-        >
-          {saving ? '…' : dirty ? 'Speichern' : '✓'}
-        </button>
+        />
         <button
           type="button"
           aria-pressed={fieldPanel}

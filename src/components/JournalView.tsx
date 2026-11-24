@@ -1,3 +1,5 @@
+import { useIsPhone } from '../hooks/useIsPhone'
+import { SaveButton } from './SaveButton'
 import { PhoneFold } from './PhoneFold'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
@@ -41,6 +43,7 @@ export function JournalView() {
   const [tag, setTag] = useState<string | null>(null)
   const [showTrash, setShowTrash] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
+  const phone = useIsPhone()
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   /** Changed entries not yet written, by id */
@@ -330,6 +333,7 @@ export function JournalView() {
               >
                 ← Liste
               </button>
+              {phone && <SaveButton dirty={status === 'Wird gespeichert …' || status === 'Speichern fehlgeschlagen'} saving={false} onSave={flush} savedTitle="Eintrag gespeichert" />}
               <span className="text-xs text-slate-400">
                 Erstellt {dateTimeText(selected.createdAt)} · geändert {dateTimeText(selected.updatedAt)}
                 {status && ` · ${status}`}
