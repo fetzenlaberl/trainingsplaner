@@ -35,10 +35,10 @@ export function ZoomControls({ zoom, onZoomIn, onZoomOut, onFit, areaMode, onTog
         className={`${BUTTON} ${areaMode ? 'bg-emerald-600 hover:bg-emerald-500' : ''}`}
         onClick={onToggleArea}
       >
-        ⬚ Bereich
+        ⬚<span className="hidden xl:inline"> Bereich</span>
       </button>
-      <button type="button" className={BUTTON} disabled={zoom <= MIN_ZOOM} onClick={onFit}>
-        Einpassen
+      <button type="button" className={BUTTON} title="Ganzes Feld zeigen" aria-label="Einpassen" disabled={zoom <= MIN_ZOOM} onClick={onFit}>
+        ⤢<span className="hidden xl:inline"> Einpassen</span>
       </button>
     </div>
   )

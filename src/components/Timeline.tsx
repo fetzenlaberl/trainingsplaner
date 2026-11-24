@@ -53,7 +53,7 @@ export function Timeline() {
 
   return (
     <div className="flex flex-col gap-2 border-t border-slate-700 bg-slate-900 py-2 pr-12 pl-3">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <button
           type="button"
           className={`${buttonClass} min-w-24 justify-center`}
@@ -85,21 +85,19 @@ export function Timeline() {
         <span className="w-24 text-right text-sm text-slate-400 tabular-nums">
           {formatSeconds(sliderValue)} / {formatSeconds(total)}
         </span>
-        <div role="group" aria-label="Tempo" className="flex gap-1 rounded-lg bg-slate-800 p-1">
+        <select
+          aria-label="Tempo"
+          title="Tempo der Animation"
+          className={inputClass}
+          value={speed}
+          onChange={(e) => setSpeed(Number(e.target.value) as typeof speed)}
+        >
           {SPEEDS.map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={s === speed}
-              onClick={() => setSpeed(s)}
-              className={`min-h-8 rounded-md px-2 text-sm font-medium ${
-                s === speed ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-              }`}
-            >
+            <option key={s} value={s}>
               {formatNumber(s)}×
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
         <button
           type="button"
           aria-pressed={perspectiveOn}
@@ -166,9 +164,7 @@ export function Timeline() {
             </button>
           </div>
         )}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
+        <span className="mx-1 hidden h-6 w-px bg-slate-700 sm:block" aria-hidden />
         <div role="group" aria-label="Szenen" className="flex flex-wrap gap-1">
           {scenes.map((_, i) => (
             <button
@@ -196,7 +192,7 @@ export function Timeline() {
             addScene()
           }}
         >
-          + Neue Szene
+          + Szene
         </button>
         <button
           type="button"
@@ -207,11 +203,12 @@ export function Timeline() {
             deleteScene()
           }}
         >
-          Szene löschen
+          − Szene
         </button>
-        <label className="ml-auto flex items-center gap-1.5 text-sm text-slate-400">
-          Dauer bis zur nächsten Szene
+        <label className="flex items-center gap-1.5 text-sm text-slate-400" title="Dauer bis zur nächsten Szene">
+          ⏱
           <select
+            aria-label="Dauer bis zur nächsten Szene"
             className={inputClass}
             value={duration / 1000}
             disabled={isLastScene}

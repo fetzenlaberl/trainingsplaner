@@ -39,7 +39,7 @@ export function FieldQuickButtons({ onStandardMode }: { onStandardMode: () => vo
         <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
           <path d="M5 3 L5 19 L9.5 14.5 L12.5 21 L15 20 L12 13.5 L18 13.5 Z" fill="currentColor" />
         </svg>
-        <span className="hidden sm:inline">Auswählen</span>
+        <span className="hidden xl:inline">Auswählen</span>
       </button>
       <button
         type="button"
@@ -50,7 +50,7 @@ export function FieldQuickButtons({ onStandardMode }: { onStandardMode: () => vo
         onClick={() => useDrillStore.getState().undo()}
       >
         <span aria-hidden className="text-lg leading-none">↶</span>
-        <span className="hidden sm:inline">Rückgängig</span>
+        <span className="hidden xl:inline">Rückgängig</span>
       </button>
     </div>
   )
