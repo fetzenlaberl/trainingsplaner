@@ -8,10 +8,9 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-/** "App installieren" button, shown only where the browser offers installation. */
-export function InstallButton() {
+/** Installs the app, or null where the browser does not offer it (or it is installed already). */
+export function useInstallPrompt(): (() => Promise<void>) | null {
   const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
-
   useEffect(() => {
     const onPrompt = (e: Event) => {
       e.preventDefault()
@@ -25,23 +24,14 @@ export function InstallButton() {
       window.removeEventListener('appinstalled', onInstalled)
     }
   }, [])
-
   if (!installEvent) return null
-  return (
-    <button
-      type="button"
-      className={`${buttonClass} order-last`}
-      title="Als App auf diesem Gerät installieren – funktioniert dann auch ohne Internet"
-      onClick={async () => {
-        await installEvent.prompt()
-        await installEvent.userChoice
-        setInstallEvent(null)
-      }}
-    >
-      ⬇ App installieren
-    </button>
-  )
+  return async () => {
+    await installEvent.prompt()
+    await installEvent.userChoice
+    setInstallEvent(null)
+  }
 }
+
 
 /** Notice at the bottom when a new version of the app has been downloaded. */
 export function UpdateBanner() {

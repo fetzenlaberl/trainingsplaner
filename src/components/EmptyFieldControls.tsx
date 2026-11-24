@@ -1,6 +1,6 @@
 import { NEON_COLORS } from '../lines/styles'
 import { useEffect, useRef, useState } from 'react'
-import { FIELD_TYPE_LABELS, FIELD_TYPES, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
+import { MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
 import { isHexColor } from '../field/pitchStyle'
 import { MAX_ZONE_FILL_OPACITY, ZONE_COLORS } from '../items/zones'
 import { LINE_COLORS, LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
@@ -27,33 +27,6 @@ import { currentScene, useDrillStore } from '../store/drillStore'
 import { ColorSwatches } from './controls'
 import { LineStylePicker } from './LineStylePicker'
 import { buttonClass, dangerButtonClass } from './ui'
-
-export function FieldTypeSwitcher() {
-  const fieldType = useDrillStore((s) => s.fieldType)
-  const setFieldType = useDrillStore((s) => s.setFieldType)
-
-  return (
-    <div role="group" aria-label="Feldtyp" className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-800 p-1">
-      {FIELD_TYPES.map((type) => {
-        const active = type === fieldType
-        return (
-          <button
-            key={type}
-            type="button"
-            aria-pressed={active}
-            onClick={() => setFieldType(type)}
-            className={`min-h-10 rounded-md px-3 text-sm font-medium transition-colors ${
-              active ? 'bg-emerald-600 text-white' : 'text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            {FIELD_TYPE_LABELS[type]}
-          </button>
-        )
-      })}
-      {fieldType === 'empty' && <AreaInputs />}
-    </div>
-  )
-}
 
 const OPTIONS_KEY = 'trainingsplaner.fieldDrawOptions'
 const FIELD_ZONE_PREFIX = 'zone-tpl-field-'
@@ -184,7 +157,7 @@ const sameContent = (a: SceneContent, b: SceneContent) => JSON.stringify(a) === 
  * Own size of the empty field: length × width in meters (empty = as big as the big pitch),
  * or the other way round from a player count; draws the field in with the chosen look.
  */
-function AreaInputs() {
+export function AreaInputs() {
   const area = useDrillStore((s) => s.pitch.area)
   const setFieldArea = useDrillStore((s) => s.setFieldArea)
   const canUndo = useDrillStore((s) => s.past.length > 0)
@@ -349,7 +322,7 @@ function AreaInputs() {
   const choice = (active: boolean) =>
     `min-h-8 rounded-md px-2 text-sm ${active ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`
   const row = 'flex flex-wrap items-center gap-x-2 gap-y-1'
-  const rowLabel = 'w-20 shrink-0 text-sm text-slate-400'
+  const rowLabel = 'w-16 shrink-0 text-sm text-slate-400'
 
   return (
     <div className="flex basis-full flex-wrap items-center gap-x-3 gap-y-1 px-2 text-sm text-slate-300">
@@ -472,7 +445,7 @@ function AreaInputs() {
 
       {showOptions && (
         // Its own row below the inputs: pushes the pitch down instead of covering it.
-        <div className="flex basis-full flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900 p-3">
+        <div className="flex basis-full flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900 p-2">
           <div className={row}>
             <span className={rowLabel}>Rand</span>
             <LineStylePicker

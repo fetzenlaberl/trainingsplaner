@@ -33,6 +33,9 @@ function save(collapsed: Collapsed): void {
 
 interface LayoutState {
   collapsed: Collapsed
+  /** The "Feld" panel (field type, look, lines, grid) is open next to the pitch */
+  fieldPanel: boolean
+  setFieldPanel: (open: boolean) => void
   toggle: (bar: Bar) => void
   /** Folds all bars away, or opens all again if they are all folded. */
   toggleAll: () => void
@@ -42,6 +45,8 @@ export const allCollapsed = (collapsed: Collapsed) => BARS.every((bar) => collap
 
 export const useLayoutStore = create<LayoutState>((set) => ({
   collapsed: typeof localStorage === 'undefined' ? NONE : load(),
+  fieldPanel: false,
+  setFieldPanel: (fieldPanel) => set({ fieldPanel }),
   toggle: (bar) =>
     set((s) => {
       const collapsed = { ...s.collapsed, [bar]: !s.collapsed[bar] }

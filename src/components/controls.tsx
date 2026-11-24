@@ -56,7 +56,7 @@ export function ColorSwatches({
   onSelect: (color: string) => void
 }) {
   return (
-    <div role="group" aria-label={label} className="flex items-center gap-1">
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-1">
       <span className="text-sm text-slate-400">{label}</span>
       {colors.map((c) => (
         <button

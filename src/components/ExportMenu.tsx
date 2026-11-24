@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { totalDuration } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
 import type { VideoFormat, VideoProgress } from '../video/exportVideo'
-import { Dropdown } from './Dropdown'
+import type { DropdownItem } from './Dropdown'
 import { TacticSheetDialog } from './TacticSheetDialog'
 import { buttonClass } from './ui'
 
@@ -19,8 +19,11 @@ function isAbort(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError'
 }
 
-/** Export menu (image, PDF, video) with a progress dialog for videos. */
-export function ExportMenu() {
+/**
+ * Export entries (image, PDF, video, tactic sheet) for a menu, plus the dialogs they open
+ * (progress of a video, tactic sheet); render `dialogs` next to the menu.
+ */
+export function useExportMenu(): { items: DropdownItem[]; busy: boolean; dialogs: ReactNode } {
   const canAnimate = useDrillStore((s) => totalDuration(s.scenes) > 0)
   const [busy, setBusy] = useState(false)
   const [videoProgress, setVideoProgress] = useState<VideoProgress | null>(null)
@@ -57,34 +60,32 @@ export function ExportMenu() {
     }
   }
 
-  return (
+  const items: DropdownItem[] = [
+    ...MENU_ITEMS.map((item) => {
+      const disabled = busy || (item.video && !canAnimate)
+      return {
+        section: 'Exportieren',
+        label: item.label,
+        disabled,
+        hint: item.video && !canAnimate ? 'Braucht mindestens zwei Szenen' : undefined,
+        onSelect: () => void runExport(item.kind),
+      }
+    }),
+    {
+      section: 'Exportieren',
+      label: 'Taktikblatt (PDF) …',
+      hint: 'Felder mit Notizen, Datum, Thema, Wappen',
+      disabled: busy,
+      onSelect: () => setSheetOpen(true),
+    },
+  ]
+  const dialogs = (
     <>
-      <Dropdown
-        label="Exportieren"
-        disabled={busy}
-        items={[
-          ...MENU_ITEMS.map((item) => {
-            const disabled = item.video && !canAnimate
-            return {
-              label: item.label,
-              disabled,
-              hint: disabled ? 'Braucht mindestens zwei Szenen' : undefined,
-              onSelect: () => runExport(item.kind),
-            }
-          }),
-          {
-            label: 'Taktikblatt (PDF) …',
-            hint: 'Felder mit Notizen, Datum, Thema, Wappen',
-            onSelect: () => setSheetOpen(true),
-          },
-        ]}
-      />
       {sheetOpen && <TacticSheetDialog onClose={() => setSheetOpen(false)} />}
-      {videoProgress && (
-        <VideoProgressDialog progress={videoProgress} onCancel={() => abortRef.current?.abort()} />
-      )}
+      {videoProgress && <VideoProgressDialog progress={videoProgress} onCancel={() => abortRef.current?.abort()} />}
     </>
   )
+  return { items, busy, dialogs }
 }
 
 function VideoProgressDialog({ progress, onCancel }: { progress: VideoProgress; onCancel: () => void }) {

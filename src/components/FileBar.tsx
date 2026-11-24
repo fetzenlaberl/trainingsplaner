@@ -12,13 +12,13 @@ import { DetailsDialog } from './DetailsDialog'
 import { FieldTemplateDialog } from './FieldTemplateDialog'
 import type { Drill } from '../model/types'
 import { Dropdown } from './Dropdown'
-import { ExportMenu } from './ExportMenu'
+import { useExportMenu } from './ExportMenu'
 import { buttonClass, inputClass } from './ui'
 
 const DISCARD_QUESTION =
   'Die Übung im Editor hat Änderungen, die nicht in der Bibliothek gespeichert sind. Trotzdem fortfahren?'
 
-/** Title, details, file menu, library save, export and undo/redo. */
+/** Title, the file menu (new, details, templates, open/save, export, import), library save and undo/redo. */
 export function FileBar() {
   const title = useDrillStore((s) => s.title)
   const setTitle = useDrillStore((s) => s.setTitle)
@@ -36,6 +36,7 @@ export function FileBar() {
   const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const dirty = drillJson !== savedJson
+  const exportMenu = useExportMenu()
 
   function handleNew() {
     if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
@@ -106,24 +107,32 @@ export function FileBar() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <button type="button" className={buttonClass} title="Neue, leere Übung beginnen" onClick={handleNew}>
-        + Neu
-      </button>
+    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
       <input
-        className={`${inputClass} w-48`}
+        className={`${inputClass} w-40 min-w-0 lg:w-56`}
         value={title}
         aria-label="Titel der Übung"
         placeholder="Titel der Übung"
         onChange={(e) => setTitle(e.target.value)}
       />
-      <button type="button" className={buttonClass} onClick={() => setDetailsOpen(true)}>
-        Details
-      </button>
       <Dropdown
         label="Datei"
         items={[
-          { label: 'Neue Übung', onSelect: handleNew },
+          { section: 'Übung', label: 'Neue Übung', onSelect: handleNew },
+          { section: 'Übung', label: 'Details …', hint: 'Beschreibung, Kategorie, Spieler, Dauer', onSelect: () => setDetailsOpen(true) },
+          {
+            section: 'Übung',
+            label: 'In Bibliothek speichern',
+            hint: 'Strg+S',
+            disabled: saving,
+            onSelect: () => void handleSaveToLibrary(),
+          },
+          {
+            section: 'Neu aus Vorlage',
+            label: 'Trainingsfelder …',
+            hint: 'Feldgrößen 1:1–9:9, Torvarianten, Y-Pass',
+            onSelect: () => setFieldTemplatesOpen(true),
+          },
           {
             section: 'Neu aus Vorlage',
             label: 'Perspektive leer',
@@ -136,14 +145,9 @@ export function FileBar() {
             hint: 'Dazu gelbe Dummys als Gegner',
             onSelect: () => handleTemplate('perspectiveDummies'),
           },
-          {
-            section: 'Neu aus Vorlage',
-            label: 'Trainingsfelder …',
-            hint: 'Feldgrößen 1:1–9:9, Torvarianten, Y-Pass',
-            onSelect: () => setFieldTemplatesOpen(true),
-          },
-          { label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
-          { label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
+          { section: 'Datei', label: 'Datei öffnen …', onSelect: () => fileInputRef.current?.click() },
+          { section: 'Datei', label: 'Als Datei speichern', hint: 'JSON-Datei herunterladen', onSelect: handleSaveFile },
+          ...exportMenu.items,
           {
             section: 'Importieren',
             label: 'Bild oder PDF aufs Feld …',
@@ -174,36 +178,36 @@ export function FileBar() {
       />
       <button
         type="button"
-        className={`${buttonClass} ${dirty ? 'bg-emerald-700 text-white hover:bg-emerald-600' : ''}`}
-        title="In der Übungsbibliothek speichern (Strg+S)"
+        className={dirty ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600') : buttonClass}
+        title={dirty ? 'Ungespeicherte Änderungen – in der Übungsbibliothek speichern (Strg+S)' : inLibrary ? 'In der Bibliothek gespeichert' : 'In der Übungsbibliothek speichern (Strg+S)'}
         disabled={saving}
         onClick={handleSaveToLibrary}
       >
-        {saving ? 'Speichert …' : 'In Bibliothek speichern'}
+        {saving ? 'Speichert …' : dirty ? '● Speichern' : inLibrary ? '✓ Gespeichert' : 'Speichern'}
       </button>
-      <span className="text-xs text-slate-400" aria-live="polite">
-        {dirty ? '● Ungespeichert' : inLibrary ? '✓ Gespeichert' : ''}
-      </span>
-      <ExportMenu />
-      <span className="mx-1 h-6 w-px bg-slate-700" aria-hidden />
-      <button
-        type="button"
-        className={buttonClass}
-        title="Rückgängig (Strg+Z)"
-        disabled={!canUndo}
-        onClick={undo}
-      >
-        ↶ Rückgängig
-      </button>
-      <button
-        type="button"
-        className={buttonClass}
-        title="Wiederholen (Strg+Y)"
-        disabled={!canRedo}
-        onClick={redo}
-      >
-        ↷ Wiederholen
-      </button>
+      <div role="group" aria-label="Verlauf" className="flex gap-1">
+        <button
+          type="button"
+          className={`${buttonClass} w-10 justify-center px-0 text-base`}
+          title="Rückgängig (Strg+Z)"
+          aria-label="Rückgängig"
+          disabled={!canUndo}
+          onClick={undo}
+        >
+          ↶
+        </button>
+        <button
+          type="button"
+          className={`${buttonClass} w-10 justify-center px-0 text-base`}
+          title="Wiederholen (Strg+Y)"
+          aria-label="Wiederholen"
+          disabled={!canRedo}
+          onClick={redo}
+        >
+          ↷
+        </button>
+      </div>
+      {exportMenu.dialogs}
       {detailsOpen && <DetailsDialog onClose={() => setDetailsOpen(false)} />}
       {fieldTemplatesOpen && (
         <FieldTemplateDialog onChoose={handleFieldTemplate} onClose={() => setFieldTemplatesOpen(false)} />
