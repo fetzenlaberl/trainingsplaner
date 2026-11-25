@@ -1,4 +1,5 @@
 import { useSaveState, type SaveState } from '../hooks/useSaveState'
+import { AutoTextarea } from './AutoTextarea'
 import { SaveButton } from './SaveButton'
 import { useEffect, useState } from 'react'
 import type { LibraryEntry } from '../library/library'
@@ -40,7 +41,6 @@ function reportSaveError(err: unknown) {
   window.alert('Die Einheit konnte nicht gespeichert werden.')
 }
 
-/** List of training sessions and the editor for the selected one. Changes are saved automatically. */
 const changed = (session: TrainingSession, change: Partial<TrainingSession>): TrainingSession => ({
   ...session,
   ...change,
@@ -54,6 +54,7 @@ interface SessionsViewProps {
   hideModeTabs?: boolean
 }
 
+/** List of training sessions and the editor for the selected one. Changes are saved automatically. */
 export function SessionsView({ initialMode = 'list', hideModeTabs = false }: SessionsViewProps = {}) {
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null)
   const [entries, setEntries] = useState<LibraryEntry[]>([])
@@ -407,12 +408,11 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
                     onChange={(e) => updateBlock(block.id, { title: e.target.value })}
                   />
                 )}
-                <input
-                  className={inputClass}
-                  aria-label="Notiz zum Block"
+                <AutoTextarea
+                  label="Notiz zum Block"
                   placeholder="Notiz für diese Einheit (optional)"
                   value={block.notes}
-                  onChange={(e) => updateBlock(block.id, { notes: e.target.value })}
+                  onChange={(notes) => updateBlock(block.id, { notes })}
                 />
               </div>
               <div className="col-span-2 flex items-start gap-1 sm:col-span-1 sm:col-start-3 sm:row-start-1 min-[70rem]:col-start-4">
