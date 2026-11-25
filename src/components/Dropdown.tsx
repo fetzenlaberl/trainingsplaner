@@ -78,12 +78,12 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
           ref={menuRef}
           role="menu"
           style={shift ? { transform: `translateX(${shift}px)` } : undefined}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] w-64 flex-col overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-xl`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] w-72 max-w-[calc(100vw-1rem)] scheme-dark flex-col overflow-y-auto overscroll-contain rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-xl`}
         >
           {items.map((item, index) => (
             <div key={`${item.section ?? ''}-${item.label}`} className="contents">
               {item.section && item.section !== items[index - 1]?.section && (
-                <div className="px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+                <div className="shrink-0 px-3 pt-2 pb-1 text-xs font-semibold tracking-wide text-slate-400 uppercase">
                   {item.section}
                 </div>
               )}
@@ -96,7 +96,7 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
                   setOpen(false)
                   item.onSelect()
                 }}
-                className="flex min-h-10 flex-col items-start justify-center rounded-md px-3 py-1 text-left text-sm text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                className="flex min-h-10 shrink-0 flex-col items-start justify-center rounded-md px-3 py-1 text-left text-sm text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
                 <span>
                   {item.checked !== undefined && (
