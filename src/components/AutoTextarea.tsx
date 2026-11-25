@@ -10,17 +10,20 @@ export function AutoTextarea({
   label,
   placeholder,
   minLines = 1,
+  maxLength,
 }: {
   value: string
   onChange: (value: string) => void
   label: string
   placeholder?: string
   minLines?: number
+  maxLength?: number
 }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)]">
       <textarea
         rows={minLines}
+        maxLength={maxLength}
         className={`${inputClass} col-start-1 row-start-1 resize-none overflow-hidden py-2 leading-5.5`}
         aria-label={label}
         placeholder={placeholder}

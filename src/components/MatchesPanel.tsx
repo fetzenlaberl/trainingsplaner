@@ -23,6 +23,7 @@ import { deleteMatch, listMatches, putMatch } from '../teams/matchDb'
 import { exportMatchPdf } from '../teams/matchPdf'
 import type { Team } from '../teams/team'
 import { useSaveState } from '../hooks/useSaveState'
+import { AutoTextarea } from './AutoTextarea'
 import { SaveButton } from './SaveButton'
 import { TrashIcon } from './TrashIcon'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -466,12 +467,13 @@ function MatchEditor({
 
       <section className="flex flex-col gap-2 rounded-xl border border-slate-700 bg-slate-900 p-4">
         <h3 className="font-semibold text-white">Notizen</h3>
-        <textarea
-          className={`${inputClass} min-h-28 py-2`}
+        <AutoTextarea
+          label="Notizen"
+          minLines={4}
           maxLength={MAX_MATCH_NOTES}
           placeholder="Was lief gut, was nicht? Besonderheiten, Verletzungen …"
           value={match.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
+          onChange={(notes) => onChange({ notes })}
         />
       </section>
       <p className="text-xs text-slate-500">
