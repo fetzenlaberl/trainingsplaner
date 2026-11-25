@@ -20,6 +20,7 @@ function isTyping(target: EventTarget | null): boolean {
  * Editor shortcuts: save (Ctrl+S), undo/redo, select all, copy/paste/duplicate, delete,
  * Escape and Space (play/pause; held down with a drag it pans the view). Inactive while `enabled` is false or a dialog is open;
  * menus and windows with `data-blocks-editing` only hold back the ones that change the pitch.
+ * Space does not start or pause the animation while any menu or window is open.
  */
 export function useKeyboardShortcuts(enabled: boolean) {
   useEffect(() => {
@@ -84,7 +85,8 @@ export function useKeyboardShortcuts(enabled: boolean) {
         e.preventDefault()
         if (!e.repeat) {
           spaceKey.down = true
-          spaceKey.usedForPan = false
+          // Behind an open menu or window it can still pan, but does not start or pause the animation.
+          spaceKey.usedForPan = document.querySelector('[role="menu"], [role="dialog"]') !== null
         }
       }
     }
