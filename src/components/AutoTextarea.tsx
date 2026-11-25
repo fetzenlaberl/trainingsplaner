@@ -1,7 +1,7 @@
 import { inputClass } from './ui'
 
 /**
- * Text field that starts with one line and grows with its text. An invisible copy of the text
+ * Text field that starts with one line (or `minLines`) and grows with its text. An invisible copy of the text
  * in the same grid cell gives the height, so it also fits after rotating the device.
  */
 export function AutoTextarea({
@@ -9,16 +9,18 @@ export function AutoTextarea({
   onChange,
   label,
   placeholder,
+  minLines = 1,
 }: {
   value: string
   onChange: (value: string) => void
   label: string
   placeholder?: string
+  minLines?: number
 }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)]">
       <textarea
-        rows={1}
+        rows={minLines}
         className={`${inputClass} col-start-1 row-start-1 resize-none overflow-hidden py-2 leading-5.5`}
         aria-label={label}
         placeholder={placeholder}

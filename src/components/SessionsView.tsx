@@ -337,10 +337,11 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
       </label>
       <label className="flex flex-col gap-1 text-sm text-slate-400">
         Notizen
-        <textarea
-          className={`${inputClass} min-h-20 py-2`}
+        <AutoTextarea
+          label="Notizen"
+          minLines={3}
           value={session.notes}
-          onChange={(e) => onChange({ notes: e.target.value })}
+          onChange={(notes) => onChange({ notes })}
         />
       </label>
 
