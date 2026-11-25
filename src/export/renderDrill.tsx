@@ -108,7 +108,7 @@ export async function renderScenePerspective(
     turn,
   )
   const overlay = await renderOffscreen(out.width, out.height, (
-    <UprightItems items={scene.items} project={project} pitchColor={pitch.color} images={images} />
+    <UprightItems items={scene.items} project={project} pitchColor={pitch.color} orientation={pitch.orientation} images={images} />
   ))
   out.getContext('2d')?.drawImage(overlay, 0, 0)
   return out

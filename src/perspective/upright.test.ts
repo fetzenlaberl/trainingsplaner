@@ -4,7 +4,7 @@ import { gridLines } from '../field/pitchStyle'
 import { parseDrill, serializeDrill } from '../model/serialize'
 import { templateDrill } from '../model/templates'
 import { fitProjected, projectPoint } from './perspective'
-import { fieldToFlat, isStanding, makeProjector, projectedRotation, type FlatLayout } from './upright'
+import { fieldToFlat, isStanding, makeProjector, projectedRotation, projectedTailTip, type FlatLayout } from './upright'
 
 const viewport = getViewport('full')
 const landscape: FlatLayout = { viewport, orientation: 'landscape', scale: 10, offsetX: 20, offsetY: 30, width: 1090, height: 740 }
@@ -80,5 +80,32 @@ describe('turned 3D view', () => {
     // Facing the right goal points right normally and left when seen from the other side.
     expect(Math.cos((projectedRotation(plain, 52.5, 34, 0) * Math.PI) / 180)).toBeGreaterThan(0.9)
     expect(Math.cos((projectedRotation(turned, 52.5, 34, 0) * Math.PI) / 180)).toBeLessThan(-0.9)
+  })
+})
+
+describe('tail of a speech bubble in the 3D view', () => {
+  const rad = (deg: number) => (deg * Math.PI) / 180
+
+  it.each([
+    ['landscape', landscape, 0, 0],
+    ['landscape, turned view', landscape, 0, 120],
+    ['portrait', portrait, -90, 0],
+  ] as const)('still points at the same spot of the field (%s)', (_, layout, view, turnDeg) => {
+    const project = makeProjector(layout, 45, 800, 600, turnDeg)
+    const bubble = { x: 40, y: 20, rotation: 30, size: 1.5 }
+    const tip = { x: 6, y: 9 }
+    // Spot of the tip on the flat field
+    const angle = rad(bubble.rotation - view)
+    const spot = project(
+      bubble.x + (tip.x * Math.cos(angle) - tip.y * Math.sin(angle)) * bubble.size,
+      bubble.y + (tip.x * Math.sin(angle) + tip.y * Math.cos(angle)) * bubble.size,
+    )
+    // Where the upright bubble draws it
+    const local = projectedTailTip(project, bubble, tip, view)
+    const at = project(bubble.x, bubble.y)
+    const own = rad(bubble.rotation)
+    const unit = at.scale * bubble.size
+    expect(at.x + (local.x * Math.cos(own) - local.y * Math.sin(own)) * unit).toBeCloseTo(spot.x, 5)
+    expect(at.y + (local.x * Math.sin(own) + local.y * Math.cos(own)) * unit).toBeCloseTo(spot.y, 5)
   })
 })

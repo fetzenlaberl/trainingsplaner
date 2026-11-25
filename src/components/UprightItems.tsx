@@ -1,7 +1,8 @@
 import { Group } from 'react-konva'
+import { viewRotation, type Orientation } from '../field/orientation'
 import type { PitchColor } from '../field/pitchStyle'
 import type { Item } from '../model/types'
-import { isStanding, projectedRotation, type FieldProjector } from '../perspective/upright'
+import { isStanding, projectedRotation, projectedTailTip, type FieldProjector } from '../perspective/upright'
 import { ImagesContext } from './imagesContext'
 import { ItemShape } from './ItemShape'
 import { PitchColorContext } from './pitchColorContext'
@@ -15,6 +16,8 @@ interface UprightItemsProps {
   items: (Item & { opacity?: number; glow?: number })[]
   project: FieldProjector
   pitchColor: PitchColor
+  /** Orientation of the flat field, which the freely dragged tails of speech bubbles refer to */
+  orientation: Orientation
   images?: Record<string, string>
 }
 
@@ -22,7 +25,7 @@ interface UprightItemsProps {
  * Standing items of the perspective view, drawn untilted in screen pixels at the projected
  * spot of each item, back to front so near items cover far ones.
  */
-export function UprightItems({ items, project, pitchColor, images = NO_IMAGES }: UprightItemsProps) {
+export function UprightItems({ items, project, pitchColor, orientation, images = NO_IMAGES }: UprightItemsProps) {
   const placed = items
     .filter((item) => isStanding(item.type))
     .map((item) => ({ item, at: project(item.x, item.y) }))
@@ -51,7 +54,11 @@ export function UprightItems({ items, project, pitchColor, images = NO_IMAGES }:
                   shape={item.shape}
                   facing={item.facing}
                   pose={item.pose}
-                  box={item.box}
+                  box={
+                    item.box?.tailTip
+                      ? { ...item.box, tailTip: projectedTailTip(project, item, item.box.tailTip, viewRotation(orientation)) }
+                      : item.box
+                  }
                   lean={item.lean}
                   view={item.view}
                   symbol={item.symbol}

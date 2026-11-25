@@ -536,6 +536,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
               <UprightItems
                 items={items}
                 pitchColor={pitch.color}
+                orientation={pitch.orientation}
                 images={images}
                 project={makeProjector(
                   {

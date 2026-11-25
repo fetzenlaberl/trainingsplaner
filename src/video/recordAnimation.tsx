@@ -134,7 +134,7 @@ export async function recordAnimation({
             }}
           >
             <Layer>
-              <UprightItems items={frame.items} project={project} pitchColor={pitch.color} images={images} />
+              <UprightItems items={frame.items} project={project} pitchColor={pitch.color} orientation={pitch.orientation} images={images} />
             </Layer>
           </Stage>
         )}

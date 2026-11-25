@@ -97,3 +97,26 @@ export function projectedRotation(project: FieldProjector, x: number, y: number,
   const b = project(x + Math.cos(rad), y + Math.sin(rad))
   return (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI
 }
+
+/**
+ * Tip of a freely dragged bubble tail for the upright bubble, so that it still points at the
+ * same spot of the field (e.g. a player). `tip` is relative to the middle of the flat bubble,
+ * which is turned by the item and kept upright against the view (`viewRotationDeg`).
+ */
+export function projectedTailTip(
+  project: FieldProjector,
+  item: { x: number; y: number; rotation: number; size: number },
+  tip: Point2,
+  viewRotationDeg: number,
+): Point2 {
+  const flat = turn(tip, item.rotation - viewRotationDeg)
+  const at = project(item.x, item.y)
+  const target = project(item.x + flat.x * item.size, item.y + flat.y * item.size)
+  const unit = at.scale * item.size
+  return turn({ x: (target.x - at.x) / unit, y: (target.y - at.y) / unit }, -item.rotation)
+}
+
+function turn(p: Point2, degrees: number): Point2 {
+  const rad = (degrees * Math.PI) / 180
+  return { x: p.x * Math.cos(rad) - p.y * Math.sin(rad), y: p.x * Math.sin(rad) + p.y * Math.cos(rad) }
+}
