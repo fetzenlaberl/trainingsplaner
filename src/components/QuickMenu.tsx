@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { BALL_STYLES, COLORABLE_TYPES, ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_COLORS } from '../items/palette'
 import { currentScene, isLine, isZone, useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
@@ -23,6 +23,11 @@ export function QuickMenu() {
   const insertCopy = useDrillStore((s) => s.insertCopy)
   const deleteElement = useDrillStore((s) => s.deleteElement)
   const ref = useRef<HTMLDivElement>(null)
+
+  const [height, setHeight] = useState(0)
+  useLayoutEffect(() => {
+    setHeight(ref.current?.offsetHeight ?? 0)
+  }, [menu, item?.type])
 
   // Close on a click or tap elsewhere and on Escape.
   useEffect(() => {
@@ -49,7 +54,7 @@ export function QuickMenu() {
 
   // Keep the menu on screen.
   const left = Math.min(menu.x + 12, window.innerWidth - MENU_WIDTH - 8)
-  const top = Math.min(menu.y + 12, window.innerHeight - 320)
+  const top = Math.min(menu.y + 12, window.innerHeight - height - 8)
   const close = () => setQuickMenu(null)
 
   return (
@@ -57,7 +62,7 @@ export function QuickMenu() {
       ref={ref}
       role="dialog"
       aria-label="Schnellmenü"
-      className="fixed z-50 flex flex-col gap-2 rounded-xl border border-slate-600 bg-slate-900/95 p-3 shadow-2xl"
+      className="fixed z-50 flex max-h-[calc(100dvh-1rem)] flex-col gap-2 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900/95 p-3 shadow-2xl"
       style={{ left: Math.max(8, left), top: Math.max(8, top), width: MENU_WIDTH }}
     >
       {item.type === 'coach' && (

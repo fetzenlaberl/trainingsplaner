@@ -1,6 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { buttonClass } from './ui'
 
+const MIN_PANEL_HEIGHT = 160
+/** Space between button and panel (mt-1) */
+const PANEL_GAP = 4
+
 interface PopoverProps {
   /** Content of the button */
   label: ReactNode
@@ -20,20 +24,29 @@ export function Popover({ label, title, children, align = 'left', closeOnPick = 
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-  const [shift, setShift] = useState(0)
+  /** Sideways shift and height that keep the panel on screen; null until measured */
+  const [place, setPlace] = useState<{ shift: number; maxHeight: number } | null>(null)
 
   useLayoutEffect(() => {
-    if (!open || !panelRef.current) {
-      setShift(0)
+    if (!open) {
+      setPlace(null)
       return
     }
-    // Keep the panel on screen.
-    const margin = 8
-    const viewWidth = Math.min(window.innerWidth, document.documentElement.clientWidth)
-    const rect = panelRef.current.getBoundingClientRect()
-    if (rect.left < margin) setShift(margin - rect.left)
-    else if (rect.right > viewWidth - margin) setShift(Math.max(margin - rect.left, viewWidth - margin - rect.right))
-  }, [open])
+    const measure = () => {
+      if (!ref.current || !panelRef.current) return
+      const margin = 8
+      const viewWidth = Math.min(window.innerWidth, document.documentElement.clientWidth)
+      const button = ref.current.getBoundingClientRect()
+      const width = panelRef.current.offsetWidth
+      const left = align === 'right' ? button.right - width : button.left
+      const wanted = Math.max(margin, Math.min(left, viewWidth - margin - width))
+      const room = window.innerHeight - button.bottom - PANEL_GAP - margin
+      setPlace({ shift: wanted - left, maxHeight: Math.max(MIN_PANEL_HEIGHT, Math.min(window.innerHeight * 0.7, room)) })
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [open, align])
 
   useEffect(() => {
     if (!open) return
@@ -72,11 +85,16 @@ export function Popover({ label, title, children, align = 'left', closeOnPick = 
           ref={panelRef}
           role="dialog"
           aria-label={title}
-          style={shift ? { transform: `translateX(${shift}px)` } : undefined}
+          // Out of the way while it is measured, so that it cannot make the page scroll.
+          style={
+            place
+              ? { maxHeight: place.maxHeight, transform: place.shift ? `translateX(${place.shift}px)` : undefined }
+              : { position: 'fixed', top: 0, left: 0, right: 'auto', visibility: 'hidden' }
+          }
           onClick={(e) => {
             if (closeOnPick && (e.target as HTMLElement).closest('button')) setOpen(false)
           }}
-          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] ${width} max-w-[calc(100vw-1rem)] flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 p-3 shadow-2xl`}
+          className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] scheme-dark ${width} max-w-[calc(100vw-1rem)] flex-col gap-3 overflow-y-auto overscroll-contain rounded-xl border border-slate-600 bg-slate-900 p-3 shadow-2xl`}
         >
           {children}
         </div>

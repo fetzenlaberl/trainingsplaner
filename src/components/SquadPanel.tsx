@@ -112,7 +112,7 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
 
       {team && (
         <>
-          <div className="flex flex-col gap-1.5 rounded-lg bg-slate-800/60 p-1.5">
+          <div className="grid grid-cols-2 gap-1.5 rounded-lg bg-slate-800/60 p-1.5 md:grid-cols-1">
             <select
               className={inputClass}
               aria-label="Formation"
@@ -201,7 +201,7 @@ export function SquadPanel({ onStartDrag }: SquadPanelProps) {
             {realignMessage && <p className="px-1 text-xs text-amber-300">{realignMessage}</p>}
           </div>
 
-          <ul className="flex max-h-[50vh] flex-col gap-0.5 overflow-y-auto md:max-h-none">
+          <ul className="flex flex-col gap-0.5">
             {team.players.length === 0 && <li className="text-xs text-slate-400">Kader ist leer.</li>}
             {team.players.map((player) => {
               const item = itemForPlayer(team, player, nameStyle, look)

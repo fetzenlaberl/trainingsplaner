@@ -559,8 +559,8 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
         </div>
       )}
       {perspective !== null && (
-        <div className="absolute inset-x-0 top-0 bottom-0 flex items-start justify-center p-3">
-          <span className="pointer-events-none rounded-md bg-slate-900/85 px-3 py-1 text-sm text-slate-200">
+        <div className="absolute inset-x-0 top-0 bottom-0 flex items-start justify-center p-3 sm:px-36">
+          <span className="pointer-events-none rounded-md bg-slate-900/85 px-3 py-1 text-center text-sm text-slate-200">
             3D-Ansicht – ziehen zum Drehen und Neigen · zum Bearbeiten in der Zeitleiste ausschalten
           </span>
         </div>

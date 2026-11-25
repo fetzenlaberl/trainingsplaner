@@ -45,6 +45,9 @@ interface ItemSidebarProps {
   dropTargetRef: RefObject<DropTarget | null>
 }
 
+/** Long compound words get a soft hyphen, so that they fit into a narrow column. */
+const breakable = (name: string) => name.replace(/(ations|ungs)(?=\p{Ll})/gu, '$1\u00AD')
+
 /**
  * Palette of items and zones. Uses pointer events instead of HTML5 drag & drop,
  * so dragging works the same with mouse, pen and touch.
@@ -169,7 +172,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
 
   return (
     <aside
-      className={`flex flex-col border-b border-slate-700 bg-slate-900 md:min-h-0 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36 lg:w-52'}`}
+      className={`flex shrink-0 flex-col border-b border-slate-700 bg-slate-900 max-md:max-h-[40dvh] md:min-h-0 md:border-r md:border-b-0 ${mode === 'squad' ? 'md:w-56' : 'md:w-36 lg:w-52'}`}
     >
       <div role="tablist" aria-label="Seitenleiste" className="flex gap-1 p-2 pb-0">
         {([
@@ -235,7 +238,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                             type="button"
                             title={`${template.name} aufs Feld ziehen`}
                             onPointerDown={(e) => startDrag(e, { kind: 'item', template })}
-                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight wrap-anywhere text-slate-300 select-none hover:bg-slate-800 md:w-full"
                           >
                             <span className="pointer-events-none flex h-10 items-center justify-center">
                               <ItemPreview
@@ -243,7 +246,7 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                                 scale={ICON_SIZE_PX / (ITEM_EXTENT[template.item.type] * (template.item.size ?? 1))}
                               />
                             </span>
-                            {template.name}
+                            {breakable(template.name)}
                           </button>
                         </li>
                       ))}
@@ -253,12 +256,12 @@ export function ItemSidebar({ dropTargetRef }: ItemSidebarProps) {
                             type="button"
                             title={`Zone ${template.name} aufs Feld ziehen`}
                             onPointerDown={(e) => startDrag(e, { kind: 'zone', template })}
-                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight text-slate-300 select-none hover:bg-slate-800 md:w-full"
+                            className="flex w-20 cursor-grab touch-pan-x md:touch-pan-y flex-col items-center gap-1 rounded-md p-1 text-center text-[11px] leading-tight wrap-anywhere text-slate-300 select-none hover:bg-slate-800 md:w-full"
                           >
                             <span className="pointer-events-none flex h-10 items-center justify-center">
                               <ZonePreview template={template} scale={ZONE_ICON_SIZE_PX / Math.max(template.width, template.height)} />
                             </span>
-                            {template.name}
+                            {breakable(template.name)}
                           </button>
                         </li>
                       ))}

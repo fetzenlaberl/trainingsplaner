@@ -205,9 +205,9 @@ export function playerLabel(player: Pick<TeamPlayer, 'name' | 'number'>): string
 export type NameStyle = 'full' | 'initials' | 'none'
 
 export const NAME_STYLES: { value: NameStyle; label: string }[] = [
-  { value: 'full', label: 'Name auf dem Feld: ganz' },
-  { value: 'initials', label: 'Name auf dem Feld: Anfangsbuchstaben' },
-  { value: 'none', label: 'Name auf dem Feld: keiner' },
+  { value: 'full', label: 'Name: ganz' },
+  { value: 'initials', label: 'Name: Anfangsbuchstaben' },
+  { value: 'none', label: 'Name: keiner' },
 ]
 
 /** How squad players look on the pitch: a circle with direction arrow, or a shape without arrow. */

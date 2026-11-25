@@ -288,7 +288,7 @@ export function FieldPanel({ fullWidth = false }: { fullWidth?: boolean } = {}) 
             </button>
           )}
           {pitch.grid !== 'none' && (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-2 gap-1.5">
               <label className="flex flex-col gap-1">
                 <span className={label}>Beschriftung</span>
                 <select
@@ -307,7 +307,7 @@ export function FieldPanel({ fullWidth = false }: { fullWidth?: boolean } = {}) 
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col gap-1">
+              <label className="order-last col-span-2 flex flex-col gap-1">
                 <span className={label}>Position</span>
                 <select className={selectClass} value={labelStyle.position} onChange={(e) => setLabels({ position: e.target.value as GridLabelStyle['position'] })}>
                   {GRID_LABEL_POSITIONS.map((o) => (
