@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { currentScene, findElement, useDrillStore } from '../store/drillStore'
 import { AutoTextarea } from './AutoTextarea'
 import { buttonClass, inputClass } from './ui'
@@ -8,6 +9,8 @@ import { buttonClass, inputClass } from './ui'
  * one and on a double tap. The whole edit counts as one undo step.
  */
 export function TextBoxDialog({ itemId, onClose }: { itemId: string; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const item = useDrillStore((s) => findElement(currentScene(s), itemId))
   const setItemLabel = useDrillStore((s) => s.setItemLabel)
   const fieldRef = useRef<HTMLTextAreaElement & HTMLInputElement>(null)
@@ -49,10 +52,12 @@ export function TextBoxDialog({ itemId, onClose }: { itemId: string; onClose: ()
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="textbox-title"
-        className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="textbox-title" className="text-base font-semibold text-white">
           Text eingeben

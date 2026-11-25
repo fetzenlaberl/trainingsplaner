@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { totalDuration } from '../animation/interpolate'
 import { useDrillStore } from '../store/drillStore'
 import type { VideoFormat, VideoProgress } from '../video/exportVideo'
@@ -89,6 +90,8 @@ export function useExportMenu(): { items: DropdownItem[]; busy: boolean; dialogs
 }
 
 function VideoProgressDialog({ progress, onCancel }: { progress: VideoProgress; onCancel: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const percent = progress.phase === 'preparing' ? null : Math.round(progress.progress * 100)
   const text = {
     recording: 'Video wird aufgenommen …',
@@ -104,10 +107,12 @@ function VideoProgressDialog({ progress, onCancel }: { progress: VideoProgress; 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="video-progress-title"
-        className="w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none w-full max-w-sm rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="video-progress-title" className="text-base font-semibold text-white">
           {text}

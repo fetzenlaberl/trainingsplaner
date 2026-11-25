@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import {
   FIELD_VARIANTS,
   fieldVariantDrill,
@@ -17,6 +18,8 @@ const tileClass =
 
 /** Choice of ready-made training fields: field sizes 1:1–9:9, goal variants, Y-pass. */
 export function FieldTemplateDialog({ onChoose, onClose }: { onChoose: (drill: Drill) => void; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const onCloseRef = useRef(onClose)
   useEffect(() => {
     onCloseRef.current = onClose
@@ -37,10 +40,12 @@ export function FieldTemplateDialog({ onChoose, onClose }: { onChoose: (drill: D
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="field-templates-title"
-        className="flex max-h-full w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-full w-full max-w-3xl flex-col gap-4 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="field-templates-title" className="text-base font-semibold text-white">
           Trainingsfelder

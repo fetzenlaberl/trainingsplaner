@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
+import { useCloseOnFocusOut } from '../hooks/useCloseOnFocusOut'
 import { buttonClass } from './ui'
 
 const MIN_PANEL_HEIGHT = 160
@@ -57,6 +58,7 @@ export function Popover({ label, title, children, align = 'left', closeOnPick = 
     window.addEventListener('pointerdown', onPointerDown)
     return () => window.removeEventListener('pointerdown', onPointerDown)
   }, [open])
+  useCloseOnFocusOut(open, ref, () => setOpen(false))
   useCloseOnEscape(open, () => setOpen(false))
 
   return (

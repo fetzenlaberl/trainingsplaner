@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
+import { useCloseOnFocusOut } from '../hooks/useCloseOnFocusOut'
 import { BALL_STYLES, COLORABLE_TYPES, ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_COLORS } from '../items/palette'
 import { currentScene, isLine, isZone, useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
@@ -31,6 +32,7 @@ export function QuickMenu() {
   }, [menu, item?.type])
 
   useCloseOnEscape(menu !== null, () => setQuickMenu(null))
+  useCloseOnFocusOut(menu !== null, ref, () => setQuickMenu(null))
 
   // Close on a click or tap elsewhere.
   useEffect(() => {

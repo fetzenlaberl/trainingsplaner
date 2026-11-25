@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { importPictureFile, ImportError } from '../import/fileImport'
 import { currentScene, findElement, useDrillStore } from '../store/drillStore'
 import { buttonClass } from './ui'
@@ -8,6 +9,8 @@ import { buttonClass } from './ui'
  * The picture stays inside the drill on this device (nothing is uploaded).
  */
 export function CrestDialog({ itemId, onClose }: { itemId: string; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const item = useDrillStore((s) => findElement(currentScene(s), itemId))
   const images = useDrillStore((s) => s.images)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -64,10 +67,12 @@ export function CrestDialog({ itemId, onClose }: { itemId: string; onClose: () =
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="crest-title"
-        className="flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex w-full max-w-sm flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="crest-title" className="text-base font-semibold text-white">
           {current ? 'Wappen ändern' : 'Wappen einfügen'}

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import {
   GRADIENT_DIRECTIONS,
@@ -61,6 +62,8 @@ function ColorPick({ label, value, onChange }: { label: string; value: string; o
 
 /** Own pitch surface: two colors running into each other. */
 export function GradientDialog({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLFormElement>(null)
+  useFocusTrap(dialogRef)
   const pitch = useDrillStore((s) => s.pitch)
   const setPitchLines = useDrillStore((s) => s.setPitchLines)
   const base = PITCH_COLORS[pitch.color].base
@@ -89,10 +92,12 @@ export function GradientDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <form
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         data-blocks-editing
         aria-label="Farbverlauf"
-        className="flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
         onSubmit={(e) => {
           e.preventDefault()
           apply()

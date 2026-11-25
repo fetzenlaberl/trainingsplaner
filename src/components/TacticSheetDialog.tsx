@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { SHEET_VARIANTS, type SheetVariant } from '../export/tacticSheet'
 import { loadClubSettings, readLogo, saveClubSettings, type ClubSettings } from '../settings/clubSettings'
 import { useDrillStore } from '../store/drillStore'
@@ -11,6 +12,8 @@ function today(): string {
 
 /** Options for the printable tactic sheet (for GoodNotes or paper). */
 export function TacticSheetDialog({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const title = useDrillStore((s) => s.title)
   const [variant, setVariant] = useState<SheetVariant>('one')
   const [content, setContent] = useState<'scene' | 'empty'>('scene')
@@ -77,10 +80,12 @@ export function TacticSheetDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="sheet-title"
-        className="flex max-h-[90vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-[90vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="sheet-title" className="text-base font-semibold text-white">
           Taktikblatt (PDF)

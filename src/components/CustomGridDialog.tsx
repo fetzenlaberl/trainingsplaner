@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import { DEFAULT_CUSTOM_GRID, MAX_CUSTOM_PARTS, MAX_CUSTOM_SIZE, parseGridSizes } from '../field/pitchStyle'
 import { useDrillStore } from '../store/drillStore'
@@ -8,6 +9,8 @@ const format = (sizes: number[]) => sizes.map((n) => String(n).replace('.', ',')
 
 /** Own grid: column widths and row heights in meters (e.g. "20 30 20"), centred on the pitch. */
 export function CustomGridDialog({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLFormElement>(null)
+  useFocusTrap(dialogRef)
   const current = useDrillStore((s) => s.pitch.customGrid) ?? DEFAULT_CUSTOM_GRID
   const setCustomGrid = useDrillStore((s) => s.setCustomGrid)
   const [columns, setColumns] = useState(() => format(current.columns))
@@ -35,10 +38,12 @@ export function CustomGridDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <form
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         data-blocks-editing
         aria-label="Eigenes Raster"
-        className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
         onSubmit={(e) => {
           e.preventDefault()
           apply()

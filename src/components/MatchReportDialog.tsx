@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import type { ReportTeam } from '../teams/matchReport'
 import type { CsvPlayer } from '../teams/teamCsv'
 import { buttonClass, inputClass } from './ui'
@@ -22,6 +23,8 @@ export function MatchReportDialog({
   onTake: (players: CsvPlayer[]) => void
   onClose: () => void
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const [teamIndex, setTeamIndex] = useState(0)
   const [rows, setRows] = useState<Row[]>(() => toRows(teams[0]))
   const chosen = rows.filter((r) => r.take)
@@ -49,10 +52,12 @@ export function MatchReportDialog({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-title"
-        className="flex max-h-full w-full max-w-lg flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-full w-full max-w-lg flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="report-title" className="text-base font-semibold text-white">
           Spieler aus dem Spielbericht

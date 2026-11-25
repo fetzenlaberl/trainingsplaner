@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { AREA_LABELS, CATEGORY_LABELS } from '../library/library'
 import { CATEGORIES } from '../model/serialize'
 import { AGE_GROUPS, parseCount, type AgeGroup } from '../model/drillInfo'
@@ -9,6 +10,8 @@ import { buttonClass, inputClass } from './ui'
 
 /** Title, category and description of the drill in the editor. */
 export function DetailsDialog({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const title = useDrillStore((s) => s.title)
   const description = useDrillStore((s) => s.description)
   const category = useDrillStore((s) => s.category)
@@ -44,10 +47,12 @@ export function DetailsDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="details-title"
-        className="flex max-h-full w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-full w-full max-w-lg flex-col gap-4 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="details-title" className="text-base font-semibold text-white">
           Details der Übung

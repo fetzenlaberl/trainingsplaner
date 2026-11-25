@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { CATEGORY_LABELS, filterEntries, type LibraryEntry } from '../library/library'
 import { buttonClass, inputClass } from './ui'
 
@@ -10,6 +11,8 @@ interface DrillPickerProps {
 
 /** Dialog to choose a drill from the library. */
 export function DrillPicker({ entries, onPick, onClose }: DrillPickerProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const onCloseRef = useRef(onClose)
@@ -37,10 +40,12 @@ export function DrillPicker({ entries, onPick, onClose }: DrillPickerProps) {
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="picker-title"
-        className="flex max-h-[85vh] w-full max-w-xl flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
+        className="outline-none flex max-h-[85vh] w-full max-w-xl flex-col gap-3 rounded-xl border border-slate-700 bg-slate-900 p-5 shadow-2xl"
       >
         <h2 id="picker-title" className="text-base font-semibold text-white">
           Übung aus der Bibliothek hinzufügen

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
+import { useCloseOnFocusOut } from '../hooks/useCloseOnFocusOut'
 import { nextMenuIndex } from './menuKeys'
 import { buttonClass } from './ui'
 
@@ -56,6 +57,7 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
     window.addEventListener('pointerdown', onPointerDown)
     return () => window.removeEventListener('pointerdown', onPointerDown)
   }, [open])
+  useCloseOnFocusOut(open, ref, () => setOpen(false))
   useCloseOnEscape(open, () => {
     // Keyboard users continue at the button.
     if (menuRef.current?.contains(document.activeElement)) buttonRef.current?.focus()

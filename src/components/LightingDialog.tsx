@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import {
   LIGHTING_OPTIONS,
@@ -32,6 +34,8 @@ const choiceClass = (active: boolean) =>
  * (no dark backdrop), a tap beside the window closes it.
  */
 export function LightingDialog({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useFocusTrap(dialogRef)
   const pitch = useDrillStore((s) => s.pitch)
   const setPitchLines = useDrillStore((s) => s.setPitchLines)
   const lighting = resolveLighting(pitch)
@@ -51,10 +55,12 @@ export function LightingDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         data-blocks-editing
         aria-label="Lichtverlauf"
-        className="flex max-h-full w-full max-w-xs flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900/95 p-4 shadow-2xl"
+        className="outline-none flex max-h-full w-full max-w-xs flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900/95 p-4 shadow-2xl"
       >
         <h2 className="text-base font-semibold text-white">Lichtverlauf</h2>
 
