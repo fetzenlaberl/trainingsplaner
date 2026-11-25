@@ -22,7 +22,7 @@ export function SaveButton({
       type="button"
       className={`${
         dirty ? buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600') : buttonClass
-      } ${compact ? '' : 'min-w-32 justify-center'}`}
+      } ${compact ? '' : 'justify-center sm:min-w-32'}`}
       disabled={saving}
       title={dirty ? 'Änderungen jetzt speichern' : `${savedTitle} – antippen speichert noch einmal`}
       aria-label={dirty ? 'Speichern' : savedTitle}

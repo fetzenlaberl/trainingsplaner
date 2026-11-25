@@ -1,4 +1,4 @@
-import { useIsPhone } from '../hooks/useIsPhone'
+import { useSaveState, type SaveState } from '../hooks/useSaveState'
 import { SaveButton } from './SaveButton'
 import { useEffect, useState } from 'react'
 import type { LibraryEntry } from '../library/library'
@@ -41,6 +41,12 @@ function reportSaveError(err: unknown) {
 }
 
 /** List of training sessions and the editor for the selected one. Changes are saved automatically. */
+const changed = (session: TrainingSession, change: Partial<TrainingSession>): TrainingSession => ({
+  ...session,
+  ...change,
+  updatedAt: Date.now(),
+})
+
 interface SessionsViewProps {
   /** List with editor or week overview when the screen opens */
   initialMode?: 'list' | 'week'
@@ -75,24 +81,17 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
   }, [])
 
   const selected = sessions?.find((s) => s.id === selectedId) ?? null
-  // Every change is written at once; the phone shows this with a save button.
-  const [saveState, setSaveState] = useState<'saved' | 'saving' | 'failed'>('saved')
+  // Every change is written at once; the save button shows the outcome.
+  const { stateOf, track } = useSaveState()
 
   /** Stores a changed or new session and keeps the list sorted. */
   function save(session: TrainingSession) {
     setSessions((list) => sortSessions([...(list ?? []).filter((s) => s.id !== session.id), session]))
-    setSaveState('saving')
-    putSession(session).then(
-      () => setSaveState('saved'),
-      (err) => {
-        setSaveState('failed')
-        reportSaveError(err)
-      },
-    )
+    track(session.id, putSession(session), reportSaveError)
   }
 
   function update(change: Partial<TrainingSession>) {
-    if (selected) save({ ...selected, ...change, updatedAt: Date.now() })
+    if (selected) save(changed(selected, change))
   }
 
   function handleNew(date = today()) {
@@ -201,8 +200,8 @@ export function SessionsView({ initialMode = 'list', hideModeTabs = false }: Ses
                 session={selected}
                 entries={entries}
                 onChange={update}
-                saveState={saveState}
-                onSave={() => save({ ...selected, updatedAt: Date.now() })}
+                saveState={stateOf(selected.id)}
+                onSave={() => update({})}
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
               />
@@ -220,14 +219,13 @@ interface SessionEditorProps {
   session: TrainingSession
   entries: LibraryEntry[]
   onChange: (change: Partial<TrainingSession>) => void
-  saveState: 'saved' | 'saving' | 'failed'
+  saveState: SaveState
   onSave: () => void
   onDuplicate: () => void
   onDelete: () => void
 }
 
 function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplicate, onDelete }: SessionEditorProps) {
-  const phone = useIsPhone()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const setView = useViewStore((s) => s.setView)
@@ -264,16 +262,15 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Stays in view while scrolling, except on the phone (too little room). */}
+      <div className="flex flex-wrap items-center gap-1.5 sm:sticky sm:-top-4 sm:z-10 sm:bg-slate-900 sm:py-2">
         <input
-          className={`${inputClass} min-w-0 flex-1 basis-full text-lg font-semibold sm:basis-auto`}
+          className={`${inputClass} min-w-0 flex-1 basis-full text-lg font-semibold lg:basis-auto`}
           aria-label="Titel der Einheit"
           value={session.title}
           onChange={(e) => onChange({ title: e.target.value })}
         />
-        {phone && (
-          <SaveButton dirty={saveState === 'failed'} saving={saveState === 'saving'} onSave={onSave} savedTitle="Einheit gespeichert" />
-        )}
+        <SaveButton dirty={saveState === 'failed'} saving={saveState === 'saving'} onSave={onSave} savedTitle="Einheit gespeichert" />
         <button type="button" className={buttonClass} disabled={exporting} onClick={handlePdf}>
           {exporting ? 'PDF wird erstellt …' : 'PDF'}
         </button>

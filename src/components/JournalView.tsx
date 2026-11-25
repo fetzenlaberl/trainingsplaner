@@ -1,4 +1,3 @@
-import { useIsPhone } from '../hooks/useIsPhone'
 import { SaveButton } from './SaveButton'
 import { PhoneFold } from './PhoneFold'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
@@ -43,7 +42,7 @@ export function JournalView() {
   const [tag, setTag] = useState<string | null>(null)
   const [showTrash, setShowTrash] = useState(false)
   const [status, setStatus] = useState<string | null>(null)
-  const phone = useIsPhone()
+  const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'failed'>('saved')
   const [importing, setImporting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   /** Changed entries not yet written, by id */
@@ -57,10 +56,12 @@ export function JournalView() {
     pending.current.clear()
     if (toSave.length === 0) return
     putJournalEntries(toSave).then(
-      () => setStatus('Gespeichert'),
+      () => setSaveState(pending.current.size > 0 ? 'dirty' : 'saved'),
       (err) => {
         console.error(err)
-        setStatus('Speichern fehlgeschlagen')
+        // Keep them for the next try, unless they were changed again meanwhile.
+        for (const e of toSave) if (!pending.current.has(e.id)) pending.current.set(e.id, e)
+        setSaveState('failed')
       },
     )
   }, [])
@@ -96,7 +97,8 @@ export function JournalView() {
     const next = editJournalEntry(entry, values, Date.now())
     setEntries((all) => all?.map((e) => (e.id === next.id ? next : e)) ?? null)
     pending.current.set(next.id, next)
-    setStatus('Wird gespeichert …')
+    setStatus(null)
+    setSaveState('dirty')
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(flush, SAVE_DELAY_MS)
   }
@@ -107,8 +109,15 @@ export function JournalView() {
       await putJournalEntry(entry)
     } catch (err) {
       console.error(err)
-      setStatus('Speichern fehlgeschlagen')
+      if (!pending.current.has(entry.id)) pending.current.set(entry.id, entry)
+      setSaveState('failed')
     }
+  }
+
+  /** Save button: writes everything that is waiting, and the open entry in any case. */
+  function saveNow(entry: JournalEntry) {
+    if (!pending.current.has(entry.id)) pending.current.set(entry.id, entry)
+    flush()
   }
 
   async function handleNew() {
@@ -137,6 +146,7 @@ export function JournalView() {
   async function deleteForGood(entry: JournalEntry) {
     if (!window.confirm(`„${entryTitle(entry)}“ endgültig löschen?`)) return
     setEntries((all) => all?.filter((e) => e.id !== entry.id) ?? null)
+    pending.current.delete(entry.id)
     await deleteJournalEntry(entry.id)
   }
 
@@ -144,6 +154,7 @@ export function JournalView() {
     if (!window.confirm(`${trash.length} Einträge im Papierkorb endgültig löschen?`)) return
     const ids = new Set(trash.map((e) => e.id))
     setEntries((all) => all?.filter((e) => !ids.has(e.id)) ?? null)
+    for (const id of ids) pending.current.delete(id)
     for (const e of trash) await deleteJournalEntry(e.id)
   }
 
@@ -333,10 +344,15 @@ export function JournalView() {
               >
                 ← Liste
               </button>
-              {phone && <SaveButton dirty={status === 'Wird gespeichert …' || status === 'Speichern fehlgeschlagen'} saving={false} onSave={flush} savedTitle="Eintrag gespeichert" />}
+              <SaveButton
+                dirty={saveState !== 'saved'}
+                saving={false}
+                onSave={() => saveNow(selected)}
+                savedTitle="Eintrag gespeichert"
+              />
               <span className="text-xs text-slate-400">
                 Erstellt {dateTimeText(selected.createdAt)} · geändert {dateTimeText(selected.updatedAt)}
-                {status && ` · ${status}`}
+                {saveState === 'failed' ? ' · Speichern fehlgeschlagen' : status && ` · ${status}`}
               </span>
               <span className="flex-1" />
               <button type="button" className={buttonClass} onClick={() => exportText([selected], entryTitle(selected))}>
