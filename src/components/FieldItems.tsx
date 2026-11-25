@@ -11,6 +11,7 @@ import { beginGroupDrag, endGroupDrag, selectOnClick, selectOnPointerDown, updat
 import { ItemShape } from './ItemShape'
 import { TextBoxHandles } from './TextBoxHandles'
 import { cancelLongPress, startLongPress } from './longPress'
+import { startRightPress } from './rightPress'
 import { SELECTION_COLOR, setCursor } from './konvaUtils'
 
 /** Minimum grab radius in pixels so small items stay easy to touch. */
@@ -51,6 +52,10 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
       {items.map((item) => {
         const selected = interactive && selectedIds.includes(item.id)
         const extent = ITEM_EXTENT[item.type] * item.size
+        const openQuickMenu = (x: number, y: number) => {
+          select(item.id)
+          useToolStore.getState().setQuickMenu({ itemId: item.id, x, y })
+        }
         return (
           <Group
             key={item.id}
@@ -64,17 +69,12 @@ export function FieldItems({ items, viewport, scale, interactive }: FieldItemsPr
             draggable={interactive && !item.locked}
             onPointerDown={(e) => {
               selectOnPointerDown(e, item.id)
-              if (e.evt.pointerType === 'touch') {
-                startLongPress(e.evt, (x, y) => {
-                  select(item.id)
-                  useToolStore.getState().setQuickMenu({ itemId: item.id, x, y })
-                })
-              }
+              if (e.evt.pointerType === 'touch') startLongPress(e.evt, openQuickMenu)
+              else if (e.evt.button === 2) startRightPress(e.evt, openQuickMenu)
             }}
             onContextMenu={(e) => {
               e.evt.preventDefault()
-              select(item.id)
-              useToolStore.getState().setQuickMenu({ itemId: item.id, x: e.evt.clientX, y: e.evt.clientY })
+              openQuickMenu(e.evt.clientX, e.evt.clientY)
             }}
             onClick={(e) => selectOnClick(e, item.id)}
             onTap={(e) => selectOnClick(e, item.id)}
