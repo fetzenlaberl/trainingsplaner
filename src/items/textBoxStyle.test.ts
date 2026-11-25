@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { changeTextBoxStyle, parseTextBoxStyle, textBoxFontFactor, textBoxWidth } from './textBoxStyle'
+import { bubbleWidth, changeTextBoxStyle, parseTextBoxStyle, textBoxFontFactor, textBoxWidth } from './textBoxStyle'
 import { cloudBumps, textAreaFromCorner, textBoxBody, textBoxTail, textBoxTailTo } from './textBoxGeometry'
 
 describe('text box style', () => {
@@ -82,5 +82,36 @@ describe('text box geometry', () => {
     const body = textBoxBody('oval', oval.w, oval.h, 1)
     expect(body.rx).toBeCloseTo(6.2)
     expect(body.ry).toBeCloseTo(3.2)
+  })
+})
+
+describe('bubbleWidth', () => {
+  /** Text of a given area: the wider, the lower; never lower than `min`. */
+  const flowing = (area: number, min = 2) => (w: number) => Math.max(min, area / w)
+
+  it('keeps the chosen width for short texts', () => {
+    expect(bubbleWidth({ shape: 'oval', width: 'narrow', tail: 'sw' }, flowing(20))).toBe(8)
+  })
+
+  it('widens bubbles until a long text is no longer higher than 60 % of the width', () => {
+    const w = bubbleWidth({ shape: 'oval', width: 'narrow', tail: 'sw' }, flowing(150))
+    expect(w).toBe(16)
+    expect(150 / w).toBeLessThanOrEqual(0.6 * w)
+  })
+
+  it('leaves text boxes without tail and dragged widths alone', () => {
+    expect(bubbleWidth(undefined, flowing(400))).toBe(12)
+    expect(bubbleWidth({ shape: 'rect' }, flowing(400))).toBe(12)
+    expect(bubbleWidth({ shape: 'oval', tail: 's', w: 9 }, flowing(400))).toBe(9)
+  })
+
+  it('stops at the widest width, more for big fonts', () => {
+    expect(bubbleWidth({ shape: 'cloud' }, () => 100)).toBe(30)
+    expect(bubbleWidth({ shape: 'cloud', font: 'xlarge' }, () => 100)).toBe(60)
+  })
+
+  it('does not widen a box with a tail when the lines are short anyway', () => {
+    expect(bubbleWidth({ tail: 's', width: 'narrow' }, () => 20)).toBe(8)
+    expect(bubbleWidth({ tail: 's', width: 'narrow' }, (w) => (w < 10 ? 25 : 20))).toBe(10)
   })
 })

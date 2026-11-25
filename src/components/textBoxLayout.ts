@@ -1,7 +1,7 @@
 import Konva from 'konva'
 import { TEXT_SCALE } from './MeterText'
 import { textBoxBody, textBoxTail, textBoxTailTo, type TextBoxBody, type TextBoxTail } from '../items/textBoxGeometry'
-import { textBoxFontFactor, textBoxWidth, type TextBoxStyle } from '../items/textBoxStyle'
+import { bubbleWidth, textBoxFontFactor, type TextBoxStyle } from '../items/textBoxStyle'
 
 const TEXTBOX_PADDING = 0.6
 const TEXTBOX_FONT_SIZE = 1.1
@@ -45,11 +45,12 @@ function measureHeight(text: string, width: number, padding: number, fontSize: n
 /** Size of a text box or speech bubble, its outline and its tail. */
 export function textBoxLayout(text: string, style: TextBoxStyle | undefined): TextBoxLayout {
   const fontFactor = textBoxFontFactor(style)
-  const width = textBoxWidth(style)
   const fontSize = TEXTBOX_FONT_SIZE * fontFactor
   const padding = TEXTBOX_PADDING * fontFactor
   const fontStyle = [style?.italic ? 'italic' : '', style?.bold ? 'bold' : ''].filter(Boolean).join(' ') || 'normal'
-  const height = Math.max(measureHeight(text, width, padding, fontSize, fontStyle), style?.h ?? 0)
+  const heightAt = (w: number) => measureHeight(text, w, padding, fontSize, fontStyle)
+  const width = bubbleWidth(style, heightAt)
+  const height = Math.max(heightAt(width), style?.h ?? 0)
   const body = textBoxBody(style?.shape ?? 'rounded', width, height, fontFactor)
   const tail = !style?.tail
     ? null

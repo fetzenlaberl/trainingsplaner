@@ -107,6 +107,42 @@ export function textBoxWidth(style: TextBoxStyle | undefined): number {
   return TEXTBOX_WIDTHS.find((w) => w.value === style?.width)?.meters ?? 12
 }
 
+/** Text area of a bubble should not get higher than this share of its width */
+const BUBBLE_RATIO = 0.6
+/** Widest automatic text area (meters, at normal font size) */
+const MAX_AUTO_WIDTH = 30
+
+/** Bubbles (with a tail, oval or cloud) widen for long texts, unless their width was dragged. */
+export function isAutoWidth(style: TextBoxStyle | undefined): boolean {
+  if (!style || style.w !== undefined) return false
+  return style.tail !== undefined || isRoundShape(style.shape)
+}
+
+function isRoundShape(shape: TextBoxShape | undefined): boolean {
+  return shape === 'oval' || shape === 'cloud'
+}
+
+/**
+ * Width of a bubble: the chosen width, and wider for long texts (in steps of 1 m).
+ * `heightAt` gives the height of the wrapped text for a width.
+ */
+export function bubbleWidth(style: TextBoxStyle | undefined, heightAt: (width: number) => number): number {
+  const start = textBoxWidth(style)
+  if (!isAutoWidth(style)) return start
+  const max = MAX_AUTO_WIDTH * Math.max(1, textBoxFontFactor(style))
+  let width = start
+  let height = heightAt(width)
+  // Narrowest width with the lowest height so far
+  let best = { width, height }
+  while (height > width * BUBBLE_RATIO && width < max) {
+    width = Math.min(max, width + 1)
+    height = heightAt(width)
+    if (height < best.height) best = { width, height }
+  }
+  // An oval needs the room for its first and last lines; a box would only get empty space.
+  return isRoundShape(style?.shape) ? width : best.width
+}
+
 /** Applies a change; values equal to the default are left out, an empty style becomes undefined. */
 export function changeTextBoxStyle(style: TextBoxStyle | undefined, change: Partial<Record<keyof TextBoxStyle, unknown>>): TextBoxStyle | undefined {
   const next: Record<string, unknown> = { ...style, ...change }
