@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
+import { nextMenuIndex } from './menuKeys'
 import { buttonClass } from './ui'
 
 export interface DropdownItem {
@@ -22,11 +23,12 @@ interface DropdownProps {
   align?: 'left' | 'right'
 }
 
-/** A button that opens a small menu; closes on selection or a click elsewhere. */
+/** A button that opens a small menu; closes on selection or a click elsewhere. Arrow keys, Home and End move between the entries. */
 export function Dropdown({ label, items, disabled, align = 'left' }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   /** Sideways shift that keeps the menu on screen (e.g. a right-aligned menu near the left edge) */
   const [shift, setShift] = useState(0)
 
@@ -54,11 +56,34 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
     window.addEventListener('pointerdown', onPointerDown)
     return () => window.removeEventListener('pointerdown', onPointerDown)
   }, [open])
-  useCloseOnEscape(open, () => setOpen(false))
+  useCloseOnEscape(open, () => {
+    // Keyboard users continue at the button.
+    if (menuRef.current?.contains(document.activeElement)) buttonRef.current?.focus()
+    setOpen(false)
+  })
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return
+      // Safari does not focus a clicked button, so the key may arrive at the page itself.
+      const target = e.target as Node
+      const onPage = target === document.body || target === document.documentElement
+      if (!onPage && !ref.current?.contains(target)) return
+      const entries = [...(menuRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])]
+      const next = nextMenuIndex(e.key, entries.indexOf(document.activeElement as HTMLButtonElement), entries.length)
+      if (next === null) return
+      e.preventDefault()
+      entries[next].focus()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   return (
     <div ref={ref} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         className={buttonClass}
         aria-haspopup="menu"
@@ -92,7 +117,7 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
                   setOpen(false)
                   item.onSelect()
                 }}
-                className="flex min-h-10 shrink-0 flex-col items-start justify-center rounded-md px-3 py-1 text-left text-sm text-slate-200 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                className="flex min-h-10 shrink-0 flex-col items-start justify-center rounded-md px-3 py-1 text-left text-sm text-slate-200 -outline-offset-2 hover:bg-slate-700 focus-visible:bg-slate-700 focus-visible:outline-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
               >
                 <span>
                   {item.checked !== undefined && (
