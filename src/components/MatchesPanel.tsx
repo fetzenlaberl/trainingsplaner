@@ -22,6 +22,8 @@ import {
 import { deleteMatch, listMatches, putMatch } from '../teams/matchDb'
 import { exportMatchPdf } from '../teams/matchPdf'
 import type { Team } from '../teams/team'
+import { useSaveState } from '../hooks/useSaveState'
+import { SaveButton } from './SaveButton'
 import { TrashIcon } from './TrashIcon'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
 
@@ -35,6 +37,8 @@ function reportError(err: unknown) {
   console.error(err)
   window.alert('Der Spielbericht konnte nicht gespeichert werden.')
 }
+
+const changed = (match: Match, change: Partial<Match>): Match => ({ ...match, ...change, updatedAt: Date.now() })
 
 /** Match reports of one team: list, view and edit (saved automatically). */
 export function MatchesPanel({ team }: { team: Team }) {
@@ -59,10 +63,11 @@ export function MatchesPanel({ team }: { team: Team }) {
   }, [team.id])
 
   const open = matches?.find((m) => m.id === openId) ?? null
+  const { stateOf, track } = useSaveState()
 
   function save(match: Match) {
     setMatches((list) => sortMatches([...(list ?? []).filter((m) => m.id !== match.id), match]))
-    putMatch(match).catch(reportError)
+    track(match.id, putMatch(match), reportError)
   }
 
   function handleNew() {
@@ -92,8 +97,18 @@ export function MatchesPanel({ team }: { team: Team }) {
         key={open.id}
         match={open}
         team={team}
-        onChange={(change) => save({ ...open, ...change, updatedAt: Date.now() })}
-        header={back}
+        onChange={(change) => save(changed(open, change))}
+        header={
+          <div className="sticky -top-4 z-10 flex flex-wrap gap-2 bg-slate-900 py-2">
+            {back}
+            <SaveButton
+              dirty={stateOf(open.id) === 'failed'}
+              saving={stateOf(open.id) === 'saving'}
+              onSave={() => save(changed(open, {}))}
+              savedTitle="Spielbericht gespeichert"
+            />
+          </div>
+        }
       />
     ) : (
       <MatchView

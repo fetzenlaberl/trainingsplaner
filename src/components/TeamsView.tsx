@@ -23,6 +23,8 @@ import { ImportError, readPdfText } from '../import/fileImport'
 import { parseMatchReport, type ReportTeam } from '../teams/matchReport'
 import { MatchReportDialog } from './MatchReportDialog'
 import { deleteTeam, listTeams, putTeam } from '../teams/teamDb'
+import { useSaveState, type SaveState } from '../hooks/useSaveState'
+import { SaveButton } from './SaveButton'
 import { TrashIcon } from './TrashIcon'
 import { MatchesPanel } from './MatchesPanel'
 import { deleteMatch, listMatches } from '../teams/matchDb'
@@ -35,6 +37,8 @@ function reportSaveError(err: unknown) {
   console.error(err)
   window.alert('Die Mannschaft konnte nicht gespeichert werden.')
 }
+
+const changed = (team: Team, change: Partial<Team>): Team => ({ ...team, ...change, updatedAt: Date.now() })
 
 /** Squads: teams with players (number, name, position, starting eleven). Saved automatically. */
 export function TeamsView() {
@@ -62,14 +66,15 @@ export function TeamsView() {
   }, [])
 
   const selected = teams?.find((t) => t.id === selectedId) ?? null
+  const { stateOf, track } = useSaveState()
 
   function save(team: Team) {
     setTeams((list) => sortTeams([...(list ?? []).filter((t) => t.id !== team.id), team]))
-    putTeam(team).catch(reportSaveError)
+    track(team.id, putTeam(team), reportSaveError)
   }
 
   function update(change: Partial<Team>) {
-    if (selected) save({ ...selected, ...change, updatedAt: Date.now() })
+    if (selected) save(changed(selected, change))
   }
 
   function handleNew() {
@@ -150,7 +155,14 @@ export function TeamsView() {
               ))}
             </div>
             {tab === 'squad' ? (
-              <TeamEditor key={selected.id} team={selected} onChange={update} onDelete={handleDelete} />
+              <TeamEditor
+                key={selected.id}
+                team={selected}
+                onChange={update}
+                saveState={stateOf(selected.id)}
+                onSave={() => update({})}
+                onDelete={handleDelete}
+              />
             ) : (
               <MatchesPanel key={selected.id} team={selected} />
             )}
@@ -166,10 +178,12 @@ export function TeamsView() {
 interface TeamEditorProps {
   team: Team
   onChange: (change: Partial<Team>) => void
+  saveState: SaveState
+  onSave: () => void
   onDelete: () => void
 }
 
-function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
+function TeamEditor({ team, onChange, saveState, onSave, onDelete }: TeamEditorProps) {
   const setPlayers = (players: TeamPlayer[]) => onChange({ players })
   const updatePlayer = (id: string, change: Partial<TeamPlayer>) =>
     setPlayers(team.players.map((p) => (p.id === id ? { ...p, ...change } : p)))
@@ -244,12 +258,19 @@ function TeamEditor({ team, onChange, onDelete }: TeamEditorProps) {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Stays in view while scrolling through a long squad. */}
+      <div className="sticky -top-4 z-10 flex flex-wrap items-center gap-2 bg-slate-900 py-2">
         <input
           className={`${inputClass} min-w-0 flex-1 text-lg font-semibold`}
           aria-label="Name der Mannschaft"
           value={team.name}
           onChange={(e) => onChange({ name: e.target.value })}
+        />
+        <SaveButton
+          dirty={saveState === 'failed'}
+          saving={saveState === 'saving'}
+          onSave={onSave}
+          savedTitle="Mannschaft gespeichert"
         />
         <button type="button" className={dangerButtonClass} onClick={onDelete}>
           Löschen
