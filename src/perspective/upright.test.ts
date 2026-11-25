@@ -4,7 +4,7 @@ import { gridLines } from '../field/pitchStyle'
 import { parseDrill, serializeDrill } from '../model/serialize'
 import { templateDrill } from '../model/templates'
 import { fitProjected, projectPoint } from './perspective'
-import { fieldToFlat, isStanding, makeProjector, projectedRotation, projectedTailTip, type FlatLayout } from './upright'
+import { fieldToFlat, isStanding, labelCircle, makeProjector, projectedRotation, projectedTailTip, stopAtCircle, type FlatLayout } from './upright'
 
 const viewport = getViewport('full')
 const landscape: FlatLayout = { viewport, orientation: 'landscape', scale: 10, offsetX: 20, offsetY: 30, width: 1090, height: 740 }
@@ -107,5 +107,30 @@ describe('tail of a speech bubble in the 3D view', () => {
     const unit = at.scale * bubble.size
     expect(at.x + (local.x * Math.cos(own) - local.y * Math.sin(own)) * unit).toBeCloseTo(spot.x, 5)
     expect(at.y + (local.x * Math.sin(own) + local.y * Math.cos(own)) * unit).toBeCloseTo(spot.y, 5)
+  })
+})
+
+describe('numbers stay free of bubble tails in the 3D view', () => {
+  it('pulls the tip back to the edge of the number, seen from the bubble', () => {
+    const circle = { x: 100, y: 0, r: 10 }
+    expect(stopAtCircle({ x: 0, y: 0 }, { x: 100, y: 0 }, circle)).toEqual({ x: 90, y: 0 })
+    const slanted = stopAtCircle({ x: 0, y: 0 }, { x: 104, y: 5 }, circle)
+    expect(Math.hypot(slanted.x - 100, slanted.y)).toBeCloseTo(10, 6)
+    expect(slanted.x).toBeLessThan(100)
+  })
+
+  it('leaves tips beside the number and bubbles lying on it alone', () => {
+    const circle = { x: 100, y: 0, r: 10 }
+    expect(stopAtCircle({ x: 0, y: 0 }, { x: 100, y: 30 }, circle)).toEqual({ x: 100, y: 30 })
+    expect(stopAtCircle({ x: 98, y: 2 }, { x: 101, y: 0 }, circle)).toEqual({ x: 101, y: 0 })
+  })
+
+  it('knows the number of players, but not of cones', () => {
+    const project = makeProjector(landscape, 45, 800, 600)
+    const at = project(60, 52)
+    const circle = labelCircle(project, { type: 'player', x: 60, y: 52, size: 1.5 })
+    expect(circle).toMatchObject({ x: at.x, y: at.y })
+    expect(circle?.r).toBeCloseTo(1.15 * 1.5 * at.scale, 6)
+    expect(labelCircle(project, { type: 'cone', x: 60, y: 52, size: 1 })).toBeNull()
   })
 })

@@ -5,7 +5,7 @@
 
 import type { Rect } from '../field/dimensions'
 import { toView, viewRect, type Orientation } from '../field/orientation'
-import type { ItemType } from '../model/types'
+import type { Item, ItemType } from '../model/types'
 import { fitProjected, projectPointScaled, type Point2 } from './perspective'
 
 /** Items that stand upright in the perspective view; all others lie on the ground. */
@@ -102,18 +102,52 @@ export function projectedRotation(project: FieldProjector, x: number, y: number,
  * Tip of a freely dragged bubble tail for the upright bubble, so that it still points at the
  * same spot of the field (e.g. a player). `tip` is relative to the middle of the flat bubble,
  * which is turned by the item and kept upright against the view (`viewRotationDeg`).
+ * The tip stops at the edge of the `labels` (screen circles), so that it does not cover them.
  */
 export function projectedTailTip(
   project: FieldProjector,
   item: { x: number; y: number; rotation: number; size: number },
   tip: Point2,
   viewRotationDeg: number,
+  labels: ScreenCircle[] = [],
 ): Point2 {
   const flat = turn(tip, item.rotation - viewRotationDeg)
   const at = project(item.x, item.y)
-  const target = project(item.x + flat.x * item.size, item.y + flat.y * item.size)
+  const spot = project(item.x + flat.x * item.size, item.y + flat.y * item.size)
+  const target = labels.reduce((tip: Point2, circle) => stopAtCircle(at, tip, circle), spot)
   const unit = at.scale * item.size
   return turn({ x: (target.x - at.x) / unit, y: (target.y - at.y) / unit }, -item.rotation)
+}
+
+export interface ScreenCircle {
+  x: number
+  y: number
+  r: number
+}
+
+/** Radius (meters at size 1) around the number or label of an item, also covering figures' shirts. */
+const LABEL_RADIUS: Partial<Record<ItemType, number>> = { player: 1.15, figure: 1.2, coach: 1.15, marker: 0.85 }
+
+/** Screen circle around the number of a player, figure, coach or marker; null for other items. */
+export function labelCircle(project: FieldProjector, item: Pick<Item, 'type' | 'x' | 'y' | 'size'>): ScreenCircle | null {
+  const radius = LABEL_RADIUS[item.type]
+  if (radius === undefined) return null
+  const at = project(item.x, item.y)
+  return { x: at.x, y: at.y, r: radius * item.size * at.scale }
+}
+
+/** End of the line `from`–`tip`, pulled back to the edge of the circle if the tip lies inside it. */
+export function stopAtCircle(from: Point2, tip: Point2, circle: ScreenCircle): Point2 {
+  const inside = (p: Point2) => Math.hypot(p.x - circle.x, p.y - circle.y) < circle.r
+  // A bubble lying on the player itself cannot stop in front of it.
+  if (!inside(tip) || inside(from)) return tip
+  const length = Math.hypot(tip.x - from.x, tip.y - from.y)
+  const u = { x: (tip.x - from.x) / length, y: (tip.y - from.y) / length }
+  // Nearest crossing of the line with the circle, seen from the bubble
+  const along = (circle.x - from.x) * u.x + (circle.y - from.y) * u.y
+  const aside = (circle.x - from.x) * u.y - (circle.y - from.y) * u.x
+  const t = along - Math.sqrt(circle.r ** 2 - aside ** 2)
+  return { x: from.x + u.x * t, y: from.y + u.y * t }
 }
 
 function turn(p: Point2, degrees: number): Point2 {

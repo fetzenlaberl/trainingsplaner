@@ -2,7 +2,7 @@ import { Group } from 'react-konva'
 import { viewRotation, type Orientation } from '../field/orientation'
 import type { PitchColor } from '../field/pitchStyle'
 import type { Item } from '../model/types'
-import { isStanding, projectedRotation, projectedTailTip, type FieldProjector } from '../perspective/upright'
+import { isStanding, labelCircle, projectedRotation, projectedTailTip, type FieldProjector } from '../perspective/upright'
 import { ImagesContext } from './imagesContext'
 import { ItemShape } from './ItemShape'
 import { PitchColorContext } from './pitchColorContext'
@@ -30,6 +30,8 @@ export function UprightItems({ items, project, pitchColor, orientation, images =
     .filter((item) => isStanding(item.type))
     .map((item) => ({ item, at: project(item.x, item.y) }))
     .sort((a, b) => a.at.y - b.at.y)
+  // Tails of bubbles must not cover these numbers.
+  const labels = items.map((item) => labelCircle(project, item)).filter((c) => c !== null)
   return (
     <ImagesContext.Provider value={images}>
       <PitchColorContext.Provider value={pitchColor}>
@@ -56,7 +58,7 @@ export function UprightItems({ items, project, pitchColor, orientation, images =
                   pose={item.pose}
                   box={
                     item.box?.tailTip
-                      ? { ...item.box, tailTip: projectedTailTip(project, item, item.box.tailTip, viewRotation(orientation)) }
+                      ? { ...item.box, tailTip: projectedTailTip(project, item, item.box.tailTip, viewRotation(orientation), labels) }
                       : item.box
                   }
                   lean={item.lean}
