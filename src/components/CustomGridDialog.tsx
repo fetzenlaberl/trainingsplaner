@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import { DEFAULT_CUSTOM_GRID, MAX_CUSTOM_PARTS, MAX_CUSTOM_SIZE, parseGridSizes } from '../field/pitchStyle'
 import { useDrillStore } from '../store/drillStore'
 import { buttonClass, inputClass } from './ui'
@@ -15,13 +16,7 @@ export function CustomGridDialog({ onClose }: { onClose: () => void }) {
   const parsedRows = parseGridSizes(rows)
   const valid = parsedColumns !== null && parsedRows !== null
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useCloseOnEscape(true, onClose)
 
   function apply() {
     if (!parsedColumns || !parsedRows) return

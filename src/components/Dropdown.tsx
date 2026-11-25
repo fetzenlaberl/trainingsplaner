@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import { buttonClass } from './ui'
 
 export interface DropdownItem {
@@ -50,16 +51,10 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
     const onPointerDown = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false)
     }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
     window.addEventListener('pointerdown', onPointerDown)
-    window.addEventListener('keydown', onKeyDown)
-    return () => {
-      window.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('keydown', onKeyDown)
-    }
+    return () => window.removeEventListener('pointerdown', onPointerDown)
   }, [open])
+  useCloseOnEscape(open, () => setOpen(false))
 
   return (
     <div ref={ref} className="relative">

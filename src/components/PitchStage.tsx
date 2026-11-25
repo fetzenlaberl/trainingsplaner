@@ -227,7 +227,7 @@ export function PitchStage({ dropTargetRef, showTrash = true }: PitchStageProps)
   useEffect(() => {
     if (!zoomAreaMode) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setZoomAreaMode(false)
+      if (e.key === 'Escape' && !e.defaultPrevented) setZoomAreaMode(false)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)

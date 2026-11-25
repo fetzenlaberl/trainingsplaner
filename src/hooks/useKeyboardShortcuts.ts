@@ -69,6 +69,7 @@ export function useKeyboardShortcuts(enabled: boolean) {
         e.preventDefault()
         store.deleteElements(selected.map((el) => el.id))
       } else if (e.key === 'Escape') {
+        if (e.defaultPrevented) return // closed a menu
         store.select(null)
         usePlaybackStore.getState().stop()
       } else if (e.key === ' ' && !(e.target instanceof HTMLButtonElement)) {

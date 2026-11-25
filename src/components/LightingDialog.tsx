@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import {
   LIGHTING_OPTIONS,
   LIGHT_KINDS,
@@ -37,13 +37,7 @@ export function LightingDialog({ onClose }: { onClose: () => void }) {
   const lighting = resolveLighting(pitch)
   const off = lighting === 'none'
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useCloseOnEscape(true, onClose)
 
   // Choosing a direction or kind turns the light on if it is off.
   const change = (patch: Partial<Pick<PitchStyle, 'lightSource' | 'lightKind'>>) =>

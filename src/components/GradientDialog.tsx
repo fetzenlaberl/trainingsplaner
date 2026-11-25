@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import {
   GRADIENT_DIRECTIONS,
   PITCH_COLORS,
@@ -67,13 +68,7 @@ export function GradientDialog({ onClose }: { onClose: () => void }) {
   const [to, setTo] = useState(pitch.gradient?.to ?? '#111214')
   const [direction, setDirection] = useState<GradientDirection>(pitch.gradient?.direction ?? 'leftRight')
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  useCloseOnEscape(true, onClose)
 
   function apply() {
     const gradient: PitchGradient = { from, to, direction }

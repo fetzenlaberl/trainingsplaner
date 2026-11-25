@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCloseOnEscape } from '../hooks/useCloseOnEscape'
 import { BALL_STYLES, COLORABLE_TYPES, ITEM_SIZE_STEP, MAX_ITEM_SIZE, MIN_ITEM_SIZE, PLAYER_COLORS } from '../items/palette'
 import { currentScene, isLine, isZone, useDrillStore } from '../store/drillStore'
 import { useToolStore } from '../store/toolStore'
@@ -29,24 +30,21 @@ export function QuickMenu() {
     setHeight(ref.current?.offsetHeight ?? 0)
   }, [menu, item?.type])
 
-  // Close on a click or tap elsewhere and on Escape.
+  useCloseOnEscape(menu !== null, () => setQuickMenu(null))
+
+  // Close on a click or tap elsewhere.
   useEffect(() => {
     if (!menu) return
     const onPointerDown = (e: PointerEvent) => {
       if (!ref.current?.contains(e.target as Node)) setQuickMenu(null)
     }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setQuickMenu(null)
-    }
     // Registered after the current event, so the opening tap does not close it again.
     const id = window.setTimeout(() => {
       window.addEventListener('pointerdown', onPointerDown)
-      window.addEventListener('keydown', onKeyDown)
     })
     return () => {
       window.clearTimeout(id)
       window.removeEventListener('pointerdown', onPointerDown)
-      window.removeEventListener('keydown', onKeyDown)
     }
   }, [menu, setQuickMenu])
 
