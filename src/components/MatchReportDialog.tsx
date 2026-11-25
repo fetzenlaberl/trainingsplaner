@@ -8,7 +8,12 @@ interface Row extends CsvPlayer {
   take: boolean
 }
 
-const toRows = (team: ReportTeam | undefined): Row[] => (team?.players ?? []).map((p) => ({ ...p, take: true }))
+const toRows = (team: ReportTeam): Row[] => team.players.map((p) => ({ ...p, take: true }))
+
+const isChanged = (row: Row, original: CsvPlayer) =>
+  !row.take || row.number !== original.number || row.name !== original.name
+
+const DISCARD_QUESTION = 'Deine Korrekturen in diesem Fenster gehen verloren. Trotzdem schließen?'
 
 /**
  * Preview of the players found in a match report: choose the team (column), untick wrong
@@ -26,29 +31,38 @@ export function MatchReportDialog({
   const dialogRef = useRef<HTMLDivElement>(null)
   useFocusTrap(dialogRef)
   const [teamIndex, setTeamIndex] = useState(0)
-  const [rows, setRows] = useState<Row[]>(() => toRows(teams[0]))
+  // One list per team, so that looking at the other team keeps the corrections.
+  const [rowLists, setRowLists] = useState<Row[][]>(() => teams.map(toRows))
+  const rows = rowLists[teamIndex]
   const chosen = rows.filter((r) => r.take)
+
+  function close() {
+    const changed = rowLists.some((list, t) => list.some((row, i) => isChanged(row, teams[t].players[i])))
+    if (!changed || window.confirm(DISCARD_QUESTION)) onClose()
+  }
+  const closeRef = useRef(close)
+  useEffect(() => {
+    closeRef.current = close
+  })
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') closeRef.current()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [onClose])
+  }, [])
 
-  const chooseTeam = (index: number) => {
-    setTeamIndex(index)
-    setRows(toRows(teams[index]))
-  }
   const update = (index: number, change: Partial<Row>) =>
-    setRows((list) => list.map((r, i) => (i === index ? { ...r, ...change } : r)))
+    setRowLists((lists) =>
+      lists.map((list, t) => (t === teamIndex ? list.map((r, i) => (i === index ? { ...r, ...change } : r)) : list)),
+    )
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onPointerDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        if (e.target === e.currentTarget) close()
       }}
     >
       <div
@@ -69,7 +83,7 @@ export function MatchReportDialog({
                 key={team.label}
                 type="button"
                 aria-pressed={i === teamIndex}
-                onClick={() => chooseTeam(i)}
+                onClick={() => setTeamIndex(i)}
                 className={`min-h-10 rounded-md px-3 text-sm ${
                   i === teamIndex ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
@@ -113,7 +127,7 @@ export function MatchReportDialog({
           ))}
         </ul>
         <div className="flex flex-wrap justify-end gap-2">
-          <button type="button" className={buttonClass} onClick={onClose}>
+          <button type="button" className={buttonClass} onClick={close}>
             Abbrechen
           </button>
           <button
