@@ -954,3 +954,21 @@ describe('own opacity', () => {
     expect(store().scenes[0].zones[0].alpha).toBe(0.3)
   })
 })
+
+describe('speech bubbles and the field orientation', () => {
+  it('keeps dragged tails on the same spot of the field, in all scenes, as one undo step', () => {
+    const id = store().addItem({ type: 'textbox', color: '#ffffff', label: 'Los!', box: { tail: 'e', tailTip: { x: 30, y: 8 } } }, 30, 44)
+    const plain = store().addItem({ type: 'textbox', color: '#ffffff', label: 'Text', box: { tail: 's' } }, 60, 20)
+    store().addScene()
+    const tips = () => store().scenes.map((s) => s.items.find((i) => i.id === id)?.box?.tailTip)
+    store().setOrientation('portrait')
+    expect(tips()).toEqual([{ x: 8, y: -30 }, { x: 8, y: -30 }])
+    expect(items().find((i) => i.id === plain)?.box).toEqual({ tail: 's' })
+    store().setOrientation('landscape')
+    expect(tips()).toEqual([{ x: 30, y: 8 }, { x: 30, y: 8 }])
+    store().setOrientation('portrait')
+    store().undo()
+    expect(store().pitch.orientation).toBe('landscape')
+    expect(tips()[0]).toEqual({ x: 30, y: 8 })
+  })
+})

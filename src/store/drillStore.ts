@@ -3,7 +3,7 @@ import { rememberStyle } from '../items/rememberedStyle'
 import { create } from 'zustand'
 import { nextSceneFrom } from '../animation/scenes'
 import { MAX_AREA, MIN_AREA, type FieldArea, type FieldType } from '../field/dimensions'
-import type { Orientation } from '../field/orientation'
+import { fromView, toView, type Orientation } from '../field/orientation'
 import { defaultPattern, type LinePattern, type LineWeight } from '../lines/styles'
 import { clampStep, nextStep, renumberSteps, sameStep } from '../lines/steps'
 import type { CustomGrid, GridType, PitchColor, PitchStyle } from '../field/pitchStyle'
@@ -320,6 +320,16 @@ export function normalizeAngle(degrees: number): number {
   return ((degrees % 360) + 360) % 360
 }
 
+/**
+ * Bubbles stay upright when the field is turned, so the tip of a dragged tail (relative to
+ * the bubble) is turned with the field to keep pointing at the same spot, e.g. a player.
+ */
+function turnTailTip(item: Item, to: Orientation): Item {
+  if (!item.box?.tailTip) return item
+  const tip = item.box.tailTip
+  return { ...item, box: { ...item.box, tailTip: to === 'portrait' ? toView(tip, 'portrait') : fromView(tip, 'portrait') } }
+}
+
 function contentOf(state: DrillContent): DrillContent {
   return { fieldType: state.fieldType, pitch: state.pitch, scenes: state.scenes, sceneIndex: state.sceneIndex }
 }
@@ -470,7 +480,13 @@ export const useDrillStore = create<DrillState>((set, get) => ({
     }),
   setOrientation: (orientation) =>
     set((s) =>
-      s.pitch.orientation === orientation ? {} : { ...recorded(s), pitch: { ...s.pitch, orientation } },
+      s.pitch.orientation === orientation
+        ? {}
+        : {
+            ...recorded(s),
+            pitch: { ...s.pitch, orientation },
+            scenes: s.scenes.map((scene) => ({ ...scene, items: scene.items.map((item) => turnTailTip(item, orientation)) })),
+          },
     ),
   select: (id) => set(selection(id ? [id] : [])),
   selectMany: (ids) => set(selection(ids)),
