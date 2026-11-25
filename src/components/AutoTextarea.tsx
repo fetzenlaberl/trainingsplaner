@@ -1,3 +1,4 @@
+import type { Ref } from 'react'
 import { inputClass } from './ui'
 
 /**
@@ -6,6 +7,7 @@ import { inputClass } from './ui'
  * With `maxHeightClass` it stops growing there and scrolls inside.
  */
 export function AutoTextarea({
+  ref,
   value,
   onChange,
   label,
@@ -16,6 +18,7 @@ export function AutoTextarea({
   onFocus,
   onBlur,
 }: {
+  ref?: Ref<HTMLTextAreaElement>
   value: string
   onChange: (value: string) => void
   label: string
@@ -29,10 +32,11 @@ export function AutoTextarea({
   return (
     <div className="grid grid-cols-[minmax(0,1fr)]">
       <textarea
+        ref={ref}
         rows={minLines}
         maxLength={maxLength}
         className={`${inputClass} col-start-1 row-start-1 resize-none py-2 leading-5.5 ${
-          maxHeightClass ? `overflow-y-auto ${maxHeightClass}` : 'overflow-hidden'
+          maxHeightClass ? `scheme-dark overflow-y-auto ${maxHeightClass}` : 'overflow-hidden'
         }`}
         aria-label={label}
         placeholder={placeholder}

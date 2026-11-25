@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { currentScene, findElement, useDrillStore } from '../store/drillStore'
+import { AutoTextarea } from './AutoTextarea'
 import { buttonClass, inputClass } from './ui'
 
 /**
@@ -57,13 +58,15 @@ export function TextBoxDialog({ itemId, onClose }: { itemId: string; onClose: ()
           Text eingeben
         </h2>
         {multiLine ? (
-          <textarea
+          <AutoTextarea
             ref={fieldRef}
-            className={`${inputClass} min-h-32 py-2`}
+            label="Text"
+            minLines={5}
+            maxHeightClass="max-h-[50dvh]"
             value={item.label}
             maxLength={400}
             placeholder="Anweisung oder Erklärung …"
-            onChange={(e) => setItemLabel(item.id, e.target.value)}
+            onChange={(text) => setItemLabel(item.id, text)}
           />
         ) : (
           <input
