@@ -90,6 +90,7 @@ export function GradientDialog({ onClose }: { onClose: () => void }) {
     >
       <form
         role="dialog"
+        data-blocks-editing
         aria-label="Farbverlauf"
         className="flex max-h-full w-full max-w-md flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
         onSubmit={(e) => {

@@ -36,6 +36,7 @@ export function CustomGridDialog({ onClose }: { onClose: () => void }) {
     >
       <form
         role="dialog"
+        data-blocks-editing
         aria-label="Eigenes Raster"
         className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-slate-600 bg-slate-900 p-5 shadow-2xl"
         onSubmit={(e) => {

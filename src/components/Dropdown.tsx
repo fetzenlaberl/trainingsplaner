@@ -72,6 +72,7 @@ export function Dropdown({ label, items, disabled, align = 'left' }: DropdownPro
         <div
           ref={menuRef}
           role="menu"
+          data-blocks-editing
           style={shift ? { transform: `translateX(${shift}px)` } : undefined}
           className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} z-40 mt-1 flex max-h-[70vh] w-72 max-w-[calc(100vw-1rem)] scheme-dark flex-col overflow-y-auto overscroll-contain rounded-lg border border-slate-700 bg-slate-800 p-1 shadow-xl`}
         >

@@ -52,6 +52,7 @@ export function LightingDialog({ onClose }: { onClose: () => void }) {
     >
       <div
         role="dialog"
+        data-blocks-editing
         aria-label="Lichtverlauf"
         className="flex max-h-full w-full max-w-xs flex-col gap-3 overflow-y-auto rounded-xl border border-slate-600 bg-slate-900/95 p-4 shadow-2xl"
       >

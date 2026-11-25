@@ -18,7 +18,8 @@ function isTyping(target: EventTarget | null): boolean {
 
 /**
  * Editor shortcuts: save (Ctrl+S), undo/redo, select all, copy/paste/duplicate, delete,
- * Escape and Space (play/pause; held down with a drag it pans the view). Inactive while `enabled` is false or a dialog is open.
+ * Escape and Space (play/pause; held down with a drag it pans the view). Inactive while `enabled` is false or a dialog is open;
+ * menus and windows with `data-blocks-editing` only hold back the ones that change the pitch.
  */
 export function useKeyboardShortcuts(enabled: boolean) {
   useEffect(() => {
@@ -41,6 +42,12 @@ export function useKeyboardShortcuts(enabled: boolean) {
         .filter((el): el is Element => el !== undefined)
       const mod = e.ctrlKey || e.metaKey
       const key = e.key.toLowerCase()
+      const edits = mod ? ['z', 'y', 'd', 'v'].includes(key) : e.key === 'Delete' || e.key === 'Backspace'
+      // Nothing changes on the pitch behind a menu or window that is about something else.
+      if (edits && document.querySelector('[data-blocks-editing]')) {
+        e.preventDefault()
+        return
+      }
 
       if (mod && key === 'z') {
         e.preventDefault()
