@@ -368,8 +368,13 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
           const entry = block.drillId ? byId.get(block.drillId) : undefined
           const missing = block.drillId !== null && !entry
           return (
-            <li key={block.id} className="flex flex-col gap-2 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:flex-row">
-              <div className="flex shrink-0 items-start gap-3 sm:w-56">
+            // Phone: picture and time, texts, buttons below each other. Tablet: texts below time and
+            // buttons, so they get the full width. Wide screens: everything in one row.
+            <li
+              key={block.id}
+              className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 rounded-xl border border-slate-700 bg-slate-900 p-3 sm:grid-cols-[auto_1fr_auto] min-[70rem]:grid-cols-[auto_6rem_1fr_auto]"
+            >
+              <div className="flex items-start gap-3 sm:row-span-2 min-[70rem]:row-span-1">
                 <span className="mt-1 w-6 text-right font-semibold text-slate-400">{number}.</span>
                 {block.drillId ? (
                   <button
@@ -386,9 +391,9 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
                     Freier Block
                   </span>
                 )}
-                <span className="mt-1 text-xs whitespace-nowrap text-slate-400 tabular-nums">{time}</span>
               </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span className="mt-1 text-xs whitespace-nowrap text-slate-400 tabular-nums">{time}</span>
+              <div className="col-span-2 flex min-w-0 flex-col gap-1.5 sm:col-start-2 sm:row-start-2 min-[70rem]:col-span-1 min-[70rem]:col-start-3 min-[70rem]:row-start-1">
                 {block.drillId ? (
                   <div className="font-medium text-white">
                     {entry?.drill.title ?? block.title}
@@ -410,7 +415,7 @@ function SessionEditor({ session, entries, onChange, saveState, onSave, onDuplic
                   onChange={(e) => updateBlock(block.id, { notes: e.target.value })}
                 />
               </div>
-              <div className="flex shrink-0 items-start gap-1">
+              <div className="col-span-2 flex items-start gap-1 sm:col-span-1 sm:col-start-3 sm:row-start-1 min-[70rem]:col-start-4">
                 <select
                   className={inputClass}
                   aria-label="Dauer"
