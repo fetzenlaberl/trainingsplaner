@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { MAX_NOTES_LENGTH } from '../field/pitchStyle'
 import { useDrillStore, type DrillContent } from '../store/drillStore'
-import { inputClass } from './ui'
+import { AutoTextarea } from './AutoTextarea'
 
 const COLLAPSED_KEY = 'trainingsplaner.notesCollapsed'
 
@@ -50,16 +50,18 @@ export function NotesPanel() {
         {collapsed && firstLine && <span className="min-w-0 flex-1 truncate font-normal text-slate-400">{firstLine}</span>}
       </button>
       {!collapsed && (
-        <textarea
-          aria-label="Notizen unter dem Feld"
-          className={`${inputClass} mb-1 block h-20 w-full resize-y py-2`}
+        // Grows up to 30 % of the screen, so the pitch keeps enough room.
+        <AutoTextarea
+          label="Notizen unter dem Feld"
+          minLines={3}
+          maxHeightClass="max-h-[30dvh]"
           value={notes}
           maxLength={MAX_NOTES_LENGTH}
           placeholder="Notizen zur Übung oder Taktik …"
           onFocus={() => {
             beforeRef.current = useDrillStore.getState().snapshot()
           }}
-          onChange={(e) => setPitchNotesLive(e.target.value)}
+          onChange={setPitchNotesLive}
           onBlur={() => {
             const before = beforeRef.current
             beforeRef.current = null
