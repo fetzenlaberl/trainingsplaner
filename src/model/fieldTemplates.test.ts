@@ -51,6 +51,11 @@ describe('field templates', () => {
     expect(goals('cornerGoals')).toBe(4)
     expect(goals('cross')).toBe(4)
     expect(goals('open')).toBe(0)
+    expect(goals('possessionTransfer')).toBe(4)
+    const transfer = fieldVariantDrill('possessionTransfer')
+    expect(transfer.fieldType).toBe('full')
+    expect(transfer.pitch.orientation).toBe('portrait')
+    expect(transfer.scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(15)
     expect(fieldVariantDrill('open').scenes[0].zones[0].dashed).toBe(true)
   })
 

@@ -2,7 +2,7 @@
 // different goal setups, and Y-pass patterns. Everything is built from the app's own
 // items, zones and lines on an empty field of the right size, so it stays editable.
 
-import { areaRunoff, MAX_AREA, MIN_AREA, type FieldArea } from '../field/dimensions'
+import { areaRunoff, MAX_AREA, MIN_AREA, PITCH, type FieldArea } from '../field/dimensions'
 import type { LinePattern, LineWeight } from '../lines/styles'
 import { MINIGOAL } from '../items/equipment'
 import { zoneCornerRadius } from '../items/zones'
@@ -379,7 +379,16 @@ export function sizeOverviewDrill(): Drill {
 // ---------------------------------------------------------------------------------------
 // Field variants with different goal setups
 
-export type VariantKey = 'standard' | 'fourGoals' | 'counterGoals' | 'cornerGoals' | 'cross' | 'zones' | 'overload' | 'open'
+export type VariantKey =
+  | 'standard'
+  | 'fourGoals'
+  | 'counterGoals'
+  | 'cornerGoals'
+  | 'cross'
+  | 'zones'
+  | 'overload'
+  | 'open'
+  | 'possessionTransfer'
 
 export const FIELD_VARIANTS: { key: VariantKey; name: string; hint: string }[] = [
   { key: 'standard', name: 'Standard – 2 Tore', hint: 'Klassische Spielform, 40–60 × 30–40 m' },
@@ -390,6 +399,7 @@ export const FIELD_VARIANTS: { key: VariantKey; name: string; hint: string }[] =
   { key: 'zones', name: 'Zonenfeld mit Zieltoren', hint: 'Drei Zonen, 45–60 × 30–40 m' },
   { key: 'overload', name: 'Überzahl/Unterzahl', hint: 'Zum Beispiel 5:3, 35–50 × 25–35 m' },
   { key: 'open', name: 'Offenes Spielfeld', hint: 'Ohne Tore, 60–100 × 40–70 m' },
+  { key: 'possessionTransfer', name: 'Ballbesitz mit Verlagerung 5:5+5', hint: 'Im Großfeld um die Mittellinie, 40 × 40 m, 4 Minitore' },
 ]
 
 export function fieldVariantDrill(key: VariantKey): Drill {
@@ -569,6 +579,83 @@ export function fieldVariantDrill(key: VariantKey): Drill {
         'Offenes Feld ohne Tore, nur mit Hütchen abgesteckt.\nFür Positionsspiel, Drucksteuerung und taktische Abläufe.',
       )
     }
+    case 'possessionTransfer':
+      return possessionTransferDrill(variant.name)
+  }
+}
+
+/**
+ * 5 v 5 + 5 on the big pitch (shown upright): a square as wide as the penalty area around the
+ * halfway line, yellow in the upper half, red in the lower half, five blue neutrals on the
+ * halfway line and two mini goals behind each end line.
+ */
+function possessionTransferDrill(name: string): Drill {
+  const b = builder({ length: PITCH.length, width: PITCH.width })
+  const mid = { x: PITCH.length / 2, y: PITCH.width / 2 }
+  const size = { length: 40, width: PITCH.penaltyAreaWidth }
+  const near = mid.x - size.length / 2
+  const far = mid.x + size.length / 2
+  b.zones.push({
+    id: 'zone-tpl-field',
+    shape: 'rect',
+    x: mid.x,
+    y: mid.y,
+    width: size.length,
+    height: size.width,
+    rotation: 0,
+    color: WHITE,
+    fillColor: WHITE,
+    fillOpacity: 0,
+    dashed: false,
+    label: '',
+    goals: 0,
+    corners: null,
+  })
+  // Mini goals 4 m behind the end lines, opening towards the square.
+  for (const y of [mid.y - 13, mid.y + 13]) {
+    addGoal(b, 'minigoal', far + 4, y, 180, 2.5)
+    addGoal(b, 'minigoal', near - 4, y, 0, 2.5)
+  }
+  const player = (color: string, label: string, x: number, y: number) =>
+    addItem(b, 'player', x, y, { color, label, size: 1.5, rotation: x > mid.x ? 180 : 0 })
+  // Yellow: two on the end line, one on each side line, one in the half.
+  player(NEUTRAL, '5', far, mid.y - 8)
+  player(NEUTRAL, '4', far, mid.y + 7.5)
+  player(NEUTRAL, '2', mid.x + 10, mid.y - size.width / 2)
+  player(NEUTRAL, '3', mid.x + 11.5, mid.y + size.width / 2)
+  player(NEUTRAL, '6', mid.x + 6, mid.y)
+  // Blue neutrals on the halfway line.
+  ;[
+    ['2', -15],
+    ['5', -7],
+    ['6', 0],
+    ['4', 9],
+    ['3', 16.5],
+  ].forEach(([label, dy]) => player(BLUE, label as string, mid.x, mid.y + (dy as number)))
+  // Red: the same in the lower half.
+  player(RED, '5', near, mid.y - 12.5)
+  player(RED, '4', near, mid.y + 2.5)
+  player(RED, '3', mid.x - 5.5, mid.y - size.width / 2)
+  player(RED, '2', mid.x - 8, mid.y + size.width / 2)
+  player(RED, '6', mid.x - 6.5, mid.y + 5.5)
+  addBall(b, far + 2.5, mid.y - 13)
+
+  const drill = emptyDrill()
+  return {
+    ...drill,
+    title: name,
+    description:
+      'Gelb gegen Rot, 5 gegen 5, dazu 5 neutrale Spieler (Blau) auf der Mittellinie. ' +
+      'Jedes Team hat seine Hälfte, die Spieler am Rand stehen auf den Linien.\n\n' +
+      'Mögliche Regeln:\n' +
+      '1. Das Team in Ballbesitz hält mit den Neutralen den Ball in der eigenen Hälfte.\n' +
+      '2. Nach einer festen Zahl Pässe wird in die andere Hälfte verlagert (Punkt).\n' +
+      '3. Nach Ballgewinn schnell auf die zwei Minitore hinter der Linie kontern.\n\n' +
+      'Schwerpunkte: Ballbesitz, Spielverlagerung, Umschalten.',
+    info: { ...drill.info, players: 15, fieldSize: `${size.length} × ${Math.round(size.width)} m` },
+    fieldType: 'full',
+    pitch: { ...drill.pitch, color: 'navy', grid: 'none', orientation: 'portrait' },
+    scenes: [{ ...drill.scenes[0], items: b.items, lines: b.lines, zones: b.zones }],
   }
 }
 
