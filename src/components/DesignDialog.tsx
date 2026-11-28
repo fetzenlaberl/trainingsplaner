@@ -48,8 +48,8 @@ const selectClass = `${inputClass} min-w-0`
 export interface DesignDialogProps {
   /** The drill the design would be put on (for the preview count and "from this drill") */
   drill: Drill
-  /** 'apply': design window of the editor; 'open': choose a design while opening a file */
-  mode: 'apply' | 'open'
+  /** 'apply': design window of the editor; 'open': choose a design while opening a file; 'template': after choosing a template */
+  mode: 'apply' | 'open' | 'template'
   /** Chosen design, or null = keep the look (only when opening) */
   onChoose: (design: Design | null) => void
   onClose: () => void
@@ -150,11 +150,13 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
       >
         <div>
           <h2 id="design-dialog-title" className="text-base font-semibold text-white">
-            {mode === 'open' ? 'Datei öffnen – Design wählen' : 'Design'}
+            {mode === 'open' ? 'Datei öffnen – Design wählen' : mode === 'template' ? 'Vorlage – Design wählen' : 'Design'}
           </h2>
           <p className="text-xs text-slate-400">
             {mode === 'open'
               ? 'Die Übung aus der Datei so lassen, wie sie ist, oder gleich in ein Design umstellen.'
+              : mode === 'template'
+                ? 'Die Vorlage so lassen, wie sie ist, oder Feld (Farbe, Muster, Linien) und Spieler (Form, Vollfarbe/Rand/Umriss, Größe, Farben) gleich in ein Design umstellen.'
               : 'Stellt die ganze Übung (alle Szenen) per Klick auf ein Design um: Feld, Teamfarben, Spieler, Hütchen, Linien und Zonen. Positionen und Texte bleiben.'}
           </p>
         </div>
@@ -205,9 +207,9 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
             </button>
           )}
           <span className="flex-1" />
-          {mode === 'open' ? (
+          {mode !== 'apply' ? (
             <button type="button" className={buttonClass} onClick={() => onChoose(null)}>
-              Wie in der Datei
+              {mode === 'open' ? 'Wie in der Datei' : 'Wie in der Vorlage'}
             </button>
           ) : (
             <button type="button" className={buttonClass} onClick={onClose}>
@@ -220,7 +222,7 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
             disabled={!selected}
             onClick={() => selected && onChoose(selected)}
           >
-            {mode === 'open' ? 'Mit diesem Design öffnen' : 'Auf diese Übung anwenden'}
+            {mode === 'apply' ? 'Auf diese Übung anwenden' : mode === 'open' ? 'Mit diesem Design öffnen' : 'Mit diesem Design starten'}
           </button>
         </div>
       </div>

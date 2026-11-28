@@ -68,6 +68,9 @@ describe('field templates', () => {
     }
     expect(fangoTemplateDrill('cornerAttack').fieldType).toBe('cornerRight')
     expect(fangoTemplateDrill('shape4231').scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(11)
+    // All players start in solid color.
+    for (const t of FANGO_TEMPLATES)
+      expect(fangoTemplateDrill(t.key).scenes.flatMap((s) => s.items).filter((i) => i.type === 'player').every((p) => p.symbol === 'flat')).toBe(true)
   })
 
   it('builds the goal variants', () => {

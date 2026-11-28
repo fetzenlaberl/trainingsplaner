@@ -36,6 +36,7 @@ export function FileBar() {
   const importTargetRef = useRef<ImportTarget>('item')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState<false | 'fields' | 'fango'>(false)
+  const [templateDesign, setTemplateDesign] = useState<Drill | null>(null)
   const [designOpen, setDesignOpen] = useState(false)
   /** Drill read from a file, waiting for the design choice */
   const [opening, setOpening] = useState<Drill | null>(null)
@@ -60,7 +61,15 @@ export function FileBar() {
 
   function handleFieldTemplate(drill: Drill) {
     if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
+    const fango = fieldTemplatesOpen === 'fango'
     setFieldTemplatesOpen(false)
+    // Fango templates first offer a design for the pitch and the players.
+    if (fango) setTemplateDesign(drill)
+    else loadTemplate(drill)
+  }
+
+  function loadTemplate(drill: Drill) {
+    setTemplateDesign(null)
     usePlaybackStore.getState().stop()
     useDrillStore.getState().loadDrill(drill)
     usePerspectiveStore.getState().setEnabled(false)
@@ -246,6 +255,14 @@ export function FileBar() {
           drill={currentDrill(useDrillStore.getState())}
           onChoose={handleApplyDesign}
           onClose={() => setDesignOpen(false)}
+        />
+      )}
+      {templateDesign && (
+        <DesignDialog
+          mode="template"
+          drill={templateDesign}
+          onChoose={(design) => loadTemplate(design ? applyDesign(templateDesign, design) : templateDesign)}
+          onClose={() => setTemplateDesign(null)}
         />
       )}
       {opening && (

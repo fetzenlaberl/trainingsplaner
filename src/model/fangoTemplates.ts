@@ -1721,5 +1721,9 @@ export const FANGO_TEMPLATES: FangoTemplate[] = [
 export function fangoTemplateDrill(key: string): Drill {
   const template = FANGO_TEMPLATES.find((t) => t.key === key)
   if (!template) throw new Error(`Unknown template ${key}`)
-  return template.build(template.name)
+  const drill = template.build(template.name)
+  // All players in solid color (no rim); the design or the selection bar can change it.
+  for (const scene of drill.scenes)
+    for (const item of scene.items) if (item.type === 'player' && !item.symbol) item.symbol = 'flat'
+  return drill
 }
