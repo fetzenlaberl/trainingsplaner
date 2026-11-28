@@ -261,7 +261,7 @@ function isFieldArea(value: unknown): value is FieldArea {
 }
 
 /** Pitch style was added later; older files get the default green pitch without grid. */
-function parsePitchStyle(value: unknown): PitchStyle {
+export function parsePitchStyle(value: unknown): PitchStyle {
   if (value === undefined) return { ...DEFAULT_PITCH_STYLE }
   if (
     !isRecord(value) ||

@@ -10,6 +10,8 @@ import { usePerspectiveStore } from '../store/perspectiveStore'
 import { templateDrill, type DrillTemplate } from '../model/templates'
 import { DetailsDialog } from './DetailsDialog'
 import { FieldTemplateDialog } from './FieldTemplateDialog'
+import { DesignDialog } from './DesignDialog'
+import { applyDesign, type Design } from '../design/design'
 import type { Drill } from '../model/types'
 import { Dropdown } from './Dropdown'
 import { useExportMenu } from './ExportMenu'
@@ -34,6 +36,9 @@ export function FileBar() {
   const importTargetRef = useRef<ImportTarget>('item')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState(false)
+  const [designOpen, setDesignOpen] = useState(false)
+  /** Drill read from a file, waiting for the design choice */
+  const [opening, setOpening] = useState<Drill | null>(null)
   const [saving, setSaving] = useState(false)
   const dirty = drillJson !== savedJson
   const exportMenu = useExportMenu()
@@ -75,13 +80,24 @@ export function FileBar() {
     try {
       const drill = parseDrill(await file.text())
       if (isEditorDirty() && !window.confirm(DISCARD_QUESTION)) return
-      usePlaybackStore.getState().stop()
-      useDrillStore.getState().loadDrill(drill)
-      unlinkEditor(null) // a drill from a file is not in the library yet
+      // Before it is loaded, the drill can be put into a design (or stay as it is).
+      setOpening(drill)
     } catch (err) {
       const message = err instanceof DrillFileError ? err.message : 'Die Datei konnte nicht gelesen werden.'
       window.alert(`Öffnen fehlgeschlagen: ${message}`)
     }
+  }
+
+  function finishOpen(drill: Drill, design: Design | null) {
+    setOpening(null)
+    usePlaybackStore.getState().stop()
+    useDrillStore.getState().loadDrill(design ? applyDesign(drill, design) : drill)
+    unlinkEditor(null) // a drill from a file is not in the library yet
+  }
+
+  function handleApplyDesign(design: Design | null) {
+    setDesignOpen(false)
+    if (design) useDrillStore.getState().applyDesign(design)
   }
 
   function startImport(target: ImportTarget) {
@@ -120,6 +136,12 @@ export function FileBar() {
         items={[
           { section: 'Übung', label: 'Neue Übung', onSelect: handleNew },
           { section: 'Übung', label: 'Details …', hint: 'Beschreibung, Kategorie, Spieler, Dauer', onSelect: () => setDetailsOpen(true) },
+          {
+            section: 'Übung',
+            label: '🎨 Design …',
+            hint: 'Feld, Farben, Spieler und Linien per Klick umstellen',
+            onSelect: () => setDesignOpen(true),
+          },
           {
             section: 'Übung',
             label: 'In Bibliothek speichern',
@@ -211,6 +233,22 @@ export function FileBar() {
       {detailsOpen && <DetailsDialog onClose={() => setDetailsOpen(false)} />}
       {fieldTemplatesOpen && (
         <FieldTemplateDialog onChoose={handleFieldTemplate} onClose={() => setFieldTemplatesOpen(false)} />
+      )}
+      {designOpen && (
+        <DesignDialog
+          mode="apply"
+          drill={currentDrill(useDrillStore.getState())}
+          onChoose={handleApplyDesign}
+          onClose={() => setDesignOpen(false)}
+        />
+      )}
+      {opening && (
+        <DesignDialog
+          mode="open"
+          drill={opening}
+          onChoose={(design) => finishOpen(opening, design)}
+          onClose={() => setOpening(null)}
+        />
       )}
     </div>
   )

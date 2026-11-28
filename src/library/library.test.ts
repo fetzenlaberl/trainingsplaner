@@ -103,7 +103,7 @@ describe('backup', () => {
   ]
 
   it('round-trips the library', () => {
-    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [], days: [] }))).toEqual({ entries, sessions: [], teams: [], days: [], matches: [], journal: [] })
+    expect(parseBackup(serializeBackup({ entries, sessions: [], teams: [], days: [] }))).toEqual({ entries, sessions: [], teams: [], days: [], matches: [], journal: [], designs: [] })
   })
 
   it('round-trips training sessions', () => {

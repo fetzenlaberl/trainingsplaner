@@ -1,6 +1,7 @@
 import { PhoneFold } from './PhoneFold'
 import { listMatches, putMatches } from '../teams/matchDb'
 import { listJournal, putJournalEntries } from '../journal/journalDb'
+import { listOwnDesigns, putDesigns } from '../design/designDb'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { downloadBlob } from '../export/download'
 import { FIELD_TYPE_LABELS } from '../field/dimensions'
@@ -14,7 +15,9 @@ import {
   serializeBackup,
   type LibraryEntry,
 } from '../library/library'
-import { isEditorDirty, openEntryInEditor, unlinkEditor } from '../library/libraryActions'
+import { applyDesignToEntry, isEditorDirty, openEntryInEditor, unlinkEditor } from '../library/libraryActions'
+import type { Design } from '../design/design'
+import { DesignDialog } from './DesignDialog'
 import { deleteEntry, listEntries, putEntries, putEntry } from '../library/libraryDb'
 import { useLibraryLink } from '../library/libraryStore'
 import { AGE_GROUPS, drillInfoLine, PLAYER_RANGES, type AgeGroup, type PlayerRange } from '../model/drillInfo'
@@ -45,6 +48,8 @@ function todayStamp(): string {
 /** Overview of all saved drills with search, categories and backup. */
 export function LibraryView() {
   const [entries, setEntries] = useState<LibraryEntry[] | null>(null)
+  /** Entry whose design is being chosen */
+  const [designFor, setDesignFor] = useState<LibraryEntry | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
@@ -106,6 +111,19 @@ export function LibraryView() {
     setView('editor')
   }
 
+  function handleDesign(entry: LibraryEntry, design: Design | null) {
+    setDesignFor(null)
+    if (!design) return
+    if (
+      !window.confirm(
+        `„${entry.drill.title}“ auf das Design „${design.name}“ umstellen? Die gespeicherte Übung wird geändert (Positionen und Texte bleiben).`,
+      )
+    ) {
+      return
+    }
+    void run(() => applyDesignToEntry(entry, design))
+  }
+
   function handleDelete(entry: LibraryEntry) {
     if (!window.confirm(`„${entry.drill.title}“ wirklich aus der Bibliothek löschen?`)) return
     void run(async () => {
@@ -125,6 +143,7 @@ export function LibraryView() {
         days: await listDayIntensities(),
         matches: await listMatches(),
         journal: await listJournal(),
+        designs: await listOwnDesigns(),
       }
       const blob = new Blob([serializeBackup(backup)], { type: 'application/json' })
       downloadBlob(blob, `trainingsplaner-sicherung-${todayStamp()}.json`)
@@ -153,6 +172,8 @@ export function LibraryView() {
       await putTeams(teams.toStore)
       await putMatches(matches.toStore)
       await putJournalEntries(journal.toStore)
+      const designs = planImport(await listOwnDesigns(), backup.designs ?? [])
+      await putDesigns(designs.toStore)
       // Day intensities simply take the value from the backup.
       await putDayIntensities(backup.days)
       const skipped = drills.skipped + sessions.skipped + teams.skipped + matches.skipped + journal.skipped
@@ -347,6 +368,14 @@ export function LibraryView() {
                   >
                     Duplizieren
                   </button>
+                  <button
+                    type="button"
+                    className={buttonClass}
+                    title="Feld, Farben, Spieler und Linien dieser Übung auf ein Design umstellen"
+                    onClick={() => setDesignFor(entry)}
+                  >
+                    🎨 Design
+                  </button>
                   <button type="button" className={dangerButtonClass} onClick={() => handleDelete(entry)}>
                     Löschen
                   </button>
@@ -356,6 +385,14 @@ export function LibraryView() {
           ))}
         </ul>
       </div>
+      {designFor && (
+        <DesignDialog
+          mode="apply"
+          drill={designFor.drill}
+          onChoose={(design) => handleDesign(designFor, design)}
+          onClose={() => setDesignFor(null)}
+        />
+      )}
     </div>
   )
 }

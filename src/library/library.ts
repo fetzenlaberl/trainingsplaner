@@ -6,12 +6,13 @@ import { dayIntensityFromData, type DayIntensity } from '../sessions/week'
 import { teamFromData, type Team } from '../teams/team'
 import { matchFromData, type Match } from '../teams/match'
 import { journalEntryFromData, type JournalEntry } from '../journal/journal'
+import { designFromData, type Design } from '../design/design'
 
 export const BACKUP_FORMAT = 'trainingsplaner-library'
 // Backup versions follow the drill file versions (2: waypoints, 3: zones, 4: text boxes etc.).
 // Version 8: also contains teams (squads). Version 10: day intensities of the week planner.
-// Version 14: match reports. Version 15: journal.
-export const BACKUP_VERSION = 15
+// Version 14: match reports. Version 15: journal. Version 16: own design templates.
+export const BACKUP_VERSION = 16
 
 export const CATEGORY_LABELS: Record<Category, string> = {
   warmup: 'Aufwärmen',
@@ -106,12 +107,14 @@ export interface Backup {
   matches?: Match[]
   /** Journal entries (missing in older backups) */
   journal?: JournalEntry[]
+  /** Own design templates (missing in older backups) */
+  designs?: Design[]
 }
 
 /** Backup of drills and training sessions as one file. */
-export function serializeBackup({ entries, sessions, teams, days, matches = [], journal = [] }: Backup): string {
+export function serializeBackup({ entries, sessions, teams, days, matches = [], journal = [], designs = [] }: Backup): string {
   return JSON.stringify(
-    { format: BACKUP_FORMAT, version: BACKUP_VERSION, entries, sessions, teams, days, matches, journal },
+    { format: BACKUP_FORMAT, version: BACKUP_VERSION, entries, sessions, teams, days, matches, journal, designs },
     null,
     2,
   )
@@ -143,7 +146,8 @@ export function parseBackup(text: string): Backup {
     !(data.teams === undefined || Array.isArray(data.teams)) ||
     !(data.days === undefined || Array.isArray(data.days)) ||
     !(data.matches === undefined || Array.isArray(data.matches)) ||
-    !(data.journal === undefined || Array.isArray(data.journal))
+    !(data.journal === undefined || Array.isArray(data.journal)) ||
+    !(data.designs === undefined || Array.isArray(data.designs))
   ) {
     throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
   }
@@ -172,6 +176,11 @@ export function parseBackup(text: string): Backup {
     if (!entry) throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
     return entry
   })
+  const designs = ((data.designs as unknown[] | undefined) ?? []).map((value) => {
+    const design = designFromData(value)
+    if (!design) throw new DrillFileError('Die Sicherung ist beschädigt oder unvollständig.')
+    return design
+  })
   const entries = data.entries.map((value): LibraryEntry => {
     if (
       !isRecord(value) ||
@@ -190,7 +199,7 @@ export function parseBackup(text: string): Backup {
       updatedAt: value.updatedAt,
     }
   })
-  return { entries, sessions, teams, days, matches, journal }
+  return { entries, sessions, teams, days, matches, journal, designs }
 }
 
 /**
