@@ -6,6 +6,7 @@ import { clampItemSize } from '../items/palette'
 import { LINE_PATTERNS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import { parsePitchStyle } from '../model/serialize'
 import type { Drill, Item, Line, LineType, PlayerShape, SymbolStyle, Zone } from '../model/types'
+import { nameInitials } from '../teams/team'
 
 /** Parts of the pitch style that belong to a design (not grid, orientation, notes or size). */
 export type DesignPitch = Pick<PitchStyle, 'color' | 'lineColor' | 'lineWidth' | 'roundedCorners' | 'mowing' | 'lighting' | 'lightSource' | 'lightKind' | 'gradient'>
@@ -39,16 +40,37 @@ export interface Design {
     /** null = keep the size of every player */
     size: number | null
     facing: boolean
+    /** Name tags: keep them, shorten to initials ("MM") or remove them */
+    names: NameTagMode
   }
   /** Cones and discs */
   coneColor: string
+  /** Goals and mini goals (also in perspective); null = keep their color */
+  goalColor: string | null
   lines: Record<DesignLineType, DesignLineStyle>
   /** Filled zones (zones without fill count as markings and take the pitch line color) */
   zone: { color: string; fillColor: string; fillOpacity: number }
 }
 
+export type NameTagMode = 'keep' | 'initials' | 'none'
+export const NAME_TAG_MODES: { value: NameTagMode; label: string }[] = [
+  { value: 'keep', label: 'Beibehalten' },
+  { value: 'initials', label: 'Anfangsbuchstaben' },
+  { value: 'none', label: 'Ohne Namen' },
+]
+
 const PLAYER_SHAPES: PlayerShape[] = ['circle', 'triangle', 'cross', 'shirt']
 const CONE_TYPES = new Set<Item['type']>(['cone', 'disc'])
+const GOAL_TYPES = new Set<Item['type']>(['goal', 'minigoal', 'goalFront', 'minigoalFront'])
+/** Items with a name tag */
+const NAMED_TYPES = new Set<Item['type']>(['player', 'figure'])
+
+/** Name tag in the chosen mode; names that already are initials stay as they are. */
+export function styledName(name: string, mode: NameTagMode): string {
+  if (mode === 'none') return ''
+  if (mode === 'keep' || /^[A-ZÄÖÜ]{1,4}$/.test(name.trim())) return name
+  return nameInitials(name)
+}
 
 /** Color of the pitch markings in a design (own line color or the usual one of the pitch). */
 export function markingColor(pitch: Pick<PitchStyle, 'color' | 'lineColor'>): string {
@@ -77,40 +99,45 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('grass', 'Rasen klassisch', {
     pitch: { color: 'darkGreenPlain', lineWidth: 'thin', roundedCorners: true },
     teams: ['#2563eb', '#dc2626', '#facc15'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
     coneColor: '#f97316',
+    goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#ffffff'),
     zone: { color: '#ffffff', fillColor: '#facc15', fillOpacity: 0.25 },
   }),
   builtIn('navy', 'Dunkelblau / Türkis', {
     pitch: { color: 'navy', lineColor: TURQUOISE_LINE, lineWidth: 'thin', roundedCorners: true },
     teams: ['#facc15', '#ef4444', '#38bdf8'],
-    player: { shape: 'circle', symbol: 'flat', size: null, facing: false },
+    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep' },
     coneColor: '#f97316',
+    goalColor: '#ffffff',
     lines: lineSet('#ffffff', TURQUOISE_LINE),
     zone: { color: TURQUOISE_LINE, fillColor: TURQUOISE_LINE, fillOpacity: 0.2 },
   }),
   builtIn('blackRed', 'Schwarz / Rot', {
     pitch: { color: 'black', lineColor: '#dc2626', lineWidth: 'thin' },
     teams: ['#ffffff', '#dc2626', '#9ca3af'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
     coneColor: '#dc2626',
+    goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#dc2626'),
     zone: { color: '#ffffff', fillColor: '#ffffff', fillOpacity: 0.15 },
   }),
   builtIn('blackOrange', 'Schwarz / Orange', {
     pitch: { color: 'black', lineColor: '#f97316', lineWidth: 'thin' },
     teams: ['#f97316', '#ffffff', '#facc15'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
     coneColor: '#f97316',
+    goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#f97316'),
     zone: { color: '#f97316', fillColor: '#f97316', fillOpacity: 0.25 },
   }),
   builtIn('whiteboard', 'Whiteboard (weiß)', {
     pitch: { color: 'white', lineWidth: 'thin' },
     teams: ['#1d4ed8', '#dc2626', '#f97316'],
-    player: { shape: 'circle', symbol: 'flat', size: null, facing: false },
+    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep' },
     coneColor: '#f97316',
+    goalColor: '#111827',
     lines: lineSet('#111827', '#111827'),
     zone: { color: '#111827', fillColor: '#fde047', fillOpacity: 0.35 },
   }),
@@ -155,9 +182,12 @@ export function applyDesign(drill: Drill, design: Design): Drill {
       else delete next.symbol
       if (design.player.facing) delete next.facing
       else next.facing = false
+      next.name = styledName(it.name, design.player.names)
       return next
     }
     if (CONE_TYPES.has(it.type)) return { ...it, color: design.coneColor }
+    if (GOAL_TYPES.has(it.type) && design.goalColor) return { ...it, color: design.goalColor }
+    if (NAMED_TYPES.has(it.type) && it.name) return { ...it, name: styledName(it.name, design.player.names) }
     return it
   }
 
@@ -215,6 +245,7 @@ export function designFromDrill(drill: Drill, base: Design, name: string, id: st
   const order = playerColorOrder(drill)
   const firstPlayer = all.find((i) => i.type === 'player')
   const cone = all.find((i) => CONE_TYPES.has(i.type))
+  const goal = all.find((i) => GOAL_TYPES.has(i.type))
   const filled = drill.scenes.flatMap((s) => s.zones).find((z) => z.fillOpacity > 0)
   const pitch = {} as DesignPitch
   for (const key of PITCH_KEYS) (pitch as Record<string, unknown>)[key] = drill.pitch[key]
@@ -231,9 +262,10 @@ export function designFromDrill(drill: Drill, base: Design, name: string, id: st
     pitch: cleanPitch(pitch),
     teams: [order[0] ?? base.teams[0], order[1] ?? base.teams[1], order[2] ?? base.teams[2]],
     player: firstPlayer
-      ? { shape: firstPlayer.shape, symbol: firstPlayer.symbol ?? null, size: null, facing: firstPlayer.facing !== false }
+      ? { shape: firstPlayer.shape, symbol: firstPlayer.symbol ?? null, size: null, facing: firstPlayer.facing !== false, names: 'keep' }
       : { ...base.player },
     coneColor: cone?.color ?? base.coneColor,
+    goalColor: goal?.color ?? base.goalColor,
     lines: lineStyles,
     zone: filled ? { color: filled.color, fillColor: filled.fillColor, fillOpacity: filled.fillOpacity } : { ...base.zone },
   }
@@ -293,7 +325,10 @@ export function designFromData(value: unknown): Design | null {
     !PLAYER_SHAPES.includes(p.shape as PlayerShape) ||
     !(p.symbol === null || p.symbol === 'flat' || p.symbol === 'outline') ||
     !(p.size === null || typeof p.size === 'number') ||
-    typeof p.facing !== 'boolean'
+    typeof p.facing !== 'boolean' ||
+    // Name tags and goal color came later; older designs keep both as they are.
+    !(p.names === undefined || NAME_TAG_MODES.some((m) => m.value === p.names)) ||
+    !(value.goalColor === undefined || value.goalColor === null || isHexColor(value.goalColor))
   ) {
     return null
   }
@@ -328,8 +363,10 @@ export function designFromData(value: unknown): Design | null {
       symbol: p.symbol as SymbolStyle | null,
       size: p.size === null ? null : clampItemSize(p.size as number),
       facing: p.facing,
+      names: (p.names as NameTagMode | undefined) ?? 'keep',
     },
     coneColor: value.coneColor,
+    goalColor: (value.goalColor as string | null | undefined) ?? null,
     lines,
     zone: { color: z.color, fillColor: z.fillColor, fillOpacity: z.fillOpacity },
   }

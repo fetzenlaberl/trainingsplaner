@@ -5,8 +5,10 @@ import {
   DESIGN_LINE_TYPES,
   designFromDrill,
   markingColor,
+  NAME_TAG_MODES,
   type Design,
   type DesignLineType,
+  type NameTagMode,
 } from '../design/design'
 import { deleteDesign, listDesigns, putDesigns } from '../design/designDb'
 import { PITCH_COLOR_ORDER, PITCH_COLORS, PITCH_LINE_COLORS, PITCH_LINE_WIDTHS, type PitchColor, type PitchLineWidth } from '../field/pitchStyle'
@@ -371,6 +373,21 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
           <Row label="Hütchen und Teller">
             <ColorInput label="Farbe Hütchen" disabled={ro} value={design.coneColor} onChange={(v) => onChange((d) => ({ ...d, coneColor: v }))} />
           </Row>
+          <Row label="Tore">
+            <label className="flex items-center gap-1 text-xs text-slate-400">
+              <input
+                type="checkbox"
+                className="h-4 w-4"
+                disabled={ro}
+                checked={design.goalColor === null}
+                onChange={(e) => onChange((d) => ({ ...d, goalColor: e.target.checked ? null : '#ffffff' }))}
+              />
+              beibehalten
+            </label>
+            {design.goalColor !== null && (
+              <ColorInput label="Farbe der Tore" disabled={ro} value={design.goalColor} onChange={(v) => onChange((d) => ({ ...d, goalColor: v }))} />
+            )}
+          </Row>
           <p className="text-xs text-slate-500">Die häufigste Spielerfarbe der Übung wird Team A, die zweite Team B, alle weiteren Neutrale.</p>
         </Section>
 
@@ -412,6 +429,20 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
               {[1, 1.25, 1.5, 1.75, 2].map((s) => (
                 <option key={s} value={s}>
                   {s.toLocaleString('de-DE')}
+                </option>
+              ))}
+            </select>
+          </Row>
+          <Row label="Namensschilder">
+            <select
+              className={selectClass}
+              disabled={ro}
+              value={design.player.names}
+              onChange={(e) => onChange((d) => ({ ...d, player: { ...d.player, names: e.target.value as NameTagMode } }))}
+            >
+              {NAME_TAG_MODES.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
                 </option>
               ))}
             </select>

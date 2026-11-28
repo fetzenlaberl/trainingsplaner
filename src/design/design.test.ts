@@ -58,6 +58,25 @@ describe('design templates', () => {
     expect(backup.designs).toEqual([design, copy])
   })
 
+  it('shortens or removes name tags and colors the goals', () => {
+    const drill = fieldVariantDrill('standard')
+    const item = drill.scenes[0].items.find((i) => i.type === 'player')!
+    item.name = 'Max Müller'
+    const short = { ...navy, player: { ...navy.player, names: 'initials' as const }, goalColor: '#ff0000' }
+    const styled = applyDesign(drill, short)
+    expect(styled.scenes[0].items.find((i) => i.id === item.id)!.name).toBe('MM')
+    expect(styled.scenes[0].items.filter((i) => i.type === 'goal').every((g) => g.color === '#ff0000')).toBe(true)
+    // Initials stay initials when applied again; "none" removes the tag.
+    expect(applyDesign(styled, short).scenes[0].items.find((i) => i.id === item.id)!.name).toBe('MM')
+    const none = applyDesign(drill, { ...navy, player: { ...navy.player, names: 'none' } })
+    expect(none.scenes[0].items.find((i) => i.id === item.id)!.name).toBe('')
+    // Designs saved before name tags and goal color keep both as they are.
+    const { goalColor: _g, ...old } = navy
+    const parsed = designFromData({ ...old, player: { shape: 'circle', symbol: 'flat', size: null, facing: false } })
+    expect(parsed?.goalColor).toBeNull()
+    expect(parsed?.player.names).toBe('keep')
+  })
+
   it('rejects broken designs', () => {
     expect(designFromData({ ...navy, teams: ['#fff'] })).toBeNull()
     expect(designFromData({ ...navy, pitch: { color: 'rainbow' } })).toBeNull()
