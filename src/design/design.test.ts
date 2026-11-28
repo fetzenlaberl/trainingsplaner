@@ -83,6 +83,19 @@ describe('design templates', () => {
     expect(applyDesign(fieldVariantDrill('standard'), plain).pitch).toMatchObject({ color: 'black', mowing: 'none' })
   })
 
+  it('keeps an own pitch color and a player size in percent', () => {
+    const { builtIn: _b, ...base } = navy
+    const own = {
+      ...base,
+      pitch: { ...navy.pitch, gradient: { from: '#123456', to: '#123456', direction: 'leftRight' as const } },
+      player: { ...navy.player, size: 1.2 },
+    }
+    expect(designFromData(own)).toEqual(own)
+    const styled = applyDesign(fieldVariantDrill('standard'), own)
+    expect(styled.pitch.gradient?.from).toBe('#123456')
+    expect(styled.scenes[0].items.filter((i) => i.type === 'player').every((p) => p.size === 1.2)).toBe(true)
+  })
+
   it('rejects broken designs', () => {
     expect(designFromData({ ...navy, teams: ['#fff'] })).toBeNull()
     expect(designFromData({ ...navy, pitch: { color: 'rainbow' } })).toBeNull()

@@ -22,6 +22,7 @@ import {
   type PitchLineWidth,
 } from '../field/pitchStyle'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { clampItemSize, MAX_ITEM_SIZE, MIN_ITEM_SIZE } from '../items/palette'
 import { LINE_PATTERN_LABELS, LINE_PATTERNS, LINE_WEIGHT_LABELS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import type { Drill, PlayerShape, SymbolStyle } from '../model/types'
 import { buttonClass, dangerButtonClass, inputClass } from './ui'
@@ -274,6 +275,55 @@ function ColorInput({ value, onChange, label, disabled }: { value: string; onCha
   )
 }
 
+/** Player size in percent (150 % = usual player size), or "keep" = null. */
+function PercentInput({ value, onChange, disabled }: { value: number | null; onChange: (size: number | null) => void; disabled: boolean }) {
+  const [draft, setDraft] = useState(value === null ? '' : String(Math.round(value * 100)))
+  useEffect(() => setDraft(value === null ? '' : String(Math.round(value * 100))), [value])
+  const commit = () => {
+    const percent = Number(draft)
+    if (!draft || !Number.isFinite(percent)) return setDraft(value === null ? '' : String(Math.round(value * 100)))
+    onChange(clampItemSize(percent / 100))
+  }
+  return (
+    <>
+      <span className="flex items-center gap-1 text-xs">
+        <input
+          type="checkbox"
+          disabled={disabled}
+          checked={value === null}
+          onChange={(e) => onChange(e.target.checked ? null : 1.5)}
+        />
+        beibehalten
+      </span>
+      {value !== null && (
+        <span className="flex items-center gap-1">
+          <input
+            type="number"
+            inputMode="numeric"
+            aria-label="Spielergröße in Prozent"
+            title={`${Math.round(MIN_ITEM_SIZE * 100)}–${Math.round(MAX_ITEM_SIZE * 100)} %, 150 % = übliche Spielergröße`}
+            className={`${inputClass} w-20`}
+            disabled={disabled}
+            min={Math.round(MIN_ITEM_SIZE * 100)}
+            max={Math.round(MAX_ITEM_SIZE * 100)}
+            step={5}
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              const percent = Number(e.target.value)
+              // Arrow keys and spinner: take valid values right away; typing finishes on leaving the field.
+              if (e.target.value && percent >= MIN_ITEM_SIZE * 100 && percent <= MAX_ITEM_SIZE * 100) onChange(clampItemSize(percent / 100))
+            }}
+            onBlur={commit}
+            onKeyDown={(e) => e.key === 'Enter' && commit()}
+          />
+          %
+        </span>
+      )}
+    </>
+  )
+}
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <fieldset className="flex flex-col gap-2 rounded-lg border border-slate-700 p-3">
@@ -316,6 +366,54 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
                 </option>
               ))}
             </select>
+          </Row>
+          <div className="grid grid-cols-8 gap-1" role="group" aria-label="Farbpalette des Spielfelds">
+            {PITCH_COLOR_ORDER.map((c) => {
+              const active = !pitch.gradient && pitch.color === c
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={ro}
+                  title={PITCH_COLORS[c].label}
+                  aria-label={`Feldfarbe: ${PITCH_COLORS[c].label}`}
+                  aria-pressed={active}
+                  onClick={() => onChange((d) => ({ ...d, pitch: { ...d.pitch, color: c, gradient: undefined } }))}
+                  className={`aspect-square rounded border-2 disabled:cursor-not-allowed ${active ? 'border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600'}`}
+                  style={{
+                    background:
+                      PITCH_COLORS[c].stripe && pitch.mowing !== 'none'
+                        ? `repeating-linear-gradient(90deg, ${PITCH_COLORS[c].base} 0 4px, ${PITCH_COLORS[c].stripe} 4px 8px)`
+                        : PITCH_COLORS[c].base,
+                  }}
+                />
+              )
+            })}
+          </div>
+          <Row label="Eigene Farbe">
+            <input
+              type="checkbox"
+              disabled={ro}
+              aria-label="Eigene Feldfarbe verwenden"
+              checked={Boolean(pitch.gradient)}
+              onChange={(e) =>
+                onChange((d) => ({
+                  ...d,
+                  pitch: {
+                    ...d.pitch,
+                    gradient: e.target.checked ? { from: PITCH_COLORS[d.pitch.color].base, to: PITCH_COLORS[d.pitch.color].base, direction: 'leftRight' } : undefined,
+                  },
+                }))
+              }
+            />
+            {pitch.gradient && (
+              <ColorInput
+                label="Eigene Feldfarbe"
+                disabled={ro}
+                value={pitch.gradient.from}
+                onChange={(v) => onChange((d) => ({ ...d, pitch: { ...d.pitch, gradient: { from: v, to: v, direction: 'leftRight' } } }))}
+              />
+            )}
           </Row>
           <Row label="Muster">
             <select
@@ -448,19 +546,11 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
             </select>
           </Row>
           <Row label="Größe">
-            <select
-              className={selectClass}
+            <PercentInput
               disabled={ro}
-              value={design.player.size === null ? '' : String(design.player.size)}
-              onChange={(e) => onChange((d) => ({ ...d, player: { ...d.player, size: e.target.value ? Number(e.target.value) : null } }))}
-            >
-              <option value="">Beibehalten</option>
-              {[1, 1.25, 1.5, 1.75, 2].map((s) => (
-                <option key={s} value={s}>
-                  {s.toLocaleString('de-DE')}
-                </option>
-              ))}
-            </select>
+              value={design.player.size}
+              onChange={(size) => onChange((d) => ({ ...d, player: { ...d.player, size } }))}
+            />
           </Row>
           <Row label="Namensschilder">
             <select
