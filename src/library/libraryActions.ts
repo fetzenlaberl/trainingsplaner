@@ -1,4 +1,4 @@
-import { applyDesign, type Design } from '../design/design'
+import { applyDesign, setPlayerNames, type Design } from '../design/design'
 import { renderSceneToCanvas } from '../export/renderDrill'
 import { serializeDrill } from '../model/serialize'
 import type { Drill } from '../model/types'
@@ -42,8 +42,9 @@ export async function saveEditorToLibrary(): Promise<LibraryEntry> {
  * Puts a design onto a saved drill (new preview picture). If the drill is open in the editor
  * without changes, the editor shows the new look too.
  */
-export async function applyDesignToEntry(entry: LibraryEntry, design: Design): Promise<LibraryEntry> {
-  const drill = applyDesign(entry.drill, design)
+export async function applyDesignToEntry(entry: LibraryEntry, design: Design | null, names: Record<string, string> = {}): Promise<LibraryEntry> {
+  const named = setPlayerNames(entry.drill, names)
+  const drill = design ? applyDesign(named, design) : named
   const updated = updateEntry(entry, drill, await createThumbnail(drill), Date.now())
   const wasClean = useLibraryLink.getState().libraryId === entry.id && !isEditorDirty()
   await putEntry(updated)

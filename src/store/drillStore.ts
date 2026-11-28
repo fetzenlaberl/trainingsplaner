@@ -26,7 +26,7 @@ import {
 } from '../items/zones'
 import type { DrillInfo } from '../model/drillInfo'
 import { emptyDrill } from '../model/serialize'
-import { applyDesign as applyDesignToDrill, type Design } from '../design/design'
+import { applyDesign as applyDesignToDrill, setPlayerNames, type Design } from '../design/design'
 import type { Category, Drill, DrillArea, FigurePose, GoalView, Item, PoleLean, SymbolStyle, Line, LineType, PlayerShape, Point, Scene, Zone } from '../model/types'
 
 /** The undoable part of a drill, plus the scene that was shown (undo jumps back to it). */
@@ -89,7 +89,8 @@ export interface DrillState extends DrillContent {
   ) => void
   setOrientation: (orientation: Orientation) => void
   /** Puts a design's look onto the whole drill (all scenes, one undo step). */
-  applyDesign: (design: Design) => void
+  /** Changes name tags (by player id) and puts a design onto the drill (one undo step). */
+  applyDesign: (design: Design | null, names?: Record<string, string>) => void
   select: (id: string | null) => void
   selectMany: (ids: string[]) => void
   /** Adds the element to the selection or removes it again. */
@@ -481,9 +482,11 @@ export const useDrillStore = create<DrillState>((set, get) => ({
       if (pitch.gridLabelStyle === undefined) delete pitch.gridLabelStyle
       return { ...recorded(s), pitch }
     }),
-  applyDesign: (design) =>
+  applyDesign: (design, names = {}) =>
     set((s) => {
-      const styled = applyDesignToDrill({ ...emptyDrill(), fieldType: s.fieldType, pitch: s.pitch, scenes: s.scenes }, design)
+      if (!design && Object.keys(names).length === 0) return {}
+      const named = setPlayerNames({ ...emptyDrill(), fieldType: s.fieldType, pitch: s.pitch, scenes: s.scenes }, names)
+      const styled = design ? applyDesignToDrill(named, design) : named
       return { ...recorded(s), pitch: styled.pitch, scenes: styled.scenes }
     }),
   setOrientation: (orientation) =>

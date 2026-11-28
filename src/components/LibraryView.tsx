@@ -111,17 +111,14 @@ export function LibraryView() {
     setView('editor')
   }
 
-  function handleDesign(entry: LibraryEntry, design: Design | null) {
+  function handleDesign(entry: LibraryEntry, design: Design | null, names: Record<string, string>) {
     setDesignFor(null)
-    if (!design) return
-    if (
-      !window.confirm(
-        `„${entry.drill.title}“ auf das Design „${design.name}“ umstellen? Die gespeicherte Übung wird geändert (Positionen und Texte bleiben).`,
-      )
-    ) {
-      return
-    }
-    void run(() => applyDesignToEntry(entry, design))
+    if (!design && Object.keys(names).length === 0) return
+    const question = design
+      ? `„${entry.drill.title}“ auf das Design „${design.name}“ umstellen? Die gespeicherte Übung wird geändert (Positionen und Texte bleiben).`
+      : `Die Namensschilder in „${entry.drill.title}“ ändern? Die gespeicherte Übung wird geändert.`
+    if (!window.confirm(question)) return
+    void run(() => applyDesignToEntry(entry, design, names))
   }
 
   function handleDelete(entry: LibraryEntry) {
@@ -389,7 +386,7 @@ export function LibraryView() {
         <DesignDialog
           mode="apply"
           drill={designFor.drill}
-          onChoose={(design) => handleDesign(designFor, design)}
+          onChoose={(design, names) => handleDesign(designFor, design, names)}
           onClose={() => setDesignFor(null)}
         />
       )}

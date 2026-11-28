@@ -11,11 +11,17 @@ import { templateDrill, type DrillTemplate } from '../model/templates'
 import { DetailsDialog } from './DetailsDialog'
 import { FieldTemplateDialog } from './FieldTemplateDialog'
 import { DesignDialog } from './DesignDialog'
-import { applyDesign, type Design } from '../design/design'
+import { applyDesign, setPlayerNames, type Design } from '../design/design'
 import type { Drill } from '../model/types'
 import { Dropdown } from './Dropdown'
 import { useExportMenu } from './ExportMenu'
 import { buttonClass, inputClass } from './ui'
+
+/** Drill with changed name tags and, if chosen, in a design. */
+function styled(drill: Drill, design: Design | null, names: Record<string, string>): Drill {
+  const named = setPlayerNames(drill, names)
+  return design ? applyDesign(named, design) : named
+}
 
 const DISCARD_QUESTION =
   'Die Übung im Editor hat Änderungen, die nicht in der Bibliothek gespeichert sind. Trotzdem fortfahren?'
@@ -97,16 +103,16 @@ export function FileBar() {
     }
   }
 
-  function finishOpen(drill: Drill, design: Design | null) {
+  function finishOpen(drill: Drill, design: Design | null, names: Record<string, string>) {
     setOpening(null)
     usePlaybackStore.getState().stop()
-    useDrillStore.getState().loadDrill(design ? applyDesign(drill, design) : drill)
+    useDrillStore.getState().loadDrill(styled(drill, design, names))
     unlinkEditor(null) // a drill from a file is not in the library yet
   }
 
-  function handleApplyDesign(design: Design | null) {
+  function handleApplyDesign(design: Design | null, names: Record<string, string>) {
     setDesignOpen(false)
-    if (design) useDrillStore.getState().applyDesign(design)
+    useDrillStore.getState().applyDesign(design, names)
   }
 
   function startImport(target: ImportTarget) {
@@ -261,7 +267,7 @@ export function FileBar() {
         <DesignDialog
           mode="template"
           drill={templateDesign}
-          onChoose={(design) => loadTemplate(design ? applyDesign(templateDesign, design) : templateDesign)}
+          onChoose={(design, names) => loadTemplate(styled(templateDesign, design, names))}
           onClose={() => setTemplateDesign(null)}
         />
       )}
@@ -269,7 +275,7 @@ export function FileBar() {
         <DesignDialog
           mode="open"
           drill={opening}
-          onChoose={(design) => finishOpen(opening, design)}
+          onChoose={(design, names) => finishOpen(opening, design, names)}
           onClose={() => setOpening(null)}
         />
       )}

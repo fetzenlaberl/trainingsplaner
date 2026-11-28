@@ -42,6 +42,8 @@ export interface Design {
     facing: boolean
     /** Name tags: keep them, shorten to initials ("MM") or remove them */
     names: NameTagMode
+    /** Number or text inside the player: keep it or show players without it */
+    numbers: NumberMode
   }
   /** Cones and discs */
   coneColor: string
@@ -51,6 +53,12 @@ export interface Design {
   /** Filled zones (zones without fill count as markings and take the pitch line color) */
   zone: { color: string; fillColor: string; fillOpacity: number }
 }
+
+export type NumberMode = 'keep' | 'none'
+export const NUMBER_MODES: { value: NumberMode; label: string }[] = [
+  { value: 'keep', label: 'Beibehalten' },
+  { value: 'none', label: 'Ohne Nummer' },
+]
 
 export type NameTagMode = 'keep' | 'initials' | 'none'
 export const NAME_TAG_MODES: { value: NameTagMode; label: string }[] = [
@@ -99,7 +107,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('grass', 'Rasen klassisch', {
     pitch: { color: 'darkGreenPlain', lineWidth: 'thin', roundedCorners: true },
     teams: ['#2563eb', '#dc2626', '#facc15'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep', numbers: 'keep' },
     coneColor: '#f97316',
     goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#ffffff'),
@@ -108,7 +116,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('navy', 'Dunkelblau / Türkis', {
     pitch: { color: 'navy', lineColor: TURQUOISE_LINE, lineWidth: 'thin', roundedCorners: true },
     teams: ['#facc15', '#ef4444', '#38bdf8'],
-    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep' },
+    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep', numbers: 'keep' },
     coneColor: '#f97316',
     goalColor: '#ffffff',
     lines: lineSet('#ffffff', TURQUOISE_LINE),
@@ -117,7 +125,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('blackRed', 'Schwarz / Rot', {
     pitch: { color: 'black', lineColor: '#dc2626', lineWidth: 'thin' },
     teams: ['#ffffff', '#dc2626', '#9ca3af'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep', numbers: 'keep' },
     coneColor: '#dc2626',
     goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#dc2626'),
@@ -126,7 +134,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('blackOrange', 'Schwarz / Orange', {
     pitch: { color: 'black', lineColor: '#f97316', lineWidth: 'thin' },
     teams: ['#f97316', '#ffffff', '#facc15'],
-    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep' },
+    player: { shape: 'circle', symbol: null, size: null, facing: false, names: 'keep', numbers: 'keep' },
     coneColor: '#f97316',
     goalColor: '#ffffff',
     lines: lineSet('#ffffff', '#f97316'),
@@ -135,7 +143,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
   builtIn('whiteboard', 'Whiteboard (weiß)', {
     pitch: { color: 'white', lineWidth: 'thin' },
     teams: ['#1d4ed8', '#dc2626', '#f97316'],
-    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep' },
+    player: { shape: 'circle', symbol: 'flat', size: null, facing: false, names: 'keep', numbers: 'keep' },
     coneColor: '#f97316',
     goalColor: '#111827',
     lines: lineSet('#111827', '#111827'),
@@ -150,7 +158,7 @@ export const BUILT_IN_DESIGNS: Design[] = [
  * Player colors of a drill, most used first (ties: first seen first). Used to map them onto
  * team A, team B and the neutrals.
  */
-export function playerColorOrder(drill: Drill): string[] {
+export function playerColorOrder(drill: Pick<Drill, 'scenes'>): string[] {
   const counts = new Map<string, number>()
   // Count each player once (by id), in the scene where it first appears.
   const seen = new Set<string>()
@@ -163,6 +171,39 @@ export function playerColorOrder(drill: Drill): string[] {
     }
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([color]) => color)
+}
+
+/** A player of the drill with its name tag (first appearance over all scenes). */
+export interface PlayerNameEntry {
+  id: string
+  color: string
+  label: string
+  name: string
+}
+
+/** All players of the drill, grouped by team color (most used first), then by number. */
+export function playerNameList(drill: Pick<Drill, 'scenes'>): PlayerNameEntry[] {
+  const found = new Map<string, PlayerNameEntry>()
+  for (const scene of drill.scenes)
+    for (const it of scene.items)
+      if (it.type === 'player' && !found.has(it.id)) found.set(it.id, { id: it.id, color: it.color, label: it.label, name: it.name })
+  const order = playerColorOrder(drill)
+  const rank = (c: string) => order.indexOf(c.toLowerCase())
+  return [...found.values()].sort(
+    (a, b) => rank(a.color) - rank(b.color) || a.label.localeCompare(b.label, 'de', { numeric: true }),
+  )
+}
+
+/** Sets the name tags of players (by id) in all scenes; an empty name removes the tag. */
+export function setPlayerNames<T extends Pick<Drill, 'scenes'>>(drill: T, names: Record<string, string>): T {
+  if (Object.keys(names).length === 0) return drill
+  return {
+    ...drill,
+    scenes: drill.scenes.map((scene) => ({
+      ...scene,
+      items: scene.items.map((it) => (it.id in names && it.type === 'player' ? { ...it, name: names[it.id].trim().slice(0, 40) } : it)),
+    })),
+  }
 }
 
 /** Puts the design's look onto the whole drill (all scenes); positions and texts stay. */
@@ -183,6 +224,7 @@ export function applyDesign(drill: Drill, design: Design): Drill {
       if (design.player.facing) delete next.facing
       else next.facing = false
       next.name = styledName(it.name, design.player.names)
+      if (design.player.numbers === 'none') next.label = ''
       return next
     }
     if (CONE_TYPES.has(it.type)) return { ...it, color: design.coneColor }
@@ -262,7 +304,7 @@ export function designFromDrill(drill: Drill, base: Design, name: string, id: st
     pitch: cleanPitch(pitch),
     teams: [order[0] ?? base.teams[0], order[1] ?? base.teams[1], order[2] ?? base.teams[2]],
     player: firstPlayer
-      ? { shape: firstPlayer.shape, symbol: firstPlayer.symbol ?? null, size: null, facing: firstPlayer.facing !== false, names: 'keep' }
+      ? { shape: firstPlayer.shape, symbol: firstPlayer.symbol ?? null, size: null, facing: firstPlayer.facing !== false, names: 'keep', numbers: 'keep' }
       : { ...base.player },
     coneColor: cone?.color ?? base.coneColor,
     goalColor: goal?.color ?? base.goalColor,
@@ -328,6 +370,7 @@ export function designFromData(value: unknown): Design | null {
     typeof p.facing !== 'boolean' ||
     // Name tags and goal color came later; older designs keep both as they are.
     !(p.names === undefined || NAME_TAG_MODES.some((m) => m.value === p.names)) ||
+    !(p.numbers === undefined || NUMBER_MODES.some((m) => m.value === p.numbers)) ||
     !(value.goalColor === undefined || value.goalColor === null || isHexColor(value.goalColor))
   ) {
     return null
@@ -364,6 +407,7 @@ export function designFromData(value: unknown): Design | null {
       size: p.size === null ? null : clampItemSize(p.size as number),
       facing: p.facing,
       names: (p.names as NameTagMode | undefined) ?? 'keep',
+      numbers: (p.numbers as NumberMode | undefined) ?? 'keep',
     },
     coneColor: value.coneColor,
     goalColor: (value.goalColor as string | null | undefined) ?? null,

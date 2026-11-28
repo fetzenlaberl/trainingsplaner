@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   copyDesign,
   createDesignId,
@@ -6,9 +6,13 @@ import {
   designFromDrill,
   markingColor,
   NAME_TAG_MODES,
+  NUMBER_MODES,
+  playerNameList,
   type Design,
   type DesignLineType,
   type NameTagMode,
+  type NumberMode,
+  type PlayerNameEntry,
 } from '../design/design'
 import { deleteDesign, listDesigns, putDesigns } from '../design/designDb'
 import {
@@ -51,7 +55,8 @@ export interface DesignDialogProps {
   /** 'apply': design window of the editor; 'open': choose a design while opening a file; 'template': after choosing a template */
   mode: 'apply' | 'open' | 'template'
   /** Chosen design, or null = keep the look (only when opening) */
-  onChoose: (design: Design | null) => void
+  /** design null = look stays as it is; names = changed name tags by player id */
+  onChoose: (design: Design | null, names: Record<string, string>) => void
   onClose: () => void
 }
 
@@ -74,6 +79,9 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
   const [designs, setDesigns] = useState<Design[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const players = useMemo(() => playerNameList(drill), [drill])
+  const [names, setNames] = useState<Record<string, string>>({})
+  const namesChanged = Object.keys(names).length > 0
 
   useEffect(() => {
     let alive = true
@@ -186,7 +194,10 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
               ))}
             </div>
 
-            {selected && <DesignEditor design={selected} onChange={change} />}
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              {selected && <DesignEditor design={selected} onChange={change} />}
+              <NameTagEditor players={players} names={names} onChange={setNames} />
+            </div>
           </div>
         )}
 
@@ -207,8 +218,13 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
             </button>
           )}
           <span className="flex-1" />
+          {mode === 'apply' && players.length > 0 && (
+            <button type="button" className={buttonClass} disabled={!namesChanged} onClick={() => onChoose(null, names)}>
+              Nur Namen übernehmen
+            </button>
+          )}
           {mode !== 'apply' ? (
-            <button type="button" className={buttonClass} onClick={() => onChoose(null)}>
+            <button type="button" className={buttonClass} onClick={() => onChoose(null, names)}>
               {mode === 'open' ? 'Wie in der Datei' : 'Wie in der Vorlage'}
             </button>
           ) : (
@@ -220,7 +236,7 @@ export function DesignDialog({ drill, mode, onChoose, onClose }: DesignDialogPro
             type="button"
             className={buttonClass.replace('bg-slate-800', 'bg-emerald-700').replace('hover:bg-slate-700', 'hover:bg-emerald-600')}
             disabled={!selected}
-            onClick={() => selected && onChoose(selected)}
+            onClick={() => selected && onChoose(selected, names)}
           >
             {mode === 'apply' ? 'Auf diese Übung anwenden' : mode === 'open' ? 'Mit diesem Design öffnen' : 'Mit diesem Design starten'}
           </button>
@@ -332,6 +348,82 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</legend>
       {children}
     </fieldset>
+  )
+}
+
+/** Name tags of the players in this drill: add, change or remove (applied together with the design). */
+function NameTagEditor({
+  players,
+  names,
+  onChange,
+}: {
+  players: PlayerNameEntry[]
+  names: Record<string, string>
+  onChange: (names: Record<string, string>) => void
+}) {
+  if (players.length === 0) return null
+  const value = (id: string, name: string) => names[id] ?? name
+  function set(id: string, original: string, name: string) {
+    const next = { ...names }
+    if (name === original) delete next[id]
+    else next[id] = name
+    onChange(next)
+  }
+  const anyName = players.some((p) => value(p.id, p.name).trim())
+  return (
+    <Section title="Namensschilder dieser Übung">
+      <p className="text-xs text-slate-400">
+        Namen eintippen, ändern oder mit ✕ löschen. Sie werden mit dem Design übernommen und gelten in allen Szenen; danach gilt die Einstellung
+        „Namensschilder“ oben.
+      </p>
+      <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+        {players.map((p) => {
+          const v = value(p.id, p.name)
+          const who = p.label || 'ohne Nummer'
+          return (
+            <div key={p.id} className="flex items-center gap-2">
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                style={{ background: p.color }}
+                aria-hidden="true"
+              >
+                {p.label}
+              </span>
+              <input
+                className={`${inputClass} min-w-0 flex-1`}
+                value={v}
+                maxLength={40}
+                placeholder="Name hinzufügen"
+                aria-label={`Name für Spieler ${who}`}
+                onChange={(e) => set(p.id, p.name, e.target.value)}
+              />
+              <button
+                type="button"
+                className={`${buttonClass} w-9 justify-center px-0`}
+                disabled={!v}
+                aria-label={`Name von Spieler ${who} löschen`}
+                onClick={() => set(p.id, p.name, '')}
+              >
+                ✕
+              </button>
+            </div>
+          )
+        })}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className={buttonClass}
+          disabled={!anyName}
+          onClick={() => onChange(Object.fromEntries(players.filter((p) => p.name).map((p) => [p.id, ''])))}
+        >
+          Alle Namen löschen
+        </button>
+        <button type="button" className={buttonClass} disabled={Object.keys(names).length === 0} onClick={() => onChange({})}>
+          Änderungen verwerfen
+        </button>
+      </div>
+    </Section>
   )
 }
 
@@ -553,6 +645,20 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
               value={design.player.size}
               onChange={(size) => onChange((d) => ({ ...d, player: { ...d.player, size } }))}
             />
+          </Row>
+          <Row label="Nummer">
+            <select
+              className={selectClass}
+              disabled={ro}
+              value={design.player.numbers}
+              onChange={(e) => onChange((d) => ({ ...d, player: { ...d.player, numbers: e.target.value as NumberMode } }))}
+            >
+              {NUMBER_MODES.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
           </Row>
           <Row label="Namensschilder">
             <select

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { fieldVariantDrill } from '../model/fieldTemplates'
 import { parseDrill, serializeDrill } from '../model/serialize'
 import { parseBackup, serializeBackup } from '../library/library'
-import { applyDesign, BUILT_IN_DESIGNS, copyDesign, designFromData, designFromDrill, markingColor, playerColorOrder } from './design'
+import { applyDesign, BUILT_IN_DESIGNS, copyDesign, designFromData, designFromDrill, markingColor, playerColorOrder, playerNameList, setPlayerNames } from './design'
 
 const navy = BUILT_IN_DESIGNS.find((d) => d.id === 'design-builtin-navy')!
 const whiteboard = BUILT_IN_DESIGNS.find((d) => d.id === 'design-builtin-whiteboard')!
@@ -94,6 +94,25 @@ describe('design templates', () => {
     const styled = applyDesign(fieldVariantDrill('standard'), own)
     expect(styled.pitch.gradient?.from).toBe('#123456')
     expect(styled.scenes[0].items.filter((i) => i.type === 'player').every((p) => p.size === 1.2)).toBe(true)
+  })
+
+  it('can show players without numbers and edit their name tags', () => {
+    const drill = fieldVariantDrill('standard')
+    const plain = applyDesign(drill, { ...navy, player: { ...navy.player, numbers: 'none' } })
+    expect(plain.scenes[0].items.filter((i) => i.type === 'player').every((p) => p.label === '')).toBe(true)
+    // Older designs without the setting keep the numbers.
+    const { numbers: _n, ...oldPlayer } = navy.player
+    expect(designFromData({ ...navy, player: oldPlayer })?.player.numbers).toBe('keep')
+
+    const list = playerNameList(drill)
+    expect(list.length).toBe(drill.scenes[0].items.filter((i) => i.type === 'player').length)
+    const [a, b] = list
+    const named = setPlayerNames(drill, { [a.id]: '  Max Müller ', [b.id]: '' })
+    const after = playerNameList(named)
+    expect(after.find((p) => p.id === a.id)?.name).toBe('Max Müller')
+    expect(after.find((p) => p.id === b.id)?.name).toBe('')
+    expect(setPlayerNames(drill, {})).toBe(drill)
+    expect(parseDrill(serializeDrill(named))).toEqual(named)
   })
 
   it('rejects broken designs', () => {
