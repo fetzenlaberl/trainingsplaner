@@ -10,6 +10,7 @@ import {
   Y_PASS_VARIANTS,
   yPassDrill,
 } from '../model/fieldTemplates'
+import { EXTRA_GROUPS, EXTRA_TEMPLATES, extraTemplateDrill } from '../model/extraTemplates'
 import type { Drill } from '../model/types'
 import { buttonClass } from './ui'
 
@@ -93,6 +94,20 @@ export function FieldTemplateDialog({ onChoose, onClose }: { onChoose: (drill: D
             ))}
           </div>
         </section>
+
+        {EXTRA_GROUPS.map(({ group, title }) => (
+          <section key={group} className="flex flex-col gap-2">
+            <h3 className="text-sm font-medium text-slate-300">{title}</h3>
+            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {EXTRA_TEMPLATES.filter((t) => t.group === group).map((t) => (
+                <button key={t.key} type="button" className={tileClass} onClick={() => onChoose(extraTemplateDrill(t.key))}>
+                  <span className="font-semibold">{t.name}</span>
+                  <span className="text-xs text-slate-400">{t.hint}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
 
         <div className="flex justify-end">
           <button type="button" className={buttonClass} onClick={onClose}>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { getViewport } from '../field/dimensions'
 import { areaForPlayers, customFieldScene, DEFAULT_FIELD_DRAW_OPTIONS, FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, sizeOverviewDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
+import { EXTRA_GROUPS, EXTRA_TEMPLATES, extraTemplateDrill } from './extraTemplates'
 import { parseDrill, serializeDrill } from './serialize'
 import type { Drill } from './types'
 
@@ -9,6 +10,7 @@ const all: Drill[] = [
   ...FIELD_VARIANTS.map((v) => fieldVariantDrill(v.key)),
   ...Y_PASS_VARIANTS.map((v) => yPassDrill(v.key)),
   sizeOverviewDrill(),
+  ...EXTRA_TEMPLATES.map((t) => extraTemplateDrill(t.key)),
 ]
 
 describe('field templates', () => {
@@ -40,6 +42,16 @@ describe('field templates', () => {
     expect(drill.scenes[0].items.some((i) => i.type === 'text' && i.label === '16–20 m')).toBe(true)
     const nine = sizeFormatDrill(SIZE_FORMATS[8])
     expect(nine.scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(18)
+  })
+
+  it('builds the extra templates in every group with unique keys', () => {
+    expect(new Set(EXTRA_TEMPLATES.map((t) => t.key)).size).toBe(EXTRA_TEMPLATES.length)
+    for (const { group } of EXTRA_GROUPS) expect(EXTRA_TEMPLATES.some((t) => t.group === group)).toBe(true)
+    const sixGoals = extraTemplateDrill('sixGoals').scenes[0].items
+    expect(sixGoals.filter((i) => i.type === 'minigoal')).toHaveLength(6)
+    expect(sixGoals.filter((i) => i.type === 'player')).toHaveLength(18)
+    expect(extraTemplateDrill('plusOne').fieldType).toBe('half')
+    expect(extraTemplateDrill('structure325').pitch.color).toBe('black')
   })
 
   it('builds the goal variants', () => {

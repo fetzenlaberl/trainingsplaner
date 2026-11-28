@@ -21,7 +21,7 @@ const PASS_COLOR = '#facc15'
 // ---------------------------------------------------------------------------------------
 // Small building blocks
 
-interface Builder {
+export interface Builder {
   items: Item[]
   lines: Line[]
   zones: Zone[]
@@ -29,12 +29,12 @@ interface Builder {
   k: number
 }
 
-function builder(area: FieldArea): Builder {
+export function builder(area: FieldArea): Builder {
   const k = Math.min(1, Math.max(0.5, Math.max(area.length, area.width) / 50))
   return { items: [], lines: [], zones: [], k }
 }
 
-function addItem(b: Builder, type: ItemType, x: number, y: number, extra: Partial<Item> = {}): void {
+export function addItem(b: Builder, type: ItemType, x: number, y: number, extra: Partial<Item> = {}): void {
   b.items.push({
     id: `item-tpl-${b.items.length + 1}`,
     type,
@@ -54,7 +54,7 @@ function addItem(b: Builder, type: ItemType, x: number, y: number, extra: Partia
   })
 }
 
-function addLine(
+export function addLine(
   b: Builder,
   type: LineType,
   points: Point[],
@@ -73,7 +73,7 @@ function addLine(
 }
 
 /** The playing field: white outline over the whole area, optionally dashed. */
-function addOutline(b: Builder, area: FieldArea, dashed = false, style: Partial<Zone> = {}): void {
+export function addOutline(b: Builder, area: FieldArea, dashed = false, style: Partial<Zone> = {}): void {
   b.zones.push({
     id: 'zone-tpl-field',
     shape: 'rect',
@@ -93,7 +93,7 @@ function addOutline(b: Builder, area: FieldArea, dashed = false, style: Partial<
   })
 }
 
-function addCornerCones(b: Builder, area: FieldArea): void {
+export function addCornerCones(b: Builder, area: FieldArea): void {
   for (const [x, y] of [
     [0, 0],
     [area.length, 0],
@@ -108,7 +108,7 @@ function addCornerCones(b: Builder, area: FieldArea): void {
  * A goal standing on a field line with its opening towards `facing` (degrees, 0 = +x).
  * The net lies outside the line.
  */
-function addGoal(b: Builder, type: 'goal' | 'minigoal', x: number, y: number, facing: number, size = 1): void {
+export function addGoal(b: Builder, type: 'goal' | 'minigoal', x: number, y: number, facing: number, size = 1): void {
   const depth = type === 'goal' ? 2 : MINIGOAL.depth
   const rad = (facing * Math.PI) / 180
   const back = (depth * clampItemSize(size)) / 2
@@ -116,7 +116,7 @@ function addGoal(b: Builder, type: 'goal' | 'minigoal', x: number, y: number, fa
 }
 
 /** Size of the mini goals on a field (bigger on bigger fields, about 2–3 m wide). */
-function miniGoalSize(area: FieldArea): number {
+export function miniGoalSize(area: FieldArea): number {
   return Math.min(2.5, Math.max(1.5, Math.min(area.length, area.width) / 10))
 }
 
@@ -125,7 +125,7 @@ function miniGoalSize(area: FieldArea): number {
  * side 'bottom' = along y = width (length label), 'left' = along x = 0 (width label);
  * `screenUp` turns the text so it reads along the side on screen.
  */
-function addSizeLabel(
+export function addSizeLabel(
   b: Builder,
   area: FieldArea,
   side: 'bottom' | 'left',
@@ -188,12 +188,12 @@ function addTeam(b: Builder, area: FieldArea, color: string, rows: number[], own
   })
 }
 
-function addBall(b: Builder, x: number, y: number): void {
+export function addBall(b: Builder, x: number, y: number): void {
   addItem(b, 'ball', x, y, { size: Math.max(0.7, b.k) })
 }
 
 /** A drill on an empty field of its own size (no grid). */
-function fieldDrill(
+export function fieldDrill(
   title: string,
   area: FieldArea,
   b: Builder,
