@@ -2398,15 +2398,214 @@ function midBlock442(name: string): Drill {
 }
 
 // ---------------------------------------------------------------------------------------
+// Pressing and counter-pressing
+
+const TEAL = '#14b8a6'
+
+/** Round highlight on the field (e.g. the space around the ball). */
+function spot(b: Builder, [x, y]: Pt, radius: number): void {
+  rect(b, x - radius, y - radius, x + radius, y + radius, { shape: 'ellipse', color: TEAL, fillColor: TEAL, fillOpacity: 0.45 })
+}
+
+/** Pass or shot in a team color with a step number. */
+function teamPass(b: Builder, from: Pt, to: Pt, color: string, step: number, type: 'pass' | 'shot' = 'pass'): void {
+  addLine(b, type, pts([from, to]), { color, step })
+}
+
+function counterPressMiniGoals(name: string): Drill {
+  const area = { length: 25, width: 35 }
+  const b = builder(area)
+  addOutline(b, area)
+  for (const y of [5.5, 29.5]) mark(b, [[0, y], [25, y]])
+  addGoal(b, 'goal', 0, 17.5, 0, 0.75)
+  addGoal(b, 'goal', 25, 17.5, 180, 0.75)
+  for (const y of [14.6, 20.4]) {
+    addGoal(b, 'minigoal', 14.6, y, 0, 1.5)
+    addGoal(b, 'minigoal', 10.4, y, 180, 1.5)
+  }
+  player(b, GREY, 'TW', [1.4, 17.5])
+  player(b, GREY, 'TW', [23.6, 17.5], { rotation: 180 })
+  team(b, RED, [
+    ['', 4.3, 2.8],
+    ['', 18.2, 3.2],
+    ['', 5.3, 32.5],
+    ['', 18.3, 33],
+  ])
+  team(b, BLUE, [
+    ['', 8.9, 10.2],
+    ['', 5.2, 10.2],
+    ['', 9.1, 24.3],
+    ['', 5.1, 23.4],
+  ])
+  player(b, YELLOW, 'J', [8.9, 15.3])
+  teamPass(b, [1.8, 16], [4.3, 3.8], RED, 1)
+  teamPass(b, [5, 3.6], [8.6, 9.3], RED, 2)
+  teamPass(b, [8.6, 11.2], [5.5, 22.5], BLUE, 3)
+  teamPass(b, [4.4, 24], [0.6, 19.8], BLUE, 4, 'shot')
+  addBall(b, 2.3, 16.6)
+  return areaDrill(name, area, b, {
+    area: 'drill',
+    category: 'game',
+    players: 11,
+    orientation: 'portrait',
+    description:
+      'Blau (4) spielt mit dem gelben Joker im Mittelfeld, Rot (4) steht in den Außenzonen. Der Torwart eröffnet über einen roten Außenspieler, Blau kombiniert mit den Außenspielern und schließt auf ein großes Tor ab.\n' +
+      'Gegenpressing: Nach einem Ballverlust jagt Blau den Ball sofort zurück. Wer den Ball erobert, kann in 6 Sekunden auf eines der 4 Minitore in der Mitte treffen – danach zählen nur noch die großen Tore.\n' +
+      'Rollen nach 3 Minuten tauschen.',
+  })
+}
+
+/** Players of the pressing pictures on the half pitch (own goal at the bottom, blue defends). */
+const PRESS_BLUE: [string, number, number][] = [
+  ['', 20, 16.7],
+  ['', 18.8, 27.5],
+  ['', 18.8, 39.4],
+  ['', 19.2, 51.1],
+  ['', 28, 19],
+  ['', 25.8, 29.7],
+  ['', 25.3, 37.9],
+  ['', 26.9, 47.9],
+  ['', 35.3, 27.5],
+  ['', 34.7, 37.7],
+]
+const PRESS_RED: [string, number, number][] = [
+  ['', 27.6, 7.8],
+  ['', 23.3, 22.3],
+  ['', 21.3, 33.4],
+  ['', 20.9, 43.4],
+  ['', 29.2, 30.7],
+  ['', 28.7, 39.6],
+  ['', 27.6, 59.4],
+  ['', 34.9, 32.6],
+  ['', 41.9, 20.8],
+  ['', 40.8, 46.3],
+]
+
+function pressingHalf(b: Builder): void {
+  rect(b, PA_NEAR, SIDE_L, 33, SIDE_R, { fillOpacity: 0.12, color: WHITE })
+  for (const y of [SIDE_L, SIDE_R]) mark(b, [[PA_NEAR, y], [HALF, y]])
+  mark(b, [[33, SIDE_L], [33, SIDE_R]])
+  for (const y of [17.5, 50.5]) addGoal(b, 'minigoal', 51.2, y, 180, 1.5)
+  player(b, GREY, 'TW', [2, 34])
+  team(b, BLUE, PRESS_BLUE)
+  team(b, RED, PRESS_RED, 180)
+}
+
+function closestPresses(name: string): Drill {
+  const b = builder(FULL)
+  spot(b, [23.3, 22.3], 4.5)
+  pressingHalf(b)
+  teamPass(b, [40.9, 21], [24.6, 22.2], RED, 1)
+  run(b, [[27, 19.5], [24.9, 21.1]], 'dashed', BLUE)
+  addBall(b, 41, 22.2)
+  return pitchDrill(name, 'half', b, {
+    area: 'drill',
+    category: 'tactics',
+    players: 21,
+    description:
+      'Rot greift auf das große Tor an, Blau verteidigt im markierten Mittelfeldraum zwischen den gestrichelten Linien. Die roten Spieler ganz außen sind Anspieler.\n' +
+      'Regel: Der Blaue, der dem Ball am nächsten ist, presst sofort (markierter Kreis um den Passempfänger) – die anderen rücken nach und schließen die Passwege. Nach Ballgewinn kontert Blau auf die 2 Minitore an der Mittellinie.',
+  })
+}
+
+function decisionDistances(name: string): Drill {
+  const b = builder(FULL)
+  spot(b, [26.9, 47.9], 4.5)
+  pressingHalf(b)
+  addBall(b, 29.2, 48)
+  return pitchDrill(name, 'half', b, {
+    area: 'drill',
+    category: 'tactics',
+    players: 21,
+    description:
+      'Gleicher Aufbau wie „Nächster Spieler presst“: Der Blaue im markierten Kreis hat den Ball erobert.\n' +
+      'Entscheidung: sofort nach vorne auf die Minitore kontern, auf die andere Seite verlagern oder sichern. Rot schaltet um, hält die Abstände zwischen den Linien klein (10–12 m) und läuft den Ballführenden so an, dass der Weg nach vorne zu ist.',
+  })
+}
+
+/** Square of 40 × 26 m with a dashed inner square and four red outside players. */
+function pressSquare(b: Builder, area: { length: number; width: number }): void {
+  addOutline(b, area)
+  rect(b, 13.5, 6.5, 26.5, 19.5, { dashed: true })
+  team(b, RED, [
+    ['', 20, -1.8],
+    ['', 20, 27.8],
+    ['', -1.8, 13],
+    ['', 41.8, 13],
+  ])
+  team(b, BLUE, [
+    ['', 7.9, 5],
+    ['', 30.4, 4.8],
+    ['', 6.3, 13],
+    ['', 33.2, 12.9],
+    ['', 8.7, 22],
+    ['', 30.3, 22],
+  ])
+}
+
+function counterPressEight(name: string): Drill {
+  const area = { length: 40, width: 26 }
+  const b = builder(area)
+  pressSquare(b, area)
+  team(b, RED, [
+    ['', 15.3, 8.8],
+    ['', 24, 8.8],
+    ['', 15.3, 16.8],
+    ['', 24, 16.8],
+  ])
+  team(b, BLUE, [
+    ['', 18.5, 10.9],
+    ['', 21.3, 14],
+  ])
+  addBall(b, 16.4, 9.6)
+  return areaDrill(name, area, b, {
+    area: 'drill',
+    category: 'game',
+    players: 16,
+    description:
+      'Rot hält den Ball im inneren Quadrat 4 gegen 2. Gewinnt Blau den Ball, spielt es ihn aus dem Quadrat zu einem blauen Spieler außen – jetzt heißt es 8 gegen 4 im großen Feld.\n' +
+      'Rot muss den Ball sofort zurückerobern (Gegenpressing), die 4 roten Außenspieler helfen als Anspielstationen. Punkte: Rot für 6 Pässe im Quadrat oder Ballgewinn außen, Blau für 8 Pässe in Folge.',
+  })
+}
+
+function blockTheLine(name: string): Drill {
+  const area = { length: 40, width: 26 }
+  const b = builder(area)
+  pressSquare(b, area)
+  team(b, RED, [
+    ['', 18.1, 8.8],
+    ['', 17.6, 16.8],
+    ['', 8.7, 10],
+    ['', 11.1, 15.9],
+  ])
+  team(b, BLUE, [
+    ['', 18.5, 10.9],
+    ['', 21.9, 15],
+  ])
+  teamPass(b, [7.9, 6.3], [8.3, 8.8], BLUE, 1)
+  teamPass(b, [7.7, 10.4], [-0.6, 12.7], RED, 2)
+  addBall(b, 7.9, 6.4)
+  return areaDrill(name, area, b, {
+    area: 'drill',
+    category: 'game',
+    players: 16,
+    description:
+      'Aufbau wie „8 gegen 8 Gegenpressing“: Blau hat den Ball außen. Der nächste Rote läuft so an, dass er die Passlinie zum nächsten Blauen mit dem Körper zustellt (Deckungsschatten).\n' +
+      'Spielt Blau trotzdem in diese Linie, fängt Rot ab und spielt sofort zu einem roten Außenspieler. Coaching: im Bogen anlaufen, nicht gerade auf den Ball.',
+  })
+}
+
+// ---------------------------------------------------------------------------------------
 // Catalog
 
-export type ExtraGroup = 'zoning' | 'running' | 'rondos' | 'games' | 'tactics'
+export type ExtraGroup = 'zoning' | 'running' | 'rondos' | 'games' | 'pressing' | 'tactics'
 
 export const EXTRA_GROUPS: { group: ExtraGroup; title: string }[] = [
   { group: 'zoning', title: 'Raumaufteilung Großfeld' },
   { group: 'running', title: 'Laufübungen' },
   { group: 'rondos', title: 'Rondos und Positionsspiel' },
   { group: 'games', title: 'Spielformen' },
+  { group: 'pressing', title: 'Pressing und Gegenpressing' },
   { group: 'tactics', title: 'Taktik und Aufstellung' },
 ]
 
@@ -2470,6 +2669,11 @@ export const EXTRA_TEMPLATES: ExtraTemplate[] = [
   { key: 'counter3', group: 'games', name: 'Konter in 3 Phasen', hint: '2:1, dann 3:2 zurück', build: counterThreePhases },
   { key: 'waves', group: 'games', name: 'Wellen 2:0 → 2:2 → 3:3', hint: '36 × 24 m, zwei Tore', build: waveTransitions },
   { key: 'highPress', group: 'games', name: 'Hohes Pressing (Großfeld)', hint: 'Gegen Aufbau, 3 Minitore', build: highPressFull },
+  { key: 'pressMiniGoals', group: 'pressing', name: 'Gegenpressing mit 4 Minitoren', hint: '4:4 + Joker, Außenzonen, 25 × 35 m', build: counterPressMiniGoals },
+  { key: 'closestPresses', group: 'pressing', name: 'Nächster Spieler presst', hint: 'Halbfeld, Mittelfeldraum, 2 Minitore', build: closestPresses },
+  { key: 'decisionDistances', group: 'pressing', name: 'Entscheidung und Abstände', hint: 'Nach Ballgewinn kontern oder sichern', build: decisionDistances },
+  { key: 'counterPress8', group: 'pressing', name: '8 gegen 8 Gegenpressing', hint: 'Innen 4:2, außen 8:4, 40 × 26 m', build: counterPressEight },
+  { key: 'blockLine', group: 'pressing', name: 'Passlinie zustellen', hint: 'Anlaufen im Deckungsschatten', build: blockTheLine },
   { key: 'widthDepth', group: 'tactics', name: 'Breite und Tiefe (Rollen)', hint: 'Pinner, Floater, Anker', build: widthAndDepth },
   { key: 'lanes235', group: 'tactics', name: '2-3-5 in fünf Korridoren', hint: 'Flügel, Halbräume, Zentrum', build: lanes235 },
   { key: 'threeOneSix', group: 'tactics', name: '3-1-6 gegen tiefen Block', hint: 'Mit Restverteidigung', build: threeOneSix },
