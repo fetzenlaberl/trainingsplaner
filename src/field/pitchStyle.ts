@@ -42,6 +42,9 @@ export const PITCH_LINE_WIDTHS: { value: PitchLineWidth; label: string; factor: 
   { value: 'extraThick', label: 'Extra dick', factor: 2.6 },
 ]
 
+/** Muted turquoise for markings on dark pitches */
+export const TURQUOISE_LINE = '#3fa9b8'
+
 /** Colors for the pitch markings; null = usual color of the pitch (white, dark on the white pitch) */
 export const PITCH_LINE_COLORS: { value: string | null; label: string }[] = [
   { value: null, label: 'Automatisch' },
@@ -53,6 +56,7 @@ export const PITCH_LINE_COLORS: { value: string | null; label: string }[] = [
   { value: '#2563eb', label: 'Blau' },
   { value: '#f97316', label: 'Orange' },
   { value: '#22c55e', label: 'Grün' },
+  { value: TURQUOISE_LINE, label: 'Türkis' },
 ]
 
 /** Mowing pattern; missing = the usual pattern of the chosen grass design */

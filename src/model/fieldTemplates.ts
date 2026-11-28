@@ -3,6 +3,7 @@
 // items, zones and lines on an empty field of the right size, so it stays editable.
 
 import { areaRunoff, MAX_AREA, MIN_AREA, PITCH, type FieldArea } from '../field/dimensions'
+import { TURQUOISE_LINE } from '../field/pitchStyle'
 import type { LinePattern, LineWeight } from '../lines/styles'
 import { MINIGOAL } from '../items/equipment'
 import { zoneCornerRadius } from '../items/zones'
@@ -603,8 +604,8 @@ function possessionTransferDrill(name: string): Drill {
     width: size.length,
     height: size.width,
     rotation: 0,
-    color: WHITE,
-    fillColor: WHITE,
+    color: TURQUOISE_LINE,
+    fillColor: TURQUOISE_LINE,
     fillOpacity: 0,
     dashed: false,
     label: '',
@@ -654,7 +655,7 @@ function possessionTransferDrill(name: string): Drill {
       'Schwerpunkte: Ballbesitz, Spielverlagerung, Umschalten.',
     info: { ...drill.info, players: 15, fieldSize: `${size.length} × ${Math.round(size.width)} m` },
     fieldType: 'full',
-    pitch: { ...drill.pitch, color: 'navy', grid: 'none', orientation: 'portrait' },
+    pitch: { ...drill.pitch, color: 'navy', lineColor: TURQUOISE_LINE, grid: 'none', orientation: 'portrait' },
     scenes: [{ ...drill.scenes[0], items: b.items, lines: b.lines, zones: b.zones }],
   }
 }
