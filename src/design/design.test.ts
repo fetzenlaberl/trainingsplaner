@@ -77,6 +77,12 @@ describe('design templates', () => {
     expect(parsed?.player.names).toBe('keep')
   })
 
+  it('can set a plain pitch without stripes', () => {
+    const plain = { ...BUILT_IN_DESIGNS[2], pitch: { ...BUILT_IN_DESIGNS[2].pitch, mowing: 'none' as const } }
+    expect(designFromData(plain)?.pitch.mowing).toBe('none')
+    expect(applyDesign(fieldVariantDrill('standard'), plain).pitch).toMatchObject({ color: 'black', mowing: 'none' })
+  })
+
   it('rejects broken designs', () => {
     expect(designFromData({ ...navy, teams: ['#fff'] })).toBeNull()
     expect(designFromData({ ...navy, pitch: { color: 'rainbow' } })).toBeNull()

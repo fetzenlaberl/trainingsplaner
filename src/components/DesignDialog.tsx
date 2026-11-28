@@ -11,7 +11,16 @@ import {
   type NameTagMode,
 } from '../design/design'
 import { deleteDesign, listDesigns, putDesigns } from '../design/designDb'
-import { PITCH_COLOR_ORDER, PITCH_COLORS, PITCH_LINE_COLORS, PITCH_LINE_WIDTHS, type PitchColor, type PitchLineWidth } from '../field/pitchStyle'
+import {
+  MOWING_OPTIONS,
+  PITCH_COLOR_ORDER,
+  PITCH_COLORS,
+  PITCH_LINE_COLORS,
+  PITCH_LINE_WIDTHS,
+  type Mowing,
+  type PitchColor,
+  type PitchLineWidth,
+} from '../field/pitchStyle'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { LINE_PATTERN_LABELS, LINE_PATTERNS, LINE_WEIGHT_LABELS, LINE_WEIGHTS, type LinePattern, type LineWeight } from '../lines/styles'
 import type { Drill, PlayerShape, SymbolStyle } from '../model/types'
@@ -226,6 +235,11 @@ export function DesignPreview({ design }: { design: Design }) {
   return (
     <svg viewBox="0 0 64 40" className="h-10 w-16 shrink-0 rounded" aria-hidden>
       <rect width="64" height="40" fill={design.pitch.gradient?.from ?? scheme.base} />
+      {!design.pitch.gradient &&
+        design.pitch.mowing !== 'none' &&
+        scheme.stripe &&
+        scheme.stripe !== scheme.base &&
+        [0, 16, 32, 48].map((x) => <rect key={x} x={x} width="8" height="40" fill={scheme.stripe ?? undefined} />)}
       <rect x="3" y="3" width="58" height="34" rx={design.pitch.roundedCorners ? 3 : 0} fill="none" stroke={marking} strokeWidth="1" />
       <line x1="32" y1="3" x2="32" y2="37" stroke={marking} strokeWidth="1" />
       <line x1="14" y1="28" x2="44" y2="12" stroke={pass.color} strokeWidth="1.2" strokeDasharray={pass.pattern === 'solid' ? undefined : '3 2'} />
@@ -299,6 +313,21 @@ function DesignEditor({ design, onChange }: { design: Design; onChange: (update:
               {PITCH_COLOR_ORDER.map((c) => (
                 <option key={c} value={c}>
                   {PITCH_COLORS[c].label}
+                </option>
+              ))}
+            </select>
+          </Row>
+          <Row label="Muster">
+            <select
+              className={selectClass}
+              disabled={ro}
+              value={pitch.mowing ?? ''}
+              title="Mähmuster des Rasens; „Keine Streifen“ = nur die Farbe"
+              onChange={(e) => onChange((d) => ({ ...d, pitch: { ...d.pitch, mowing: (e.target.value || undefined) as Mowing | undefined } }))}
+            >
+              {MOWING_OPTIONS.map((m) => (
+                <option key={m.label} value={m.value ?? ''}>
+                  {m.label}
                 </option>
               ))}
             </select>
