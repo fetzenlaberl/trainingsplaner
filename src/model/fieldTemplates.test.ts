@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { getViewport } from '../field/dimensions'
 import { areaForPlayers, customFieldScene, DEFAULT_FIELD_DRAW_OPTIONS, FIELD_VARIANTS, fieldVariantDrill, SIZE_FORMATS, sizeFormatDrill, sizeOverviewDrill, Y_PASS_VARIANTS, yPassDrill } from './fieldTemplates'
 import { EXTRA_GROUPS, EXTRA_TEMPLATES, extraTemplateDrill } from './extraTemplates'
+import { FANGO_GROUPS, FANGO_TEMPLATES, fangoTemplateDrill } from './fangoTemplates'
 import { parseDrill, serializeDrill } from './serialize'
 import type { Drill } from './types'
 
@@ -11,6 +12,7 @@ const all: Drill[] = [
   ...Y_PASS_VARIANTS.map((v) => yPassDrill(v.key)),
   sizeOverviewDrill(),
   ...EXTRA_TEMPLATES.map((t) => extraTemplateDrill(t.key)),
+  ...FANGO_TEMPLATES.map((t) => fangoTemplateDrill(t.key)),
 ]
 
 describe('field templates', () => {
@@ -52,6 +54,20 @@ describe('field templates', () => {
     expect(sixGoals.filter((i) => i.type === 'player')).toHaveLength(18)
     expect(extraTemplateDrill('plusOne').fieldType).toBe('half')
     expect(extraTemplateDrill('structure325').pitch.color).toBe('black')
+  })
+
+  it('builds the Fango templates in their own groups, without names', () => {
+    const keys = [...EXTRA_TEMPLATES, ...FANGO_TEMPLATES].map((t) => t.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    for (const { group } of FANGO_GROUPS) expect(FANGO_TEMPLATES.some((t) => t.group === group)).toBe(true)
+    for (const t of FANGO_TEMPLATES) {
+      const drill = fangoTemplateDrill(t.key)
+      expect(drill.title).toBe(t.name)
+      // Name tags stay empty or a placeholder: no real player names in templates.
+      expect(drill.scenes[0].items.every((i) => !i.name || i.name === '…'), t.key).toBe(true)
+    }
+    expect(fangoTemplateDrill('cornerAttack').fieldType).toBe('cornerRight')
+    expect(fangoTemplateDrill('shape4231').scenes[0].items.filter((i) => i.type === 'player')).toHaveLength(11)
   })
 
   it('builds the goal variants', () => {

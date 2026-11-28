@@ -35,7 +35,7 @@ export function FileBar() {
   const importInputRef = useRef<HTMLInputElement>(null)
   const importTargetRef = useRef<ImportTarget>('item')
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState(false)
+  const [fieldTemplatesOpen, setFieldTemplatesOpen] = useState<false | 'fields' | 'fango'>(false)
   const [designOpen, setDesignOpen] = useState(false)
   /** Drill read from a file, waiting for the design choice */
   const [opening, setOpening] = useState<Drill | null>(null)
@@ -153,7 +153,13 @@ export function FileBar() {
             section: 'Neu aus Vorlage',
             label: 'Trainingsfelder …',
             hint: 'Feldgrößen 1:1–9:9, Torvarianten, Y-Pass',
-            onSelect: () => setFieldTemplatesOpen(true),
+            onSelect: () => setFieldTemplatesOpen('fields'),
+          },
+          {
+            section: 'Neu aus Vorlage',
+            label: 'Fango Grafiken …',
+            hint: 'Standards, Grundordnungen, Spieleröffnung, Trainingsformen',
+            onSelect: () => setFieldTemplatesOpen('fango'),
           },
           {
             section: 'Neu aus Vorlage',
@@ -232,7 +238,7 @@ export function FileBar() {
       {exportMenu.dialogs}
       {detailsOpen && <DetailsDialog onClose={() => setDetailsOpen(false)} />}
       {fieldTemplatesOpen && (
-        <FieldTemplateDialog onChoose={handleFieldTemplate} onClose={() => setFieldTemplatesOpen(false)} />
+        <FieldTemplateDialog set={fieldTemplatesOpen} onChoose={handleFieldTemplate} onClose={() => setFieldTemplatesOpen(false)} />
       )}
       {designOpen && (
         <DesignDialog

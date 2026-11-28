@@ -19,71 +19,71 @@ import {
 import { emptyDrill } from './serialize'
 import type { Category, Drill, Item, Point, Zone } from './types'
 
-const WHITE = '#ffffff'
-const RED = '#dc2626'
-const BLUE = '#2563eb'
-const YELLOW = '#facc15'
-const ORANGE = '#f97316'
-const BLACK = '#111827'
-const GREEN = '#22c55e'
-const GREY = '#9ca3af'
-const PASS = '#facc15'
-const SKY = '#38bdf8'
-const PURPLE = '#a855f7'
+export const WHITE = '#ffffff'
+export const RED = '#dc2626'
+export const BLUE = '#2563eb'
+export const YELLOW = '#facc15'
+export const ORANGE = '#f97316'
+export const BLACK = '#111827'
+export const GREEN = '#22c55e'
+export const GREY = '#9ca3af'
+export const PASS = '#facc15'
+export const SKY = '#38bdf8'
+export const PURPLE = '#a855f7'
 const NAVY_TEAM = '#1e3a8a'
 const CYAN_TEAM = '#22d3ee'
 
-type Pt = [number, number]
+export type Pt = [number, number]
 
-const FULL = { length: PITCH.length, width: PITCH.width }
+export const FULL = { length: PITCH.length, width: PITCH.width }
 /** Penalty area edges across the pitch and the inner lanes (half-spaces) */
-const PA_NEAR = PITCH.penaltyAreaDepth
-const PA_FAR = PITCH.length - PITCH.penaltyAreaDepth
-const SIDE_L = (PITCH.width - PITCH.penaltyAreaWidth) / 2
-const SIDE_R = PITCH.width - SIDE_L
+export const PA_NEAR = PITCH.penaltyAreaDepth
+export const PA_FAR = PITCH.length - PITCH.penaltyAreaDepth
+export const SIDE_L = (PITCH.width - PITCH.penaltyAreaWidth) / 2
+export const SIDE_R = PITCH.width - SIDE_L
 const LANE_L = 27.9
 const LANE_R = PITCH.width - LANE_L
-const HALF = PITCH.length / 2
+export const HALF = PITCH.length / 2
 
-const pts = (list: Pt[]): Point[] => list.map(([x, y]) => ({ x, y }))
+export const pts = (list: Pt[]): Point[] => list.map(([x, y]) => ({ x, y }))
 
 /** Marking line of the field (fixed with it). */
-function mark(b: Builder, list: Pt[], pattern: LinePattern = 'dashed', color = WHITE): void {
+export function mark(b: Builder, list: Pt[], pattern: LinePattern = 'dashed', color = WHITE): void {
   addLine(b, 'line', pts(list), { pattern, weight: 'extraThin', color })
   b.lines[b.lines.length - 1].locked = true
 }
 
 /** Plain drawn line, e.g. connections between players (not fixed). */
-function link(b: Builder, a: Pt, c: Pt, color = GREY, pattern: LinePattern = 'solid'): void {
+export function link(b: Builder, a: Pt, c: Pt, color = GREY, pattern: LinePattern = 'solid'): void {
   addLine(b, 'line', pts([a, c]), { pattern, weight: 'extraThin', color })
 }
 
-function run(b: Builder, list: Pt[], pattern: LinePattern = 'solid', color = WHITE): void {
+export function run(b: Builder, list: Pt[], pattern: LinePattern = 'solid', color = WHITE): void {
   addLine(b, 'run', pts(list), { pattern, weight: 'extraThin', color })
 }
 
-function pass(b: Builder, from: Pt, to: Pt, pattern: LinePattern = 'dashed', step: number | null = null): void {
+export function pass(b: Builder, from: Pt, to: Pt, pattern: LinePattern = 'dashed', step: number | null = null): void {
   addLine(b, 'pass', pts([from, to]), { pattern, color: PASS, step })
 }
 
-function player(b: Builder, color: string, label: string, [x, y]: Pt, extra: Partial<Item> = {}): void {
+export function player(b: Builder, color: string, label: string, [x, y]: Pt, extra: Partial<Item> = {}): void {
   addItem(b, 'player', x, y, { color, label, size: 1.5 * b.k, ...extra })
 }
 
-function team(b: Builder, color: string, list: [string, number, number][], rotation = 0): void {
+export function team(b: Builder, color: string, list: [string, number, number][], rotation = 0): void {
   for (const [label, x, y] of list) player(b, color, label, [x, y], { rotation })
 }
 
-function text(b: Builder, label: string, [x, y]: Pt, size = 0.6, rotation = 0): void {
+export function text(b: Builder, label: string, [x, y]: Pt, size = 0.6, rotation = 0): void {
   addItem(b, 'text', x, y, { label, size, rotation })
 }
 
-function cone(b: Builder, [x, y]: Pt): void {
+export function cone(b: Builder, [x, y]: Pt): void {
   addItem(b, 'cone', x, y, { color: ORANGE, size: b.k })
 }
 
 /** Rectangle zone from corner (x0, y0) to (x1, y1). */
-function rect(b: Builder, x0: number, y0: number, x1: number, y1: number, style: Partial<Zone> = {}): void {
+export function rect(b: Builder, x0: number, y0: number, x1: number, y1: number, style: Partial<Zone> = {}): void {
   b.zones.push({
     id: `zone-tpl-z${b.zones.length + 1}`,
     shape: 'rect',
@@ -104,7 +104,7 @@ function rect(b: Builder, x0: number, y0: number, x1: number, y1: number, style:
 }
 
 /** Zone with free corners (e.g. pentagon or block shape), given as points on the field. */
-function poly(b: Builder, corners: Pt[], style: Partial<Zone> = {}): void {
+export function poly(b: Builder, corners: Pt[], style: Partial<Zone> = {}): void {
   const xs = corners.map((c) => c[0])
   const ys = corners.map((c) => c[1])
   const cx = (Math.min(...xs) + Math.max(...xs)) / 2
@@ -116,11 +116,11 @@ function poly(b: Builder, corners: Pt[], style: Partial<Zone> = {}): void {
 }
 
 /** Lines through several players in a row (a chain), e.g. a defensive line. */
-function chain(b: Builder, list: Pt[], color = WHITE): void {
+export function chain(b: Builder, list: Pt[], color = WHITE): void {
   for (let i = 1; i < list.length; i++) link(b, list[i - 1], list[i], color)
 }
 
-interface DrillOptions {
+export interface DrillOptions {
   description: string
   players: number | null
   area: 'drill' | 'tactic'
@@ -130,7 +130,7 @@ interface DrillOptions {
 }
 
 /** Drill on the big pitch or half pitch, shown upright (own goal at the bottom). */
-function pitchDrill(title: string, fieldType: 'full' | 'half', b: Builder, o: DrillOptions): Drill {
+export function pitchDrill(title: string, fieldType: 'full' | 'half', b: Builder, o: DrillOptions): Drill {
   const drill = emptyDrill()
   return {
     ...drill,
@@ -146,7 +146,7 @@ function pitchDrill(title: string, fieldType: 'full' | 'half', b: Builder, o: Dr
 }
 
 /** Drill on an empty field of its own size. */
-function areaDrill(
+export function areaDrill(
   title: string,
   area: { length: number; width: number },
   b: Builder,
